@@ -2,9 +2,10 @@ use super::{
     duration_to_psotime, models::character::Character, psotime_to_duration, read_magic, read_utf16,
     read_utf8, read_variable_utf16, read_variable_utf8, write_magic, write_utf16, write_utf8,
     write_variable_utf16, write_variable_utf8, EntityType, Flags, ObjectHeader, PacketHeader,
-    PacketReadWrite,
+    PacketReadWrite, HelperReadWrite
 };
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use packetlib_impl::HelperReadWrite;
 use std::{
     io::{Read, Seek, Write},
     net::Ipv4Addr,
@@ -16,38 +17,57 @@ use std::{
 // ----------------------------------------------------------------
 
 // 0x11, 0x00
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x00)]
+#[Flags(Flags {packed: true, ..Default::default()})]
 pub struct SegaIDLoginPacket {
     //FIXME: fix data sizes
     pub unk1: u32,
     pub unk2: u32,
     pub unk3: u32,
     pub ver_id: [u8; 0x20],
+    #[Magic(0x5E6, 0x6B)]
     pub interfaces: Vec<NetInterface>,
+    #[Seek(0x14)]
     pub unk4: [u8; 0x90],
+    #[Seek(0x10)]
     pub unk5: [u8; 0x10],
+    #[Seek(0x10)]
     pub flag1: u32,
     pub flag2: u32,
     pub flag3: u32,
     pub flag4: u32,
+    #[Seek(0x8)]
+    #[FixedUtf16(0x10)]
     pub language: String,
     pub unk6: u32,
     pub unk7: u32,
     pub magic1: u32,
     pub unk8: [u8; 0x20],
     pub unk9: [u8; 0x44],
+    #[Seek(0x104)]
+    #[FixedAscii(0x40)]
     pub username: String,
+    #[Seek(0x20)]
+    #[FixedAscii(0x40)]
     pub password: String,
+    #[Seek(0x4)]
     pub unk10: u32,
-    pub unk11: u32,
+    #[SeekAfter(0x4)]
+    #[VariableAscii(0x5E6, 0x6B)]
+    pub unk11: String,
 }
 
 // 0x11, 0x01
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x01)]
+#[Flags(Flags {packed: true, ..Default::default()})]
 pub struct LoginResponsePacket {
-    pub status: bool,
+    pub status: LoginStatus,
+    #[VariableUtf16(0x8BA4, 0xB6)]
     pub error: String,
-    pub player_id: u32,
+    pub player: ObjectHeader,
+    #[FixedUtf16(0x20)]
     pub blockname: String,
     pub unk1: f32,
     pub unk2: u32,
@@ -101,58 +121,81 @@ pub struct EncryptionResponsePacket {
 }
 
 // 0x11, 0x0D
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x0D)]
 pub struct ClientPingPacket {
+    #[PSOTime]
     pub time: Duration,
 }
 
 // 0x11, 0x0E
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x0E)]
 pub struct ClientPongPacket {
+    #[PSOTime]
     pub client_time: Duration,
+    #[PSOTime]
     pub server_time: Duration,
 }
 
 // 0x11, 0x1E
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x1E)]
 pub struct NicknameRequestPacket {
     // Judging by Polaris Server this packet contains 0x44 byte long array of something
+    #[SeekAfter(0x42)]
     pub error: u16,
 }
 
 // 0x11, 0x1D
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x1D)]
 pub struct NicknameResponsePacket {
+    #[FixedUtf16(0x10)]
+    #[SeekAfter(0x20)]
     pub nickname: String,
 }
 
 // 0x11, 0x2D
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x2D)]
+#[Flags(Flags {packed: true, ..Default::default()})]
 pub struct SystemInformationPacket {
+    #[VariableAscii(0x883D, 0x9F)]
     pub cpu_info: String,
+    #[VariableAscii(0x883D, 0x9F)]
     pub video_info: String,
     pub vram: u64,
     pub total_ram: u64,
     pub unk1: u32,
     pub unk2: u32,
+    #[VariableUtf16(0x883D, 0x9F)]
     pub windows_version: String,
+    #[VariableAscii(0x883D, 0x9F)]
     pub window_size: String,
+    #[VariableUtf16(0x883D, 0x9F)]
     pub unk3: String,
+    #[VariableUtf16(0x883D, 0x9F)]
     pub unk4: String,
+    #[VariableUtf16(0x883D, 0x9F)]
     pub video_driver: String,
     pub total_disk_space: u64,
     pub free_disk_space: u64,
 }
 
 // 0x11, 0x3D
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x3D)]
+#[Flags(Flags {packed: true, ..Default::default()})]
 pub struct ShipListPacket {
+    #[Magic(0xE418, 0x51)]
     pub ships: Vec<ShipEntry>,
     pub timestamp: Duration,
 }
 
 // 0x11, 0x42
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x42)]
 pub struct CreateCharacter1ResponsePacket {
     pub status: u32,
     pub unk2: u32,
@@ -161,13 +204,16 @@ pub struct CreateCharacter1ResponsePacket {
 }
 
 // 0x11, 0x55
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x55)]
 pub struct CreateCharacter2ResponsePacket {
     pub unk: u32,
 }
 
 // 0x11, 0x63
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x63)]
+#[Flags(Flags {packed: true, ..Default::default()})]
 pub struct VitaLoginPacket {
     pub unk1: u8,
     pub unk2: u8,
@@ -175,59 +221,83 @@ pub struct VitaLoginPacket {
     pub unk4: u32,
     pub unk5: u32,
     pub ver_id: [u8; 0x20],
+    #[Magic(0xBE3F, 0x77)]
     pub interfaces: Vec<NetInterface>,
     pub unk6: [u8; 0x10],
+    #[Seek(0x4)]
     pub unk7: [u8; 0x90],
+    #[Seek(0x10)]
     pub unk8: [u8; 0x10],
+    #[Seek(0x10)]
     pub flag1: u32,
     pub flag2: u32,
     pub flag3: u32,
     pub flag4: u32,
     pub flag5: u32,
     pub flag6: u32,
+    #[FixedUtf16(0x10)]
     pub language: String,
     pub unk9: u32,
     pub unk10: u32,
     pub magic1: u32,
     pub unk11: [u8; 0x20],
     pub unk12: [u8; 0x44],
+    #[Seek(0xFC)]
+    #[FixedAscii(0x40)]
     pub username: String,
+    #[Seek(0x20)]
+    #[FixedAscii(0x40)]
     pub password: String,
+    #[Seek(0x4)]
     pub unk13: u8,
     pub unk14: u8,
     pub unk15: u16,
+    #[VariableAscii(0xBE3F, 0x77)]
     pub unk16: String,
+    #[Magic(0xBE3F, 0x77)]
     pub unk17: Vec<u8>,
     pub unk18: [u8; 0x10],
 }
 
 // 0x11, 0x87
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x87)]
+#[Flags(Flags {packed: true, ..Default::default()})]
 pub struct LoginHistoryPacket {
+    #[Magic(0x8ceb, 8)]
     pub attempts: Vec<LoginAttempt>,
 }
 
 // 0x11, 0xEA
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0xEA)]
+#[Flags(Flags {packed: true, ..Default::default()})]
 pub struct NicknameErrorPacket {
     pub unk1: u32,
+    #[VariableUtf16(0x4544, 0x14)]
     pub nickname: String,
 }
 
 // 0x11, 0xEE
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0xEE)]
+#[Flags(Flags {packed: true, ..Default::default()})]
 pub struct EmailCodeRequestPacket {
     pub unk1: u32,
+    #[VariableUtf16(0x5C3B, 0x40)]
     pub message: String,
 }
 
 // 0x11, 0xFF
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0xFF)]
+#[Flags(Flags {packed: true, ..Default::default()})]
 pub struct Unk1Packet {
     pub unk1: u8,
     pub unk2: u8,
     pub unk3: u8,
     pub unk4: u8,
+    #[VariableUtf16(0x3DD3, 0x3D)]
     pub unk5: String,
     pub unk6: [u8; 0xC],
     pub unk7: [u8; 0x40],
@@ -238,23 +308,27 @@ pub struct Unk1Packet {
 // Additional structs
 // ----------------------------------------------------------------
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct NetInterface {
     pub state: u32,
+    #[FixedAscii(0x18)]
     pub mac: String,
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct ShipEntry {
     pub id: u32,
+    #[FixedUtf16(0x10)]
     pub name: String,
     pub ip: [u8; 4],
+    #[Seek(4)]
     pub status: ShipStatus,
+    #[SeekAfter(4)]
     pub order: u16,
 }
 
 #[repr(u16)]
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 pub enum ShipStatus {
     #[default]
     Unknown,
@@ -265,7 +339,7 @@ pub enum ShipStatus {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
 pub struct LoginAttempt {
     pub ip: Ipv4Addr,
     pub status: LoginResult,
@@ -274,7 +348,7 @@ pub struct LoginAttempt {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 #[repr(u32)]
 pub enum LoginResult {
     #[default]
@@ -288,220 +362,18 @@ pub enum LoginResult {
     GenericError,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
+#[repr(u32)]
+pub enum LoginStatus {
+    #[default]
+    Success,
+    Failure,
+}
+
 // ----------------------------------------------------------------
 // Read/Write implementations
 // ----------------------------------------------------------------
-
-impl PacketReadWrite for SegaIDLoginPacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let unk1 = reader.read_u32::<LittleEndian>()?;
-        let unk2 = reader.read_u32::<LittleEndian>()?;
-        let unk3 = reader.read_u32::<LittleEndian>()?;
-        let mut ver_id = [0u8; 0x20];
-        reader.read_exact(&mut ver_id)?;
-        let mac_amount = read_magic(reader, 0x6B, 0x5E6)? as usize;
-        let mut interfaces = Vec::with_capacity(mac_amount);
-        for _ in 0..mac_amount {
-            interfaces.push(NetInterface::read(reader)?);
-        }
-        reader.seek(std::io::SeekFrom::Current(0x14))?;
-        let mut unk4 = [0u8; 0x90];
-        reader.read_exact(&mut unk4)?;
-        reader.seek(std::io::SeekFrom::Current(0x10))?;
-        let mut unk5 = [0u8; 0x10];
-        reader.read_exact(&mut unk5)?;
-        reader.seek(std::io::SeekFrom::Current(0x10))?;
-        let flag1 = reader.read_u32::<LittleEndian>()?;
-        let flag2 = reader.read_u32::<LittleEndian>()?;
-        let flag3 = reader.read_u32::<LittleEndian>()?;
-        let flag4 = reader.read_u32::<LittleEndian>()?;
-        reader.seek(std::io::SeekFrom::Current(0x8))?;
-        let language = read_utf16(reader, 0x10);
-        let unk6 = reader.read_u32::<LittleEndian>()?;
-        let unk7 = reader.read_u32::<LittleEndian>()?;
-        let magic1 = reader.read_u32::<LittleEndian>()?;
-        let mut unk8 = [0u8; 0x20];
-        reader.read_exact(&mut unk8)?;
-        let mut unk9 = [0u8; 0x44];
-        reader.read_exact(&mut unk9)?;
-        unk9.iter_mut().map(|x| *x ^= 0x15).count();
-        reader.seek(std::io::SeekFrom::Current(0x104))?;
-        let username = read_utf8(reader, 0x40);
-        reader.seek(std::io::SeekFrom::Current(0x20))?;
-        let password = read_utf8(reader, 0x40);
-        reader.seek(std::io::SeekFrom::Current(0x4))?;
-        let unk10 = reader.read_u32::<LittleEndian>()?;
-        let unk11 = reader.read_u32::<LittleEndian>()?;
-        Ok(Self {
-            unk1,
-            unk2,
-            unk3,
-            ver_id,
-            interfaces,
-            unk4,
-            unk5,
-            flag1,
-            flag2,
-            flag3,
-            flag4,
-            language,
-            unk6,
-            unk7,
-            magic1,
-            unk8,
-            unk9,
-            username,
-            password,
-            unk10,
-            unk11,
-        })
-    }
-    fn write(mut self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(
-            0x11,
-            0x00,
-            Flags {
-                packed: true,
-                ..Default::default()
-            },
-        )
-        .write(is_ngs);
-        buf.write_u32::<LittleEndian>(self.unk1).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk2).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk3).unwrap();
-        buf.write_all(&self.ver_id).unwrap();
-        buf.write_u32::<LittleEndian>(write_magic(self.interfaces.len() as u32, 107, 0x5E6))
-            .unwrap();
-        for interface in self.interfaces.iter_mut() {
-            interface.write(&mut buf).unwrap();
-        }
-        buf.write_all(&[0u8; 0x14]).unwrap();
-        buf.write_all(&self.unk4).unwrap();
-        buf.write_all(&[0u8; 0x10]).unwrap();
-        buf.write_all(&self.unk5).unwrap();
-        buf.write_all(&[0u8; 0x10]).unwrap();
-        buf.write_u32::<LittleEndian>(self.flag1).unwrap();
-        buf.write_u32::<LittleEndian>(self.flag2).unwrap();
-        buf.write_u32::<LittleEndian>(self.flag3).unwrap();
-        buf.write_u32::<LittleEndian>(self.flag4).unwrap();
-        buf.write_all(&[0u8; 0x8]).unwrap();
-        buf.write_all(&write_utf16(&self.language, 0x10)).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk6).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk7).unwrap();
-        buf.write_u32::<LittleEndian>(self.magic1).unwrap();
-        buf.write_all(&self.unk8).unwrap();
-        self.unk9.iter_mut().map(|x| *x ^= 0x15).count();
-        buf.write_all(&self.unk9).unwrap();
-        buf.write_all(&[0u8; 0x104]).unwrap();
-        buf.write_all(&write_utf8(&self.username, 0x40)).unwrap();
-        buf.write_all(&[0u8; 0x20]).unwrap();
-        buf.write_all(&write_utf8(&self.password, 0x40)).unwrap();
-        buf.write_all(&[0u8; 0x4]).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk10).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk11).unwrap();
-        buf.write_u32::<LittleEndian>(0).unwrap();
-        buf
-    }
-}
-
-impl PacketReadWrite for LoginResponsePacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let status = matches!(reader.read_u32::<LittleEndian>()?, 0);
-        let error = read_variable_utf16(reader, 0xB6, 0x8BA4);
-        let player_id = ObjectHeader::read(reader)?.id;
-        let blockname = read_utf16(reader, 0x20);
-        let unk1 = reader.read_f32::<LittleEndian>()?;
-        let unk2 = reader.read_u32::<LittleEndian>()?;
-        let unk3 = reader.read_u32::<LittleEndian>()?;
-        let unk4 = reader.read_u32::<LittleEndian>()?;
-        let unk5 = reader.read_f32::<LittleEndian>()?;
-        let unk6 = reader.read_f32::<LittleEndian>()?;
-        let unk7 = reader.read_u32::<LittleEndian>()?;
-        let unk8 = reader.read_f32::<LittleEndian>()?;
-        let unk9 = reader.read_f32::<LittleEndian>()?;
-        let unk10 = reader.read_u32::<LittleEndian>()?;
-        let unk11 = reader.read_f32::<LittleEndian>()?;
-        let unk12 = reader.read_u32::<LittleEndian>()?;
-        let unk13 = reader.read_f32::<LittleEndian>()?;
-        let mut unk14 = [0f32; 0xA];
-        for num in &mut unk14 {
-            *num = reader.read_f32::<LittleEndian>()?;
-        }
-        let mut unk15 = [0f32; 0x15];
-        for num in &mut unk15 {
-            *num = reader.read_f32::<LittleEndian>()?;
-        }
-        let unk16 = reader.read_u32::<LittleEndian>()?;
-        let unk17 = reader.read_u32::<LittleEndian>()?;
-        Ok(Self {
-            status,
-            error,
-            player_id,
-            blockname,
-            unk1,
-            unk2,
-            unk3,
-            unk4,
-            unk5,
-            unk6,
-            unk7,
-            unk8,
-            unk9,
-            unk10,
-            unk11,
-            unk12,
-            unk13,
-            unk14,
-            unk15,
-            unk16,
-            unk17,
-        })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(
-            0x11,
-            0x01,
-            Flags {
-                packed: true,
-                ..Default::default()
-            },
-        )
-        .write(is_ngs);
-        buf.write_u32::<LittleEndian>(!self.status as u32).unwrap();
-        buf.write_all(&write_variable_utf16(&self.error, 0xB6, 0x8BA4))
-            .unwrap();
-        ObjectHeader {
-            id: self.player_id,
-            entity_type: EntityType::Player,
-        }
-        .write(&mut buf)
-        .unwrap();
-        buf.write_all(&write_utf16(&self.blockname, 0x20)).unwrap();
-        buf.write_f32::<LittleEndian>(self.unk1).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk2).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk3).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk4).unwrap();
-        buf.write_f32::<LittleEndian>(self.unk5).unwrap();
-        buf.write_f32::<LittleEndian>(self.unk6).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk7).unwrap();
-        buf.write_f32::<LittleEndian>(self.unk8).unwrap();
-        buf.write_f32::<LittleEndian>(self.unk9).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk10).unwrap();
-        buf.write_f32::<LittleEndian>(self.unk11).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk12).unwrap();
-        buf.write_f32::<LittleEndian>(self.unk13).unwrap();
-        for num in self.unk14 {
-            buf.write_f32::<LittleEndian>(num).unwrap();
-        }
-        for num in self.unk15 {
-            buf.write_f32::<LittleEndian>(num).unwrap();
-        }
-        buf.write_u32::<LittleEndian>(self.unk16).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk17).unwrap();
-        buf.write_all(&[0; 0xC]).unwrap();
-        buf
-    }
-}
 
 impl PacketReadWrite for CharacterListPacket {
     fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
@@ -559,7 +431,7 @@ impl PacketReadWrite for CharacterListPacket {
             characters.push(Character::default());
         }
 
-        for character in characters.iter().cycle().take(30) {
+        for character in characters.into_iter().cycle().take(30) {
             buf.write_u32::<LittleEndian>(0).unwrap();
             character.write(&mut buf, self.is_global).unwrap();
         }
@@ -654,573 +526,6 @@ impl PacketReadWrite for EncryptionResponsePacket {
     }
 }
 
-impl PacketReadWrite for ClientPingPacket {
-    fn read(reader: &mut impl Read) -> std::io::Result<Self> {
-        let timestamp = reader.read_u64::<LittleEndian>()?;
-        let time = psotime_to_duration(timestamp);
-        Ok(Self { time })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(0x11, 0x0D, Flags::default()).write(is_ngs);
-        buf.write_u64::<LittleEndian>(duration_to_psotime(self.time))
-            .unwrap();
-        buf
-    }
-}
-
-impl PacketReadWrite for ClientPongPacket {
-    fn read(reader: &mut impl Read) -> std::io::Result<Self> {
-        let timestamp = reader.read_u64::<LittleEndian>()?;
-        let client_time = psotime_to_duration(timestamp);
-        let timestamp = reader.read_u64::<LittleEndian>()?;
-        let server_time = psotime_to_duration(timestamp);
-        Ok(Self {
-            client_time,
-            server_time,
-        })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(0x11, 0x0E, Flags::default()).write(is_ngs);
-        buf.write_u64::<LittleEndian>(duration_to_psotime(self.client_time))
-            .unwrap();
-        buf.write_u64::<LittleEndian>(duration_to_psotime(self.server_time))
-            .unwrap();
-        buf
-    }
-}
-
-impl PacketReadWrite for NicknameRequestPacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let error = reader.read_u16::<LittleEndian>()?;
-
-        Ok(Self { error })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(0x11, 0x1E, Flags::default()).write(is_ngs);
-        buf.write_u16::<LittleEndian>(self.error).unwrap();
-        buf.extend(std::iter::once(0).cycle().take(0x42));
-        buf
-    }
-}
-
-impl PacketReadWrite for NicknameResponsePacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let nickname = read_utf16(reader, 0x10);
-
-        Ok(Self { nickname })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(0x11, 0x1D, Flags::default()).write(is_ngs);
-        buf.write_all(&write_utf16(&self.nickname, 0x20)).unwrap();
-        buf.extend(std::iter::once(0).cycle().take(0x20));
-        buf
-    }
-}
-
-impl PacketReadWrite for SystemInformationPacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let cpu_info = read_variable_utf8(reader, 0x9F, 0x883D);
-        let video_info = read_variable_utf8(reader, 0x9F, 0x883D);
-        let vram = reader.read_u64::<LittleEndian>()?;
-        let total_ram = reader.read_u64::<LittleEndian>()?;
-        let unk1 = reader.read_u32::<LittleEndian>()?;
-        let unk2 = reader.read_u32::<LittleEndian>()?;
-        let windows_version = read_variable_utf16(reader, 0x9F, 0x883D);
-        let window_size = read_variable_utf8(reader, 0x9F, 0x883D);
-        let unk3 = read_variable_utf16(reader, 0x9F, 0x883D);
-        let unk4 = read_variable_utf16(reader, 0x9F, 0x883D);
-        let video_driver = read_variable_utf16(reader, 0x9F, 0x883D);
-        let total_disk_space = reader.read_u64::<LittleEndian>()?;
-        let free_disk_space = reader.read_u64::<LittleEndian>()?;
-        Ok(Self {
-            cpu_info,
-            video_info,
-            vram,
-            total_ram,
-            unk1,
-            unk2,
-            windows_version,
-            window_size,
-            unk3,
-            unk4,
-            video_driver,
-            total_disk_space,
-            free_disk_space,
-        })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(
-            0x11,
-            0x2D,
-            Flags {
-                packed: true,
-                ..Default::default()
-            },
-        )
-        .write(is_ngs);
-        buf.write_all(&write_variable_utf8(&self.cpu_info, 0x9F, 0x883D))
-            .unwrap();
-        buf.write_all(&write_variable_utf8(&self.video_info, 0x9F, 0x883D))
-            .unwrap();
-        buf.write_u64::<LittleEndian>(self.vram).unwrap();
-        buf.write_u64::<LittleEndian>(self.total_ram).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk1).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk2).unwrap();
-        buf.write_all(&write_variable_utf16(&self.windows_version, 0x9F, 0x883D))
-            .unwrap();
-        buf.write_all(&write_variable_utf8(&self.window_size, 0x9F, 0x883D))
-            .unwrap();
-        buf.write_all(&write_variable_utf16(&self.unk3, 0x9F, 0x883D))
-            .unwrap();
-        buf.write_all(&write_variable_utf16(&self.unk4, 0x9F, 0x883D))
-            .unwrap();
-        buf.write_all(&write_variable_utf16(&self.video_driver, 0x9F, 0x883D))
-            .unwrap();
-        buf.write_u64::<LittleEndian>(self.total_disk_space)
-            .unwrap();
-        buf.write_u64::<LittleEndian>(self.free_disk_space).unwrap();
-        buf
-    }
-}
-
-impl PacketReadWrite for ShipListPacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let ship_count = read_magic(reader, 0x51, 0xE418)?;
-        let mut ships = vec![];
-        for _ in 0..ship_count {
-            ships.push(ShipEntry::read(reader)?);
-        }
-        let timestamp = Duration::from_secs(reader.read_u32::<LittleEndian>()? as u64);
-        let _ = reader.read_u32::<LittleEndian>()?;
-        Ok(Self { ships, timestamp })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(
-            0x11,
-            0x3D,
-            Flags {
-                packed: true,
-                ..Default::default()
-            },
-        )
-        .write(is_ngs);
-        buf.write_u32::<LittleEndian>(write_magic(self.ships.len() as u32, 0x51, 0xE418))
-            .unwrap();
-        for ship in self.ships {
-            ship.write(&mut buf).unwrap()
-        }
-        buf.write_u32::<LittleEndian>(self.timestamp.as_secs() as u32)
-            .unwrap();
-        buf.write_u32::<LittleEndian>(1).unwrap();
-        buf
-    }
-}
-
-impl PacketReadWrite for CreateCharacter1ResponsePacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let status = reader.read_u32::<LittleEndian>()?;
-        let unk2 = reader.read_u32::<LittleEndian>()?;
-        let used_smth = reader.read_u32::<LittleEndian>()?;
-        let req_ac = reader.read_u32::<LittleEndian>()?;
-        Ok(Self {
-            status,
-            unk2,
-            used_smth,
-            req_ac,
-        })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(0x11, 0x42, Flags::default()).write(is_ngs);
-        buf.write_u32::<LittleEndian>(self.status).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk2).unwrap();
-        buf.write_u32::<LittleEndian>(self.used_smth).unwrap();
-        buf.write_u32::<LittleEndian>(self.req_ac).unwrap();
-        buf
-    }
-}
-
-impl PacketReadWrite for CreateCharacter2ResponsePacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let unk = reader.read_u32::<LittleEndian>()?;
-        Ok(Self { unk })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(0x11, 0x55, Flags::default()).write(is_ngs);
-        buf.write_u32::<LittleEndian>(self.unk).unwrap();
-        buf
-    }
-}
-
-impl PacketReadWrite for VitaLoginPacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let unk1 = reader.read_u8()?;
-        let unk2 = reader.read_u8()?;
-        let unk3 = reader.read_u16::<LittleEndian>()?;
-        let unk4 = reader.read_u32::<LittleEndian>()?;
-        let unk5 = reader.read_u32::<LittleEndian>()?;
-        let mut ver_id = [0u8; 0x20];
-        reader.read_exact(&mut ver_id)?;
-        let mac_amount = read_magic(reader, 0x77, 0xBE3F)? as usize;
-        let mut interfaces = Vec::with_capacity(mac_amount);
-        for _ in 0..mac_amount {
-            interfaces.push(NetInterface::read(reader)?);
-        }
-        let mut unk6 = [0u8; 0x10];
-        reader.read_exact(&mut unk6)?;
-        reader.seek(std::io::SeekFrom::Current(0x4))?;
-        let mut unk7 = [0u8; 0x90];
-        reader.read_exact(&mut unk7)?;
-        reader.seek(std::io::SeekFrom::Current(0x10))?;
-        let mut unk8 = [0u8; 0x10];
-        reader.read_exact(&mut unk8)?;
-        reader.seek(std::io::SeekFrom::Current(0x10))?;
-        let flag1 = reader.read_u32::<LittleEndian>()?;
-        let flag2 = reader.read_u32::<LittleEndian>()?;
-        let flag3 = reader.read_u32::<LittleEndian>()?;
-        let flag4 = reader.read_u32::<LittleEndian>()?;
-        let flag5 = reader.read_u32::<LittleEndian>()?;
-        let flag6 = reader.read_u32::<LittleEndian>()?;
-        let language = read_utf16(reader, 0x10);
-        let unk9 = reader.read_u32::<LittleEndian>()?;
-        let unk10 = reader.read_u32::<LittleEndian>()?;
-        let magic1 = reader.read_u32::<LittleEndian>()?;
-        let mut unk11 = [0u8; 0x20];
-        reader.read_exact(&mut unk11)?;
-        let mut unk12 = [0u8; 0x44];
-        reader.read_exact(&mut unk12)?;
-        unk12.iter_mut().map(|x| *x ^= 0x15).count();
-        reader.seek(std::io::SeekFrom::Current(0xFC))?;
-        let username = read_utf8(reader, 0x40);
-        reader.seek(std::io::SeekFrom::Current(0x20))?;
-        let password = read_utf8(reader, 0x40);
-        reader.seek(std::io::SeekFrom::Current(0x4))?;
-        let unk13 = reader.read_u8()?;
-        let unk14 = reader.read_u8()?;
-        let unk15 = reader.read_u16::<LittleEndian>()?;
-        let unk16 = read_variable_utf8(reader, 0x77, 0xBE3F);
-        let unk17_magic = read_magic(reader, 0x77, 0xBE3F)? as usize;
-        let mut unk17 = vec![0u8; unk17_magic];
-        reader.read_exact(&mut unk17)?;
-        let mut unk18 = [0u8; 0x10];
-        reader.read_exact(&mut unk18)?;
-        Ok(Self {
-            unk1,
-            unk2,
-            unk3,
-            unk4,
-            unk5,
-            ver_id,
-            interfaces,
-            unk6,
-            unk7,
-            unk8,
-            flag1,
-            flag2,
-            flag3,
-            flag4,
-            flag5,
-            flag6,
-            language,
-            unk9,
-            unk10,
-            magic1,
-            unk11,
-            unk12,
-            username,
-            password,
-            unk13,
-            unk14,
-            unk15,
-            unk16,
-            unk17,
-            unk18,
-        })
-    }
-    fn write(mut self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(
-            0x11,
-            0x63,
-            Flags {
-                packed: true,
-                ..Default::default()
-            },
-        )
-        .write(is_ngs);
-        buf.write_u8(self.unk1).unwrap();
-        buf.write_u8(self.unk2).unwrap();
-        buf.write_u16::<LittleEndian>(self.unk3).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk4).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk5).unwrap();
-        buf.write_all(&self.ver_id).unwrap();
-        buf.write_u32::<LittleEndian>(write_magic(self.interfaces.len() as u32, 0x77, 0xBE3F))
-            .unwrap();
-        for interface in self.interfaces.iter_mut() {
-            interface.write(&mut buf).unwrap();
-        }
-        buf.write_all(&self.unk6).unwrap();
-        buf.write_all(&[0u8; 0x4]).unwrap();
-        buf.write_all(&self.unk7).unwrap();
-        buf.write_all(&[0u8; 0x10]).unwrap();
-        buf.write_all(&self.unk8).unwrap();
-        buf.write_all(&[0u8; 0x10]).unwrap();
-        buf.write_u32::<LittleEndian>(self.flag1).unwrap();
-        buf.write_u32::<LittleEndian>(self.flag2).unwrap();
-        buf.write_u32::<LittleEndian>(self.flag3).unwrap();
-        buf.write_u32::<LittleEndian>(self.flag4).unwrap();
-        buf.write_u32::<LittleEndian>(self.flag5).unwrap();
-        buf.write_u32::<LittleEndian>(self.flag6).unwrap();
-        buf.write_all(&write_utf16(&self.language, 0x10)).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk9).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk10).unwrap();
-        buf.write_u32::<LittleEndian>(self.magic1).unwrap();
-        buf.write_all(&self.unk11).unwrap();
-        self.unk12.iter_mut().map(|x| *x ^= 0x15).count();
-        buf.write_all(&self.unk12).unwrap();
-        buf.write_all(&[0u8; 0xFC]).unwrap();
-        buf.write_all(&write_utf8(&self.username, 0x40)).unwrap();
-        buf.write_all(&[0u8; 0x20]).unwrap();
-        buf.write_all(&write_utf8(&self.password, 0x40)).unwrap();
-        buf.write_all(&[0u8; 0x4]).unwrap();
-        buf.write_u8(self.unk13).unwrap();
-        buf.write_u8(self.unk14).unwrap();
-        buf.write_u16::<LittleEndian>(self.unk15).unwrap();
-        buf.write_all(&write_variable_utf8(&self.unk16, 0x77, 0xBE3F))
-            .unwrap();
-        buf.write_u32::<LittleEndian>(write_magic(self.unk17.len() as u32, 0x77, 0xBE3F))
-            .unwrap();
-        buf.write_all(&self.unk17).unwrap();
-        buf.write_all(&self.unk18).unwrap();
-        buf
-    }
-}
-
-impl PacketReadWrite for LoginHistoryPacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let num = read_magic(reader, 8, 0x8ceb)?;
-        let mut attempts = vec![];
-        for _ in 0..num {
-            attempts.push(LoginAttempt::read(reader)?);
-        }
-
-        Ok(Self { attempts })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(
-            0x11,
-            0x87,
-            Flags {
-                packed: true,
-                ..Default::default()
-            },
-        )
-        .write(is_ngs);
-        buf.write_u32::<LittleEndian>(write_magic(
-            (self.attempts.len() as u32).clamp(0, 50),
-            8,
-            0x8ceb,
-        ))
-        .unwrap();
-        for attempt in self.attempts.iter().take(50) {
-            attempt.write(&mut buf).unwrap();
-        }
-        buf
-    }
-}
-
-impl PacketReadWrite for NicknameErrorPacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let unk1 = reader.read_u32::<LittleEndian>()?;
-        let nickname = read_variable_utf16(reader, 0x14, 0x4544);
-
-        Ok(Self { unk1, nickname })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(
-            0x11,
-            0xEA,
-            Flags {
-                packed: true,
-                ..Default::default()
-            },
-        )
-        .write(is_ngs);
-        buf.write_u32::<LittleEndian>(self.unk1).unwrap();
-        buf.write_all(&write_variable_utf16(&self.nickname, 0x14, 0x4544))
-            .unwrap();
-        buf
-    }
-}
-
-impl PacketReadWrite for EmailCodeRequestPacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let unk1 = reader.read_u32::<LittleEndian>()?;
-        let message = read_variable_utf16(reader, 0x40, 0x5C3B);
-
-        Ok(Self { unk1, message })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(
-            0x11,
-            0xEE,
-            Flags {
-                packed: true,
-                ..Default::default()
-            },
-        )
-        .write(is_ngs);
-        buf.write_u32::<LittleEndian>(self.unk1).unwrap();
-        buf.write_all(&write_variable_utf16(&self.message, 0x40, 0x5C3B))
-            .unwrap();
-        buf
-    }
-}
-
-impl PacketReadWrite for Unk1Packet {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let unk1 = reader.read_u8()?;
-        let unk2 = reader.read_u8()?;
-        let unk3 = reader.read_u8()?;
-        let unk4 = reader.read_u8()?;
-        let unk5 = read_variable_utf16(reader, 0x3D, 0x3DD3);
-        let mut unk6 = [0; 0xC];
-        reader.read_exact(&mut unk6)?;
-        let mut unk7 = [0; 0x40];
-        reader.read_exact(&mut unk7)?;
-        let mut unk8 = [0; 0x20];
-        reader.read_exact(&mut unk8)?;
-
-        Ok(Self {
-            unk1,
-            unk2,
-            unk3,
-            unk4,
-            unk5,
-            unk6,
-            unk7,
-            unk8,
-        })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(
-            0x11,
-            0xFF,
-            Flags {
-                packed: true,
-                ..Default::default()
-            },
-        )
-        .write(is_ngs);
-        buf.write_u8(self.unk1).unwrap();
-        buf.write_u8(self.unk2).unwrap();
-        buf.write_u8(self.unk3).unwrap();
-        buf.write_u8(self.unk4).unwrap();
-        buf.write_all(&write_variable_utf16(&self.unk5, 0x3D, 0x3DD3))
-            .unwrap();
-        buf.write_all(&self.unk6).unwrap();
-        buf.write_all(&self.unk7).unwrap();
-        buf.write_all(&self.unk8).unwrap();
-
-        buf
-    }
-}
-
-impl NetInterface {
-    fn read(reader: &mut impl Read) -> std::io::Result<Self> {
-        let state = reader.read_u32::<LittleEndian>()?;
-        let mac = read_utf8(reader, 0x18);
-        Ok(Self { state, mac })
-    }
-    fn write(&mut self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_u32::<LittleEndian>(self.state)?;
-        writer.write_all(&write_utf8(&self.mac, 0x18))?;
-        Ok(())
-    }
-}
-
-impl ShipEntry {
-    pub(crate) fn read(reader: &mut impl Read) -> std::io::Result<Self> {
-        let id = reader.read_u32::<LittleEndian>()?;
-        let name = read_utf16(reader, 0x10);
-        let mut ip = [0u8; 4];
-        reader.read_exact(&mut ip)?;
-        let _ = reader.read_u32::<LittleEndian>()?;
-        let status = ShipStatus::read(reader.read_u16::<LittleEndian>()?);
-        let order = reader.read_u16::<LittleEndian>()?;
-        let _ = reader.read_u32::<LittleEndian>()?;
-
-        Ok(Self {
-            id,
-            name,
-            ip,
-            status,
-            order,
-        })
-    }
-    pub(crate) fn write(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_u32::<LittleEndian>(self.id)?;
-        writer.write_all(&write_utf16(&self.name, 0x10))?;
-        writer.write_all(&self.ip)?;
-        writer.write_u32::<LittleEndian>(0)?;
-        writer.write_u16::<LittleEndian>(self.status as u16)?;
-        writer.write_u16::<LittleEndian>(self.order)?;
-        writer.write_u32::<LittleEndian>(0)?;
-
-        Ok(())
-    }
-}
-
-impl ShipStatus {
-    fn read(num: u16) -> Self {
-        match num {
-            1 => Self::Online,
-            2 => Self::Busy,
-            3 => Self::Full,
-            4 => Self::Offline,
-            _ => Self::Unknown,
-        }
-    }
-}
-
-impl LoginAttempt {
-    pub(crate) fn read(reader: &mut impl Read) -> std::io::Result<Self> {
-        let mut ip_buf = [0u8; 4];
-        reader.read_exact(&mut ip_buf)?;
-        let ip = Ipv4Addr::from(ip_buf);
-        let status = LoginResult::read(reader.read_u32::<LittleEndian>()?);
-        let timestamp = Duration::from_secs(reader.read_u32::<LittleEndian>()? as u64);
-        let unk = reader.read_u32::<LittleEndian>()?;
-        Ok(Self {
-            ip,
-            status,
-            timestamp,
-            unk,
-        })
-    }
-    pub(crate) fn write(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_all(&self.ip.octets())?;
-        writer.write_u32::<LittleEndian>(self.status as u32)?;
-        writer.write_u32::<LittleEndian>(self.timestamp.as_secs() as u32)?;
-        writer.write_u32::<LittleEndian>(self.unk)?;
-
-        Ok(())
-    }
-}
-
-impl LoginResult {
-    pub(crate) fn read(num: u32) -> Self {
-        match num {
-            0 => Self::Successful,
-            1 => Self::EmailConfirmed,
-            2 => Self::LoginError,
-            3 => Self::EmailAuthError,
-            4 => Self::AuthEmailSent,
-            5 => Self::OTPError,
-            6 => Self::InMaintenance,
-            _ => Self::GenericError,
-        }
-    }
-}
-
 // ----------------------------------------------------------------
 // Default implementations
 // ----------------------------------------------------------------
@@ -1248,7 +553,7 @@ impl Default for SegaIDLoginPacket {
             username: String::new(),
             password: String::new(),
             unk10: 512,
-            unk11: 0x058A,
+            unk11: String::new(),
         }
     }
 }
@@ -1256,9 +561,9 @@ impl Default for SegaIDLoginPacket {
 impl Default for LoginResponsePacket {
     fn default() -> Self {
         Self {
-            status: true,
+            status: LoginStatus::Success,
             error: String::new(),
-            player_id: 0,
+            player: ObjectHeader { id: 0, entity_type: EntityType::Player },
             blockname: String::new(),
             unk1: 60.0,
             unk2: 7,
@@ -1275,8 +580,8 @@ impl Default for LoginResponsePacket {
             unk13: 100.0,
             unk14: [1.0; 0xA],
             unk15: [100.0; 0x15],
-            unk16: 0x91A2B,
-            unk17: 0x91A2B,
+            unk16: 0x91A2b,
+            unk17: 0x91A2b,
         }
     }
 }
