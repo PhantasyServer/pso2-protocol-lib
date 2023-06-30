@@ -1,4 +1,4 @@
-use crate::protocol::{read_utf16, write_utf16};
+use crate::protocol::{read_utf16, write_utf16, HelperReadWrite};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Read, Seek, Write};
 
@@ -21,7 +21,7 @@ pub struct Character {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct HSVColor {
     pub hue: u16,
     pub saturation: u16,
@@ -29,28 +29,28 @@ pub struct HSVColor {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 // I'm unsure if we need to name these fields
 pub struct Figure(pub u16, pub u16, pub u16);
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct AccessoryData(pub u8, pub u8, pub u8);
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+pub struct AccessoryData(pub i8, pub i8, pub i8);
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 #[repr(u16)]
 pub enum Race {
-    #[default]
     Human,
     Newman,
     Cast,
     Deuman,
+    #[default]
     Unknown = 0xFFFF,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 #[repr(u16)]
 pub enum Gender {
     #[default]
@@ -60,7 +60,7 @@ pub enum Gender {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
 pub struct Look {
     pub running_animation: u16,
     pub race: Race,
@@ -137,7 +137,7 @@ pub struct Look {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 #[repr(u8)]
 pub enum Class {
     #[default]
@@ -167,7 +167,7 @@ pub struct ClassFlags {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
 pub struct ClassLevel {
     pub level1: u16,
     pub level2: u16,
@@ -175,7 +175,7 @@ pub struct ClassLevel {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct ClassInfo {
     pub unk1: u32,
     pub main_class: Class,
@@ -264,7 +264,7 @@ impl Character {
             classes,
         })
     }
-    pub(crate) fn write(&self, writer: &mut impl Write, is_global: bool) -> std::io::Result<()> {
+    pub(crate) fn write(self, writer: &mut impl Write, is_global: bool) -> std::io::Result<()> {
         writer.write_u32::<LittleEndian>(self.character_id)?;
         writer.write_u32::<LittleEndian>(self.player_id)?;
         writer.write_u32::<LittleEndian>(self.unk1)?;
@@ -288,335 +288,9 @@ impl Character {
     }
 }
 
-impl HSVColor {
-    pub(crate) fn read(reader: &mut impl Read) -> std::io::Result<Self> {
-        let hue = reader.read_u16::<LittleEndian>()?;
-        let saturation = reader.read_u16::<LittleEndian>()?;
-        let value = reader.read_u16::<LittleEndian>()?;
-        Ok(Self {
-            hue,
-            saturation,
-            value,
-        })
-    }
-    pub(crate) fn write(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_u16::<LittleEndian>(self.hue)?;
-        writer.write_u16::<LittleEndian>(self.saturation)?;
-        writer.write_u16::<LittleEndian>(self.value)?;
-        Ok(())
-    }
-}
-
-impl Figure {
-    pub(crate) fn read(reader: &mut impl Read) -> std::io::Result<Self> {
-        let x = reader.read_u16::<LittleEndian>()?;
-        let y = reader.read_u16::<LittleEndian>()?;
-        let z = reader.read_u16::<LittleEndian>()?;
-        Ok(Self(x, y, z))
-    }
-    pub(crate) fn write(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_u16::<LittleEndian>(self.0)?;
-        writer.write_u16::<LittleEndian>(self.1)?;
-        writer.write_u16::<LittleEndian>(self.2)?;
-        Ok(())
-    }
-}
-
-impl AccessoryData {
-    pub(crate) fn read(reader: &mut impl Read) -> std::io::Result<Self> {
-        let x = reader.read_u8()?;
-        let y = reader.read_u8()?;
-        let z = reader.read_u8()?;
-        Ok(Self(x, y, z))
-    }
-    pub(crate) fn write(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_u8(self.0)?;
-        writer.write_u8(self.1)?;
-        writer.write_u8(self.2)?;
-        Ok(())
-    }
-}
-
-impl Race {
-    pub(crate) fn read(num: u16) -> Self {
-        match num {
-            0 => Self::Human,
-            1 => Self::Newman,
-            2 => Self::Cast,
-            3 => Self::Deuman,
-            _ => Self::Unknown,
-        }
-    }
-}
-
-impl Gender {
-    pub(crate) fn read(num: u16) -> Self {
-        match num {
-            0 => Self::Male,
-            1 => Self::Female,
-            _ => Self::Unknown,
-        }
-    }
-}
-
-impl Look {
-    pub(crate) fn read(reader: &mut impl Read) -> std::io::Result<Self> {
-        let running_animation = reader.read_u16::<LittleEndian>()?;
-        let race = Race::read(reader.read_u16::<LittleEndian>()?);
-        let gender = Gender::read(reader.read_u16::<LittleEndian>()?);
-        let muscule = reader.read_u16::<LittleEndian>()?;
-        let body = Figure::read(reader)?;
-        let arms = Figure::read(reader)?;
-        let legs = Figure::read(reader)?;
-        let chest = Figure::read(reader)?;
-        let face_shape = Figure::read(reader)?;
-        let face_parts = Figure::read(reader)?;
-        let eyes = Figure::read(reader)?;
-        let nose_size = Figure::read(reader)?;
-        let nose_height = Figure::read(reader)?;
-        let mouth = Figure::read(reader)?;
-        let ears = Figure::read(reader)?;
-        let neck = Figure::read(reader)?;
-        let waist = Figure::read(reader)?;
-        let body2 = Figure::read(reader)?;
-        let arms2 = Figure::read(reader)?;
-        let legs2 = Figure::read(reader)?;
-        let chest2 = Figure::read(reader)?;
-        let neck2 = Figure::read(reader)?;
-        let waist2 = Figure::read(reader)?;
-        let mut unk1 = [0u8; 0x20];
-        reader.read_exact(&mut unk1)?;
-        let mut unk2 = [0u8; 0x0A];
-        reader.read_exact(&mut unk2)?;
-        let acc1_location = AccessoryData::read(reader)?;
-        let acc2_location = AccessoryData::read(reader)?;
-        let acc3_location = AccessoryData::read(reader)?;
-        let acc4_location = AccessoryData::read(reader)?;
-        let unk_color = HSVColor::read(reader)?;
-        let costume_color = HSVColor::read(reader)?;
-        let main_color = HSVColor::read(reader)?;
-        let sub1_color = HSVColor::read(reader)?;
-        let sub2_color = HSVColor::read(reader)?;
-        let sub3_color = HSVColor::read(reader)?;
-        let eye_color = HSVColor::read(reader)?;
-        let hair_color = HSVColor::read(reader)?;
-        let mut unk3 = [0u8; 0x20];
-        reader.read_exact(&mut unk3)?;
-        let mut unk4 = [0u8; 0x10];
-        reader.read_exact(&mut unk4)?;
-        let costume_id = reader.read_u16::<LittleEndian>()?;
-        let body_paint1 = reader.read_u16::<LittleEndian>()?;
-        let sticker_id = reader.read_u16::<LittleEndian>()?;
-        let right_eye_id = reader.read_u16::<LittleEndian>()?;
-        let eyebrow_id = reader.read_u16::<LittleEndian>()?;
-        let eyelash_id = reader.read_u16::<LittleEndian>()?;
-        let face_id1 = reader.read_u16::<LittleEndian>()?;
-        let face_id2 = reader.read_u16::<LittleEndian>()?;
-        let facemakeup1_id = reader.read_u16::<LittleEndian>()?;
-        let hairstyle_id = reader.read_u16::<LittleEndian>()?;
-        let acc1_id = reader.read_u16::<LittleEndian>()?;
-        let acc2_id = reader.read_u16::<LittleEndian>()?;
-        let acc3_id = reader.read_u16::<LittleEndian>()?;
-        let facemakeup2_id = reader.read_u16::<LittleEndian>()?;
-        let leg_id = reader.read_u16::<LittleEndian>()?;
-        let arm_id = reader.read_u16::<LittleEndian>()?;
-        let acc4_id = reader.read_u16::<LittleEndian>()?;
-        let mut unk5 = [0u8; 0x4];
-        reader.read_exact(&mut unk5)?;
-        let body_paint2 = reader.read_u16::<LittleEndian>()?;
-        let left_eye_id = reader.read_u16::<LittleEndian>()?;
-        let mut unk6 = [0u8; 0x12];
-        reader.read_exact(&mut unk6)?;
-        let acc1_size = AccessoryData::read(reader)?;
-        let acc2_size = AccessoryData::read(reader)?;
-        let acc3_size = AccessoryData::read(reader)?;
-        let acc4_size = AccessoryData::read(reader)?;
-        let acc1_rotation = AccessoryData::read(reader)?;
-        let acc2_rotation = AccessoryData::read(reader)?;
-        let acc3_rotation = AccessoryData::read(reader)?;
-        let acc4_rotation = AccessoryData::read(reader)?;
-        let unk7 = reader.read_u16::<LittleEndian>()?;
-        let mut unk8 = [0u8; 0x8];
-        reader.read_exact(&mut unk8)?;
-        let skin_color_type = reader.read_u8()?;
-        let eyebrow_thickness = reader.read_u8()?;
-        Ok(Self {
-            running_animation,
-            race,
-            gender,
-            muscule,
-            body,
-            arms,
-            legs,
-            chest,
-            face_shape,
-            face_parts,
-            eyes,
-            nose_size,
-            nose_height,
-            mouth,
-            ears,
-            neck,
-            waist,
-            body2,
-            arms2,
-            legs2,
-            chest2,
-            neck2,
-            waist2,
-            unk1,
-            unk2,
-            acc1_location,
-            acc2_location,
-            acc3_location,
-            acc4_location,
-            unk_color,
-            costume_color,
-            main_color,
-            sub1_color,
-            sub2_color,
-            sub3_color,
-            eye_color,
-            hair_color,
-            unk3,
-            unk4,
-            costume_id,
-            body_paint1,
-            sticker_id,
-            right_eye_id,
-            eyebrow_id,
-            eyelash_id,
-            face_id1,
-            face_id2,
-            facemakeup1_id,
-            hairstyle_id,
-            acc1_id,
-            acc2_id,
-            acc3_id,
-            facemakeup2_id,
-            leg_id,
-            arm_id,
-            acc4_id,
-            unk5,
-            body_paint2,
-            left_eye_id,
-            unk6,
-            acc1_size,
-            acc2_size,
-            acc3_size,
-            acc4_size,
-            acc1_rotation,
-            acc2_rotation,
-            acc3_rotation,
-            acc4_rotation,
-            unk7,
-            unk8,
-            skin_color_type,
-            eyebrow_thickness,
-        })
-    }
-    pub(crate) fn write(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_u16::<LittleEndian>(self.running_animation)?;
-        writer.write_u16::<LittleEndian>(self.race as u16)?;
-        writer.write_u16::<LittleEndian>(self.gender as u16)?;
-        writer.write_u16::<LittleEndian>(self.muscule)?;
-        self.body.write(writer)?;
-        self.arms.write(writer)?;
-        self.legs.write(writer)?;
-        self.chest.write(writer)?;
-        self.face_shape.write(writer)?;
-        self.face_parts.write(writer)?;
-        self.eyes.write(writer)?;
-        self.nose_size.write(writer)?;
-        self.nose_height.write(writer)?;
-        self.mouth.write(writer)?;
-        self.ears.write(writer)?;
-        self.neck.write(writer)?;
-        self.waist.write(writer)?;
-        self.body2.write(writer)?;
-        self.arms2.write(writer)?;
-        self.legs2.write(writer)?;
-        self.chest2.write(writer)?;
-        self.neck2.write(writer)?;
-        self.waist2.write(writer)?;
-        writer.write_all(&self.unk1)?;
-        writer.write_all(&self.unk2)?;
-        self.acc1_location.write(writer)?;
-        self.acc2_location.write(writer)?;
-        self.acc3_location.write(writer)?;
-        self.acc4_location.write(writer)?;
-        self.unk_color.write(writer)?;
-        self.costume_color.write(writer)?;
-        self.main_color.write(writer)?;
-        self.sub1_color.write(writer)?;
-        self.sub2_color.write(writer)?;
-        self.sub3_color.write(writer)?;
-        self.eye_color.write(writer)?;
-        self.hair_color.write(writer)?;
-        writer.write_all(&self.unk3)?;
-        writer.write_all(&self.unk4)?;
-        writer.write_u16::<LittleEndian>(self.costume_id)?;
-        writer.write_u16::<LittleEndian>(self.body_paint1)?;
-        writer.write_u16::<LittleEndian>(self.sticker_id)?;
-        writer.write_u16::<LittleEndian>(self.right_eye_id)?;
-        writer.write_u16::<LittleEndian>(self.eyebrow_id)?;
-        writer.write_u16::<LittleEndian>(self.eyelash_id)?;
-        writer.write_u16::<LittleEndian>(self.face_id1)?;
-        writer.write_u16::<LittleEndian>(self.face_id2)?;
-        writer.write_u16::<LittleEndian>(self.facemakeup1_id)?;
-        writer.write_u16::<LittleEndian>(self.hairstyle_id)?;
-        writer.write_u16::<LittleEndian>(self.acc1_id)?;
-        writer.write_u16::<LittleEndian>(self.acc2_id)?;
-        writer.write_u16::<LittleEndian>(self.acc3_id)?;
-        writer.write_u16::<LittleEndian>(self.facemakeup2_id)?;
-        writer.write_u16::<LittleEndian>(self.leg_id)?;
-        writer.write_u16::<LittleEndian>(self.arm_id)?;
-        writer.write_u16::<LittleEndian>(self.acc4_id)?;
-        writer.write_all(&self.unk5)?;
-        writer.write_u16::<LittleEndian>(self.body_paint2)?;
-        writer.write_u16::<LittleEndian>(self.left_eye_id)?;
-        writer.write_all(&self.unk6)?;
-        self.acc1_size.write(writer)?;
-        self.acc2_size.write(writer)?;
-        self.acc3_size.write(writer)?;
-        self.acc4_size.write(writer)?;
-        self.acc1_rotation.write(writer)?;
-        self.acc2_rotation.write(writer)?;
-        self.acc3_rotation.write(writer)?;
-        self.acc4_rotation.write(writer)?;
-        writer.write_u16::<LittleEndian>(self.unk7)?;
-        writer.write_all(&self.unk8)?;
-        writer.write_u8(self.skin_color_type)?;
-        writer.write_u8(self.eyebrow_thickness)?;
-        Ok(())
-    }
-}
-
-impl Class {
-    pub(crate) fn read(num: u8) -> Self {
-        match num {
-            0 => Self::Hunter,
-            1 => Self::Ranger,
-            2 => Self::Force,
-            3 => Self::Fighter,
-            4 => Self::Gunner,
-            5 => Self::Techer,
-            6 => Self::Braver,
-            7 => Self::Bouncer,
-            8 => Self::Challenger,
-            9 => Self::Summoner,
-            10 => Self::BattleWarrior,
-            11 => Self::Hero,
-            12 => Self::Phantom,
-            13 => Self::Etole,
-            14 => Self::Luster,
-            _ => Self::Unknown,
-        }
-    }
-}
-
 impl ClassFlags {
-    fn read(mut num: u16) -> Self {
+    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
+        let mut num = reader.read_u16::<LittleEndian>()?;
         let mut flags = Self::default();
         if num & 0b0000_0001 != 0 {
             flags.hunter = true;
@@ -626,7 +300,7 @@ impl ClassFlags {
         if num != 0 {
             println!("Unknown flags: {num}");
         }
-        flags
+        Ok(flags)
     }
     fn write(&self, writer: &mut impl Write) -> std::io::Result<()> {
         let mut num = 0;
@@ -634,170 +308,6 @@ impl ClassFlags {
             num += 0b0000_0001;
         }
         writer.write_u16::<LittleEndian>(num)?;
-        Ok(())
-    }
-}
-
-impl ClassLevel {
-    pub(crate) fn read(reader: &mut impl Read) -> std::io::Result<Self> {
-        let level1 = reader.read_u16::<LittleEndian>()?;
-        let level2 = reader.read_u16::<LittleEndian>()?;
-        let exp = reader.read_u32::<LittleEndian>()?;
-        Ok(Self {
-            level1,
-            level2,
-            exp,
-        })
-    }
-    pub(crate) fn write(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_u16::<LittleEndian>(self.level1)?;
-        writer.write_u16::<LittleEndian>(self.level2)?;
-        writer.write_u32::<LittleEndian>(self.exp)?;
-        Ok(())
-    }
-}
-
-impl ClassInfo {
-    pub(crate) fn read(reader: &mut impl Read) -> std::io::Result<Self> {
-        let unk1 = reader.read_u32::<LittleEndian>()?;
-        let main_class = Class::read(reader.read_u8()?);
-        let sub_class = Class::read(reader.read_u8()?);
-        let unk2 = reader.read_u16::<LittleEndian>()?;
-        let enabled_classes = ClassFlags::read(reader.read_u16::<LittleEndian>()?);
-        let unk3 = reader.read_u16::<LittleEndian>()?;
-        let hunter_info = ClassLevel::read(reader)?;
-        let ranger_info = ClassLevel::read(reader)?;
-        let force_info = ClassLevel::read(reader)?;
-        let fighter_info = ClassLevel::read(reader)?;
-        let gunner_info = ClassLevel::read(reader)?;
-        let techer_info = ClassLevel::read(reader)?;
-        let braver_info = ClassLevel::read(reader)?;
-        let bouncer_info = ClassLevel::read(reader)?;
-        let challenger_info = ClassLevel::read(reader)?;
-        let summoner_info = ClassLevel::read(reader)?;
-        let battle_warrior_info = ClassLevel::read(reader)?;
-        let hero_info = ClassLevel::read(reader)?;
-        let phantom_info = ClassLevel::read(reader)?;
-        let etole_info = ClassLevel::read(reader)?;
-        let luster_info = ClassLevel::read(reader)?;
-        let unk16_info = ClassLevel::read(reader)?;
-        let unk17_info = ClassLevel::read(reader)?;
-        let unk18_info = ClassLevel::read(reader)?;
-        let unk19_info = ClassLevel::read(reader)?;
-        let unk20_info = ClassLevel::read(reader)?;
-        let unk21_info = ClassLevel::read(reader)?;
-        let unk22_info = ClassLevel::read(reader)?;
-        let unk23_info = ClassLevel::read(reader)?;
-        let unk24_info = ClassLevel::read(reader)?;
-        let unk1_maxlevel = reader.read_u16::<LittleEndian>()?;
-        let unk2_maxlevel = reader.read_u16::<LittleEndian>()?;
-        let unk3_maxlevel = reader.read_u16::<LittleEndian>()?;
-        let unk4_maxlevel = reader.read_u16::<LittleEndian>()?;
-        let unk5_maxlevel = reader.read_u16::<LittleEndian>()?;
-        let unk6_maxlevel = reader.read_u16::<LittleEndian>()?;
-        let unk7_maxlevel = reader.read_u16::<LittleEndian>()?;
-        let unk8_maxlevel = reader.read_u16::<LittleEndian>()?;
-        let unk9_maxlevel = reader.read_u16::<LittleEndian>()?;
-        let unk10_maxlevel = reader.read_u16::<LittleEndian>()?;
-        let unk11_maxlevel = reader.read_u16::<LittleEndian>()?;
-        let unk12_maxlevel = reader.read_u16::<LittleEndian>()?;
-        let unk13_maxlevel = reader.read_u16::<LittleEndian>()?;
-        let unk14_maxlevel = reader.read_u16::<LittleEndian>()?;
-        let unk15_maxlevel = reader.read_u16::<LittleEndian>()?;
-        Ok(Self {
-            unk1,
-            main_class,
-            sub_class,
-            unk2,
-            enabled_classes,
-            unk3,
-            hunter_info,
-            ranger_info,
-            force_info,
-            fighter_info,
-            gunner_info,
-            techer_info,
-            braver_info,
-            bouncer_info,
-            challenger_info,
-            summoner_info,
-            battle_warrior_info,
-            hero_info,
-            phantom_info,
-            etole_info,
-            luster_info,
-            unk16_info,
-            unk17_info,
-            unk18_info,
-            unk19_info,
-            unk20_info,
-            unk21_info,
-            unk22_info,
-            unk23_info,
-            unk24_info,
-            unk1_maxlevel,
-            unk2_maxlevel,
-            unk3_maxlevel,
-            unk4_maxlevel,
-            unk5_maxlevel,
-            unk6_maxlevel,
-            unk7_maxlevel,
-            unk8_maxlevel,
-            unk9_maxlevel,
-            unk10_maxlevel,
-            unk11_maxlevel,
-            unk12_maxlevel,
-            unk13_maxlevel,
-            unk14_maxlevel,
-            unk15_maxlevel,
-        })
-    }
-    pub(crate) fn write(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_u32::<LittleEndian>(self.unk1)?;
-        writer.write_u8(self.main_class as u8)?;
-        writer.write_u8(self.sub_class as u8)?;
-        writer.write_u16::<LittleEndian>(self.unk2)?;
-        self.enabled_classes.write(writer)?;
-        writer.write_u16::<LittleEndian>(self.unk3)?;
-        self.hunter_info.write(writer)?;
-        self.ranger_info.write(writer)?;
-        self.force_info.write(writer)?;
-        self.fighter_info.write(writer)?;
-        self.gunner_info.write(writer)?;
-        self.techer_info.write(writer)?;
-        self.braver_info.write(writer)?;
-        self.bouncer_info.write(writer)?;
-        self.challenger_info.write(writer)?;
-        self.summoner_info.write(writer)?;
-        self.battle_warrior_info.write(writer)?;
-        self.hero_info.write(writer)?;
-        self.phantom_info.write(writer)?;
-        self.etole_info.write(writer)?;
-        self.luster_info.write(writer)?;
-        self.unk16_info.write(writer)?;
-        self.unk17_info.write(writer)?;
-        self.unk18_info.write(writer)?;
-        self.unk19_info.write(writer)?;
-        self.unk20_info.write(writer)?;
-        self.unk21_info.write(writer)?;
-        self.unk22_info.write(writer)?;
-        self.unk23_info.write(writer)?;
-        self.unk24_info.write(writer)?;
-        writer.write_u16::<LittleEndian>(self.unk1_maxlevel)?;
-        writer.write_u16::<LittleEndian>(self.unk2_maxlevel)?;
-        writer.write_u16::<LittleEndian>(self.unk3_maxlevel)?;
-        writer.write_u16::<LittleEndian>(self.unk4_maxlevel)?;
-        writer.write_u16::<LittleEndian>(self.unk5_maxlevel)?;
-        writer.write_u16::<LittleEndian>(self.unk6_maxlevel)?;
-        writer.write_u16::<LittleEndian>(self.unk7_maxlevel)?;
-        writer.write_u16::<LittleEndian>(self.unk8_maxlevel)?;
-        writer.write_u16::<LittleEndian>(self.unk9_maxlevel)?;
-        writer.write_u16::<LittleEndian>(self.unk10_maxlevel)?;
-        writer.write_u16::<LittleEndian>(self.unk11_maxlevel)?;
-        writer.write_u16::<LittleEndian>(self.unk12_maxlevel)?;
-        writer.write_u16::<LittleEndian>(self.unk13_maxlevel)?;
-        writer.write_u16::<LittleEndian>(self.unk14_maxlevel)?;
-        writer.write_u16::<LittleEndian>(self.unk15_maxlevel)?;
         Ok(())
     }
 }

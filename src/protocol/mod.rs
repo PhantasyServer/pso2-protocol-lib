@@ -2,6 +2,7 @@ pub mod login;
 pub mod models;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use login::*;
+use packetlib_impl::{HelperReadWrite, PacketReadWrite};
 use std::{
     io::{Cursor, Read, Seek, Write},
     time::Duration,
@@ -14,6 +15,13 @@ pub(crate) trait PacketReadWrite {
         Self: Sized;
     /// Write a packet to a Vec.
     fn write(self, is_ngs: bool) -> Vec<u8>;
+}
+
+pub(crate) trait HelperReadWrite {
+    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self>
+    where
+        Self: Sized;
+    fn write(self, writer: &mut impl Write) -> std::io::Result<()>;
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -92,7 +100,7 @@ pub enum Packet {
     LoadSettings(LoadSettingsPacket),
 
     //Other packets
-    Encrypted(Vec<u8>),
+    // Encrypted(Vec<u8>),
     Unknown((PacketHeader, Vec<u8>)),
     UnknownNGS((PacketHeader, Vec<u8>)),
 }
@@ -151,7 +159,7 @@ impl Packet {
             Self::LoadSettings(packet) => packet.write(is_ngs),
 
             //Other packets
-            Self::Encrypted(data) => return data,
+            // Self::Encrypted(data) => return data,
             Self::Unknown(data) => {
                 let mut out_data = data.0.write(is_ngs);
                 out_data.extend_from_slice(&data.1);
@@ -186,7 +194,6 @@ impl Packet {
             let mut buf_tmp = Cursor::new(&input[pointer..pointer + len]);
             let header = PacketHeader::read(&mut buf_tmp, is_ngs)?;
             pointer += len;
-            // println!("{:?}", (header.id, header.subid));
             match (header.id, header.subid) {
                 (0x11, 0x0B) => {
                     packets.push(Self::EncryptionRequest(EncryptionRequestPacket::read(
@@ -368,18 +375,18 @@ impl PacketHeader {
             flag2: Flags::default(),
         }
     }
-    fn read(reader: &mut impl Read, is_ngs: bool) -> std::io::Result<Self> {
+    fn read(reader: &mut (impl Read + Seek), is_ngs: bool) -> std::io::Result<Self> {
         let (id, subid, flag1, flag2) = if !is_ngs {
             let id = reader.read_u8()?;
             let subid = reader.read_u8()? as u16;
-            let flag1 = Flags::read(reader.read_u8()?);
-            let flag2 = Flags::read(reader.read_u8()?);
+            let flag1 = Flags::read(reader)?;
+            let flag2 = Flags::read(reader)?;
             (id, subid, flag1, flag2)
         } else {
-            let flag1 = Flags::read(reader.read_u8()?);
+            let flag1 = Flags::read(reader)?;
             let id = reader.read_u8()?;
             let subid = reader.read_u16::<LittleEndian>()?;
-            let flag2 = Flags::read(0 /* reader.read_u8()? */);
+            let flag2 = Flags::default();
             (id, subid, flag1, flag2)
         };
 
@@ -414,9 +421,10 @@ pub struct Flags {
     pub full_movement: bool,
     pub object_related: bool,
 }
-impl Flags {
-    fn read(mut num: u8) -> Self {
+impl HelperReadWrite for Flags {
+    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
         let mut flags = Self::default();
+        let mut num = reader.read_u8()?;
         if num & 0x40 != 0 {
             flags.object_related = true;
             num -= 0x40;
@@ -436,7 +444,7 @@ impl Flags {
         if num != 0 {
             println!("Unknown flags: {num}");
         }
-        flags
+        Ok(flags)
     }
     fn write(self, writer: &mut impl Write) -> std::io::Result<()> {
         let mut num = 0;
@@ -457,8 +465,8 @@ impl Flags {
     }
 }
 
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[repr(u16)]
-#[derive(Debug, Default, Clone)]
 pub enum EntityType {
     #[default]
     Unknown = 0,
@@ -466,37 +474,13 @@ pub enum EntityType {
     Map = 5,
     Object = 6,
 }
-impl EntityType {
-    fn read(num: u16) -> Self {
-        match num {
-            4 => Self::Player,
-            5 => Self::Map,
-            6 => Self::Object,
-            _ => Self::Unknown,
-        }
-    }
-}
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct ObjectHeader {
     pub id: u32,
+    #[Seek(4)]
+    #[SeekAfter(2)]
     pub entity_type: EntityType,
-}
-impl ObjectHeader {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let id = reader.read_u32::<LittleEndian>()?;
-        reader.seek(std::io::SeekFrom::Current(0x4))?;
-        let entity_type = EntityType::read(reader.read_u16::<LittleEndian>()?);
-        reader.seek(std::io::SeekFrom::Current(0x2))?;
-        Ok(Self { id, entity_type })
-    }
-    fn write(self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_u32::<LittleEndian>(self.id)?;
-        writer.write_all(&[0u8; 0x4])?;
-        writer.write_u16::<LittleEndian>(self.entity_type as u16)?;
-        writer.write_all(&[0u8; 0x2])?;
-        Ok(())
-    }
 }
 
 // ----------------------------------------------------------------
@@ -504,24 +488,12 @@ impl ObjectHeader {
 // ----------------------------------------------------------------
 
 // 0x03, 0x08
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x08)]
 pub struct ServerHelloPacket {
+    #[Const_u16(0x03)]
+    #[SeekAfter(8)]
     pub version: u16,
-}
-impl ServerHelloPacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        reader.seek(std::io::SeekFrom::Current(2))?;
-        let version = reader.read_u16::<LittleEndian>()?;
-        Ok(Self { version })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(0x03, 0x08, Flags::default()).write(is_ngs);
-        buf.write_u16::<LittleEndian>(0x03).unwrap();
-        buf.write_u16::<LittleEndian>(self.version).unwrap();
-        buf.write_u32::<LittleEndian>(0x0).unwrap();
-        buf.write_u32::<LittleEndian>(0x0).unwrap();
-        buf
-    }
 }
 impl Default for ServerHelloPacket {
     fn default() -> Self {
@@ -530,49 +502,20 @@ impl Default for ServerHelloPacket {
 }
 
 // 0x19, 0x01
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x19, 0x01)]
+#[Flags(Flags {packed: true, ..Default::default()})]
 pub struct SystemMessagePacket {
+    #[VariableUtf16(0x78F7, 0xA2)]
     pub message: String,
+    #[VariableUtf16(0x78F7, 0xA2)]
     pub unk: String,
     pub msg_type: MessageType,
     pub unk2: u32,
 }
-impl SystemMessagePacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let message = read_variable_utf16(reader, 0xA2, 0x78F7);
-        let unk = read_variable_utf16(reader, 0xA2, 0x78F7);
-        let msg_type = MessageType::read(reader.read_u32::<LittleEndian>()?);
-        let unk2 = reader.read_u32::<LittleEndian>()?;
-
-        Ok(Self {
-            message,
-            unk,
-            msg_type,
-            unk2,
-        })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(
-            0x19,
-            0x01,
-            Flags {
-                packed: true,
-                ..Default::default()
-            },
-        )
-        .write(is_ngs);
-        buf.write_all(&write_variable_utf16(&self.message, 0xA2, 0x78F7))
-            .unwrap();
-        buf.write_all(&write_variable_utf16(&self.unk, 0xA2, 0x78F7))
-            .unwrap();
-        buf.write_u32::<LittleEndian>(self.msg_type as u32).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk2).unwrap();
-        buf
-    }
-}
 
 #[repr(u32)]
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, HelperReadWrite)]
 pub enum MessageType {
     GoldenTicker,
     AdminMessage,
@@ -581,76 +524,27 @@ pub enum MessageType {
     #[default]
     GenericMessage,
 }
-impl MessageType {
-    fn read(num: u32) -> Self {
-        match num {
-            0 => Self::GoldenTicker,
-            1 => Self::AdminMessage,
-            2 => Self::AdminMessageInstant,
-            3 => Self::SystemMessage,
-            4 => Self::GenericMessage,
-            _ => Self::GenericMessage,
-        }
-    }
-}
 
 // ----------------------------------------------------------------
 // Settings packets
 // ----------------------------------------------------------------
-//
 
 // 0x2B, 0x01
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x2B, 0x01)]
+#[Flags(Flags {packed: true, ..Default::default()})]
 pub struct SaveSettingsPacket {
+    #[VariableAscii(0xCEF1, 0xB5)]
     pub settings: String,
-}
-impl SaveSettingsPacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let settings = read_variable_utf8(reader, 0xB5, 0xCEF1);
-
-        Ok(Self { settings })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(
-            0x2B,
-            0x02,
-            Flags {
-                packed: true,
-                ..Default::default()
-            },
-        )
-        .write(is_ngs);
-        buf.write_all(&write_variable_utf8(&self.settings, 0xB5, 0xCEF1))
-            .unwrap();
-        buf
-    }
 }
 
 // 0x2B, 0x02
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x2B, 0x02)]
+#[Flags(Flags {packed: true, ..Default::default()})]
 pub struct LoadSettingsPacket {
+    #[VariableAscii(0x54AF, 0x100)]
     pub settings: String,
-}
-impl LoadSettingsPacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let settings = read_variable_utf8(reader, 0x100, 0x54AF);
-
-        Ok(Self { settings })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(
-            0x2B,
-            0x02,
-            Flags {
-                packed: true,
-                ..Default::default()
-            },
-        )
-        .write(is_ngs);
-        buf.write_all(&write_variable_utf8(&self.settings, 0x100, 0x54AF))
-            .unwrap();
-        buf
-    }
 }
 
 // ----------------------------------------------------------------

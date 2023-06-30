@@ -1,0 +1,12 @@
+[package]
+name = "packetlib_impl"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "2.0.22"
+proc-macro2 = "1.0.63"
+quote = "1.0.28"

@@ -19,9 +19,9 @@ pub struct Connection {
     is_ngs: bool,
 }
 impl Connection {
-    /// Create a new connection. 
-    /// `in_keyfile` is the path to the keyfile to decrypt client's key, 
-    /// `out_keyfile` is the path to the keyfile to encrypt client's key 
+    /// Create a new connection.
+    /// `in_keyfile` is the path to the keyfile to decrypt client's key,
+    /// `out_keyfile` is the path to the keyfile to encrypt client's key
     /// (only useful to proxies).
     pub fn new(
         stream: std::net::TcpStream,
