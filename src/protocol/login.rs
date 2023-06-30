@@ -1,11 +1,10 @@
 use super::{
     duration_to_psotime, models::character::Character, psotime_to_duration, read_magic, read_utf16,
     read_utf8, read_variable_utf16, read_variable_utf8, write_magic, write_utf16, write_utf8,
-    write_variable_utf16, write_variable_utf8, EntityType, Flags, ObjectHeader, PacketHeader,
-    PacketReadWrite, HelperReadWrite
+    write_variable_utf16, write_variable_utf8, EntityType, Flags, HelperReadWrite, ObjectHeader,
+    PacketHeader, PacketReadWrite,
 };
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use packetlib_impl::HelperReadWrite;
 use std::{
     io::{Read, Seek, Write},
     net::Ipv4Addr,
@@ -563,7 +562,10 @@ impl Default for LoginResponsePacket {
         Self {
             status: LoginStatus::Success,
             error: String::new(),
-            player: ObjectHeader { id: 0, entity_type: EntityType::Player },
+            player: ObjectHeader {
+                id: 0,
+                entity_type: EntityType::Player,
+            },
             blockname: String::new(),
             unk1: 60.0,
             unk2: 7,

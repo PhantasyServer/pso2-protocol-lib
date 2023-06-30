@@ -1,6 +1,5 @@
 use crate::protocol::{read_utf16, write_utf16, HelperReadWrite};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use packetlib_impl::HelperReadWrite;
 use std::io::{Read, Seek, Write};
 
 // ----------------------------------------------------------------
@@ -36,7 +35,7 @@ pub struct Figure(pub u16, pub u16, pub u16);
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-pub struct AccessoryData(pub u8, pub u8, pub u8);
+pub struct AccessoryData(pub i8, pub i8, pub i8);
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]

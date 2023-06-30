@@ -403,17 +403,33 @@ fn check_code_type(
             read.extend(quote! {let #name = reader.read_u8()?;});
             write.extend(quote! {writer.write_u8(#write_name).unwrap();});
         },
+        "i8" => {
+            read.extend(quote! {let #name = reader.read_i8()?;});
+            write.extend(quote! {writer.write_i8(#write_name).unwrap();});
+        },
         "u16" => {
             read.extend(quote! {let #name = reader.read_u16::<LittleEndian>()?;});
             write.extend(quote! {writer.write_u16::<LittleEndian>(#write_name).unwrap();});
+        },
+        "i16" => {
+            read.extend(quote! {let #name = reader.read_i16::<LittleEndian>()?;});
+            write.extend(quote! {writer.write_i16::<LittleEndian>(#write_name).unwrap();});
         },
         "u32" => {
             read.extend(quote! {let #name = reader.read_u32::<LittleEndian>()?;});
             write.extend(quote! {writer.write_u32::<LittleEndian>(#write_name).unwrap();});
         },
+        "i32" => {
+            read.extend(quote! {let #name = reader.read_i32::<LittleEndian>()?;});
+            write.extend(quote! {writer.write_i32::<LittleEndian>(#write_name).unwrap();});
+        },
         "u64" => {
             read.extend(quote! {let #name = reader.read_u64::<LittleEndian>()?;});
             write.extend(quote! {writer.write_u64::<LittleEndian>(#write_name).unwrap();});
+        },
+        "i64" => {
+            read.extend(quote! {let #name = reader.read_i64::<LittleEndian>()?;});
+            write.extend(quote! {writer.write_i64::<LittleEndian>(#write_name).unwrap();});
         },
         "f32" => {
             read.extend(quote! {let #name = reader.read_f32::<LittleEndian>()?;});

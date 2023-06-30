@@ -2,7 +2,7 @@ pub mod login;
 pub mod models;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use login::*;
-use packetlib_impl::PacketReadWrite;
+use packetlib_impl::{HelperReadWrite, PacketReadWrite};
 use std::{
     io::{Cursor, Read, Seek, Write},
     time::Duration,
@@ -100,7 +100,7 @@ pub enum Packet {
     LoadSettings(LoadSettingsPacket),
 
     //Other packets
-    Encrypted(Vec<u8>),
+    // Encrypted(Vec<u8>),
     Unknown((PacketHeader, Vec<u8>)),
     UnknownNGS((PacketHeader, Vec<u8>)),
 }
@@ -159,7 +159,7 @@ impl Packet {
             Self::LoadSettings(packet) => packet.write(is_ngs),
 
             //Other packets
-            Self::Encrypted(data) => return data,
+            // Self::Encrypted(data) => return data,
             Self::Unknown(data) => {
                 let mut out_data = data.0.write(is_ngs);
                 out_data.extend_from_slice(&data.1);
@@ -194,7 +194,6 @@ impl Packet {
             let mut buf_tmp = Cursor::new(&input[pointer..pointer + len]);
             let header = PacketHeader::read(&mut buf_tmp, is_ngs)?;
             pointer += len;
-            // println!("{:?}", (header.id, header.subid));
             match (header.id, header.subid) {
                 (0x11, 0x0B) => {
                     packets.push(Self::EncryptionRequest(EncryptionRequestPacket::read(
@@ -466,8 +465,8 @@ impl HelperReadWrite for Flags {
     }
 }
 
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[repr(u16)]
-#[derive(Debug, Default, Clone, PartialEq)]
 pub enum EntityType {
     #[default]
     Unknown = 0,
@@ -475,37 +474,13 @@ pub enum EntityType {
     Map = 5,
     Object = 6,
 }
-impl EntityType {
-    fn read(num: u16) -> Self {
-        match num {
-            4 => Self::Player,
-            5 => Self::Map,
-            6 => Self::Object,
-            _ => Self::Unknown,
-        }
-    }
-}
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct ObjectHeader {
     pub id: u32,
+    #[Seek(4)]
+    #[SeekAfter(2)]
     pub entity_type: EntityType,
-}
-impl ObjectHeader {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let id = reader.read_u32::<LittleEndian>()?;
-        reader.seek(std::io::SeekFrom::Current(0x4))?;
-        let entity_type = EntityType::read(reader.read_u16::<LittleEndian>()?);
-        reader.seek(std::io::SeekFrom::Current(0x2))?;
-        Ok(Self { id, entity_type })
-    }
-    fn write(self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_u32::<LittleEndian>(self.id)?;
-        writer.write_all(&[0u8; 0x4])?;
-        writer.write_u16::<LittleEndian>(self.entity_type as u16)?;
-        writer.write_all(&[0u8; 0x2])?;
-        Ok(())
-    }
 }
 
 // ----------------------------------------------------------------
@@ -540,7 +515,7 @@ pub struct SystemMessagePacket {
 }
 
 #[repr(u32)]
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, HelperReadWrite)]
 pub enum MessageType {
     GoldenTicker,
     AdminMessage,
@@ -549,28 +524,10 @@ pub enum MessageType {
     #[default]
     GenericMessage,
 }
-impl MessageType {
-    pub(crate) fn read(reader: &mut impl Read) -> std::io::Result<Self> {
-        let num = reader.read_u32::<LittleEndian>()?;
-        Ok(match num {
-            0 => Self::GoldenTicker,
-            1 => Self::AdminMessage,
-            2 => Self::AdminMessageInstant,
-            3 => Self::SystemMessage,
-            4 => Self::GenericMessage,
-            _ => Self::GenericMessage,
-        })
-    }
-    pub(crate) fn write(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_u32::<LittleEndian>(*self as u32)?;
-        Ok(())
-    }
-}
 
 // ----------------------------------------------------------------
 // Settings packets
 // ----------------------------------------------------------------
-//
 
 // 0x2B, 0x01
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
