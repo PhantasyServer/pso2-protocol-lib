@@ -9,5 +9,6 @@ Library that aims to provide easy(er) interaction with the PSO2 protocol.
 
 ## Notes
 
+ - For more information about the protocol, see [this file](packet_docs/README.MD).
  - Because a lot of information about the protocol is unknown, expect breaking changes (such as adding/deleting/renaming of struct's fields).
  - Any contributions are welcome (e.g. code style suggestions, comments, additional packet information, etc.)
