@@ -8,6 +8,8 @@ use std::{
     time::Duration,
 };
 
+use self::models::{character::Character, Position};
+
 pub(crate) trait PacketReadWrite {
     /// Read a packet from stream.
     fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self>
@@ -29,12 +31,22 @@ pub(crate) trait HelperReadWrite {
 pub enum Packet {
     #[default]
     None,
+    // 0x03, 0x03
+    InitialLoad,
+    // 0x03, 0x04
+    LoadingScreenTransition,
     // 0x03, 0x08
     ServerHello(ServerHelloPacket),
     // 0x03, 0x0B
     ServerPing,
     // 0x03, 0x0C
     ServerPong,
+
+    // 0x06, 0x00
+    SetPlayerID(SetPlayerIDPacket),
+
+    // 0x08, 0x04
+    CharacterSpawn(CharacterSpawnPacket),
 
     // Login packets [0x11]
     // 0x11, 0x00
@@ -45,6 +57,8 @@ pub enum Packet {
     CharacterListRequest,
     // 0x11, 0x03
     CharacterListResponse(CharacterListPacket),
+    // 0x11, 0x04
+    StartGame(StartGamePacket),
     // 0x11, 0x05
     CharacterCreate(CharacterCreatePacket),
     // 0x11, 0x0B
@@ -61,6 +75,8 @@ pub enum Packet {
     NicknameResponse(NicknameResponsePacket),
     // 0x11, 0x2B
     ClientGoodbye,
+    // 0x11, 0x2C
+    BlockBalance(BlockBalancePacket),
     // 0x11, 0x2D
     SystemInformation(SystemInformationPacket),
     // 0x11, 0x3D
@@ -114,9 +130,17 @@ impl Packet {
                 return vec![];
             }
 
+            Self::InitialLoad => PacketHeader::new(0x03, 0x03, Flags::default()).write(is_ngs),
+            Self::LoadingScreenTransition => {
+                PacketHeader::new(0x03, 0x04, Flags::default()).write(is_ngs)
+            }
             Self::ServerHello(packet) => packet.write(is_ngs),
             Self::ServerPing => PacketHeader::new(0x03, 0x0B, Flags::default()).write(is_ngs),
             Self::ServerPong => PacketHeader::new(0x03, 0x0C, Flags::default()).write(is_ngs),
+
+            Self::SetPlayerID(packet) => packet.write(is_ngs),
+
+            Self::CharacterSpawn(packet) => packet.write(is_ngs),
 
             //Login packets
             Self::SegaIDLogin(packet) => packet.write(is_ngs),
@@ -125,6 +149,7 @@ impl Packet {
                 PacketHeader::new(0x11, 0x02, Flags::default()).write(is_ngs)
             }
             Self::CharacterListResponse(packet) => packet.write(is_ngs),
+            Self::StartGame(packet) => packet.write(is_ngs),
             Self::CharacterCreate(packet) => packet.write(is_ngs),
             Self::EncryptionRequest(packet) => packet.write(is_ngs),
             Self::EncryptionResponse(packet) => packet.write(is_ngs),
@@ -133,6 +158,7 @@ impl Packet {
             Self::NicknameRequest(packet) => packet.write(is_ngs),
             Self::NicknameResponse(packet) => packet.write(is_ngs),
             Self::ClientGoodbye => PacketHeader::new(0x11, 0x2B, Flags::default()).write(is_ngs),
+            Self::BlockBalance(packet) => packet.write(is_ngs),
             Self::SystemInformation(packet) => packet.write(is_ngs),
             Self::ShipList(packet) => packet.write(is_ngs),
             Self::CreateCharacter1 => PacketHeader::new(0x11, 0x41, Flags::default()).write(is_ngs),
@@ -194,156 +220,164 @@ impl Packet {
             let mut buf_tmp = Cursor::new(&input[pointer..pointer + len]);
             let header = PacketHeader::read(&mut buf_tmp, is_ngs)?;
             pointer += len;
-            match (header.id, header.subid) {
-                (0x11, 0x0B) => {
-                    packets.push(Self::EncryptionRequest(EncryptionRequestPacket::read(
-                        &mut buf_tmp,
-                    )?));
-                }
-                (0x11, 0x0C) => {
-                    packets.push(Self::EncryptionResponse(EncryptionResponsePacket::read(
-                        &mut buf_tmp,
-                    )?));
-                }
-                (_, _) if is_ngs => {
-                    packets.push(Self::UnknownNGS({
-                        let mut data = vec![];
-                        buf_tmp.set_position(0);
-                        buf_tmp.read_to_end(&mut data)?;
-                        (header, data)
-                    }));
-                }
-
-                (0x03, 0x08) => {
+            match (header.id, header.subid, is_ngs) {
+                (0x03, 0x03, _) => packets.push(Self::InitialLoad),
+                (0x03, 0x04, _) => packets.push(Self::LoadingScreenTransition),
+                (0x03, 0x08, _) => {
                     packets.push(Self::ServerHello(ServerHelloPacket::read(&mut buf_tmp)?))
                 }
-                (0x03, 0x0B) => {
+                (0x03, 0x0B, _) => {
                     packets.push(Self::ServerPing);
                 }
-                (0x03, 0x0C) => {
+                (0x03, 0x0C, _) => {
                     packets.push(Self::ServerPong);
                 }
 
+                (0x06, 0x00, _) => {
+                    packets.push(Self::SetPlayerID(SetPlayerIDPacket::read(&mut buf_tmp)?))
+                }
+
+                (0x08, 0x04, false) => {
+                    packets.push(Self::CharacterSpawn(CharacterSpawnPacket::read(
+                    &mut buf_tmp,
+                )?))},
+
                 //Login packets
-                (0x11, 0x00) => {
+                (0x11, 0x00, _) => {
                     packets.push(Self::SegaIDLogin(SegaIDLoginPacket::read(&mut buf_tmp)?));
                 }
-                (0x11, 0x01) => {
-                    if is_ngs {
-                        packets.push(Self::Unknown({
-                            let mut data = vec![];
-                            buf_tmp.read_to_end(&mut data)?;
-                            (header, data)
-                        }));
-                    } else {
-                        packets.push(Self::LoginResponse(LoginResponsePacket::read(
-                            &mut buf_tmp,
-                        )?));
-                    }
+                (0x11, 0x01, false) => {
+                    packets.push(Self::LoginResponse(LoginResponsePacket::read(
+                        &mut buf_tmp,
+                    )?));
                 }
-                (0x11, 0x02) => {
+                (0x11, 0x02, _) => {
                     packets.push(Self::CharacterListRequest);
                 }
-                (0x11, 0x03) => {
+                (0x11, 0x03, false) => {
                     packets.push(Self::CharacterListResponse(CharacterListPacket::read(
                         &mut buf_tmp,
                     )?));
                 }
-                (0x11, 0x05) => {
+                (0x11, 0x04, false) => {
+                    packets.push(Self::StartGame(StartGamePacket::read(&mut buf_tmp)?));
+                }
+                (0x11, 0x05, false) => {
                     packets.push(Self::CharacterCreate(CharacterCreatePacket::read(
                         &mut buf_tmp,
                     )?));
                 }
-                (0x11, 0x0D) => {
+                (0x11, 0x0B, _) => {
+                    packets.push(Self::EncryptionRequest(EncryptionRequestPacket::read(
+                        &mut buf_tmp,
+                    )?));
+                }
+                (0x11, 0x0C, _) => {
+                    packets.push(Self::EncryptionResponse(EncryptionResponsePacket::read(
+                        &mut buf_tmp,
+                    )?));
+                }
+                (0x11, 0x0D, _) => {
                     packets.push(Self::ClientPing(ClientPingPacket::read(&mut buf_tmp)?));
                 }
-                (0x11, 0x0E) => {
+                (0x11, 0x0E, _) => {
                     packets.push(Self::ClientPong(ClientPongPacket::read(&mut buf_tmp)?));
                 }
-                (0x11, 0x1E) => {
+                (0x11, 0x1E, _) => {
                     packets.push(Self::NicknameRequest(NicknameRequestPacket::read(
                         &mut buf_tmp,
                     )?));
                 }
-                (0x11, 0x1D) => {
+                (0x11, 0x1D, _) => {
                     packets.push(Self::NicknameResponse(NicknameResponsePacket::read(
                         &mut buf_tmp,
                     )?));
                 }
-                (0x11, 0x2B) => {
+                (0x11, 0x2B, _) => {
                     packets.push(Self::ClientGoodbye);
                 }
-                (0x11, 0x2D) => {
+                (0x11, 0x2C, false) => {
+                    packets.push(Self::BlockBalance(BlockBalancePacket::read(&mut buf_tmp)?));
+                }
+                (0x11, 0x2D, _) => {
                     packets.push(Self::SystemInformation(SystemInformationPacket::read(
                         &mut buf_tmp,
                     )?));
                 }
-                (0x11, 0x3D) => {
+                (0x11, 0x3D, _) => {
                     packets.push(Self::ShipList(ShipListPacket::read(&mut buf_tmp)?));
                 }
-                (0x11, 0x41) => {
+                (0x11, 0x41, _) => {
                     packets.push(Self::CreateCharacter1);
                 }
-                (0x11, 0x42) => {
+                (0x11, 0x42, _) => {
                     packets.push(Self::CreateCharacter1Response(
                         CreateCharacter1ResponsePacket::read(&mut buf_tmp)?,
                     ));
                 }
-                (0x11, 0x54) => {
+                (0x11, 0x54, _) => {
                     packets.push(Self::CreateCharacter2);
                 }
-                (0x11, 0x55) => {
+                (0x11, 0x55, _) => {
                     packets.push(Self::CreateCharacter2Response(
                         CreateCharacter2ResponsePacket::read(&mut buf_tmp)?,
                     ));
                 }
-                (0x11, 0x63) => {
+                (0x11, 0x63, false) => {
                     packets.push(Self::VitaLogin(VitaLoginPacket::read(&mut buf_tmp)?));
                 }
-                (0x11, 0x6B) => {
+                (0x11, 0x6B, false) => {
                     packets.push(Self::SegaIDInfoRequest);
                 }
-                (0x11, 0x86) => {
+                (0x11, 0x86, _) => {
                     packets.push(Self::LoginHistoryRequest);
                 }
-                (0x11, 0x87) => {
+                (0x11, 0x87, _) => {
                     packets.push(Self::LoginHistoryResponse(LoginHistoryPacket::read(
                         &mut buf_tmp,
                     )?));
                 }
-                (0x11, 0xEA) => {
+                (0x11, 0xEA, _) => {
                     packets.push(Self::NicknameError(NicknameErrorPacket::read(
                         &mut buf_tmp,
                     )?));
                 }
-                (0x11, 0xEE) => {
+                (0x11, 0xEE, _) => {
                     packets.push(Self::EmailCodeRequest(EmailCodeRequestPacket::read(
                         &mut buf_tmp,
                     )?));
                 }
-                (0x11, 0xFF) => {
+                (0x11, 0xFF, _) => {
                     packets.push(Self::Unk1(Unk1Packet::read(&mut buf_tmp)?));
                 }
 
-                (0x19, 0x01) => {
+                (0x19, 0x01, _) => {
                     packets.push(Self::SystemMessage(SystemMessagePacket::read(
                         &mut buf_tmp,
                     )?));
                 }
 
                 //Settings packets
-                (0x2B, 0x00) => packets.push(Self::SettingsRequest),
-                (0x2B, 0x01) => {
+                (0x2B, 0x00, _) => packets.push(Self::SettingsRequest),
+                (0x2B, 0x01, _) => {
                     packets.push(Self::SaveSettings(SaveSettingsPacket::read(&mut buf_tmp)?));
                 }
-                (0x2B, 0x02) => {
+                (0x2B, 0x02, _) => {
                     packets.push(Self::LoadSettings(LoadSettingsPacket::read(&mut buf_tmp)?));
                 }
 
                 //Other packets
-                _ => {
+                (_, _, false) => {
                     packets.push(Self::Unknown({
                         let mut data = vec![];
+                        buf_tmp.read_to_end(&mut data)?;
+                        (header, data)
+                    }));
+                }
+                (_, _, true) => {
+                    packets.push(Self::UnknownNGS({
+                        let mut data = vec![];
+                        buf_tmp.set_position(0);
                         buf_tmp.read_to_end(&mut data)?;
                         (header, data)
                     }));
@@ -498,6 +532,129 @@ pub struct ServerHelloPacket {
 impl Default for ServerHelloPacket {
     fn default() -> Self {
         Self { version: 0xc9 }
+    }
+}
+
+//0x06, 0x00
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x06, 0x00)]
+pub struct SetPlayerIDPacket {
+    pub player_id: u32,
+    pub unk1: u32,
+    pub unk2: u32,
+}
+
+//0x08, 0x04
+#[derive(Debug, Clone, PartialEq)]
+pub struct CharacterSpawnPacket {
+    // unsure about real structure
+    pub player_obj: ObjectHeader,
+    pub position: Position,
+    pub unk1: u16, // padding?
+    pub unk2: String,
+    pub unk3: u16,
+    pub unk4: u16,
+    pub unk5: u32,
+    pub unk6: u32,
+    pub unk7: u32,
+    pub unk8: u32,
+    pub is_me: u32, //47 - me, 39 - otherwise
+    pub character: Character,
+    pub is_global: bool,
+    pub unk9: String, // title?
+    pub unk10: u32,
+    pub unk11: u32, // gmflag?
+    pub nickname: String,
+    pub unk12: [u8; 0x40],
+}
+impl PacketReadWrite for CharacterSpawnPacket {
+    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
+        let player_obj = ObjectHeader::read(reader)?;
+        let position = Position::read(reader)?;
+        let unk1 = reader.read_u16::<LittleEndian>()?;
+        let unk2 = read_utf8(reader, 0x20);
+        let unk3 = reader.read_u16::<LittleEndian>()?;
+        let unk4 = reader.read_u16::<LittleEndian>()?;
+        let unk5 = reader.read_u32::<LittleEndian>()?;
+        let unk6 = reader.read_u32::<LittleEndian>()?;
+        let unk7 = reader.read_u32::<LittleEndian>()?;
+        let unk8 = reader.read_u32::<LittleEndian>()?;
+        let is_me = reader.read_u32::<LittleEndian>()?;
+        let character = Character::read(reader)?;
+        let unk9 = read_utf16(reader, 0x20);
+        let unk10 = reader.read_u32::<LittleEndian>()?;
+        let unk11 = reader.read_u32::<LittleEndian>()?;
+        let nickname = read_utf16(reader, 0x10);
+        let mut unk12 = [0u8; 0x40];
+        reader.read_exact(&mut unk12)?;
+        Ok(Self {
+            player_obj,
+            position,
+            unk1,
+            unk2,
+            unk3,
+            unk4,
+            unk5,
+            unk6,
+            unk7,
+            unk8,
+            is_me,
+            character,
+            is_global: false,
+            unk9,
+            unk10,
+            unk11,
+            nickname,
+            unk12,
+        })
+    }
+    fn write(self, is_ngs: bool) -> Vec<u8> {
+        let mut buf = PacketHeader::new(0x08, 0x04, Flags::default()).write(is_ngs);
+        self.player_obj.write(&mut buf).unwrap();
+        self.position.write(&mut buf).unwrap();
+        buf.write_u16::<LittleEndian>(self.unk1).unwrap();
+        buf.write_all(&write_utf8(&self.unk2, 0x20)).unwrap();
+        buf.write_u16::<LittleEndian>(self.unk3).unwrap();
+        buf.write_u16::<LittleEndian>(self.unk4).unwrap();
+        buf.write_u32::<LittleEndian>(self.unk5).unwrap();
+        buf.write_u32::<LittleEndian>(self.unk6).unwrap();
+        buf.write_u32::<LittleEndian>(self.unk7).unwrap();
+        buf.write_u32::<LittleEndian>(self.unk8).unwrap();
+        buf.write_u32::<LittleEndian>(self.is_me).unwrap();
+        self.character.write(&mut buf, self.is_global).unwrap();
+        buf.write_all(&write_utf16(&self.unk9, 0x20)).unwrap();
+        buf.write_u32::<LittleEndian>(self.unk10).unwrap();
+        buf.write_u32::<LittleEndian>(self.unk11).unwrap();
+        buf.write_all(&write_utf16(&self.nickname, 0x10)).unwrap();
+        buf.write_all(&self.unk12).unwrap();
+        buf
+    }
+}
+impl Default for CharacterSpawnPacket {
+    fn default() -> Self {
+        Self {
+            player_obj: ObjectHeader {
+                id: 0,
+                entity_type: EntityType::Player,
+            },
+            position: Position { rot_x: 0, rot_y: 15360, rot_z: 0, rot_w: 0, pos_x: 14892, pos_y: 0, pos_z: 22589 },
+            unk1: 0,
+            unk2: "Character".to_string(),
+            unk3: 1,
+            unk4: 0,
+            unk5: 602,
+            unk6: 1,
+            unk7: 53,
+            unk8: 0,
+            is_me: 47,
+            character: Character::default(),
+            is_global: true,
+            unk9: String::new(),
+            unk10: 0,
+            unk11: 0,
+            nickname: String::new(),
+            unk12: [0u8; 0x40],
+        }
     }
 }
 

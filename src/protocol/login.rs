@@ -100,6 +100,15 @@ pub struct CharacterListPacket {
     pub ad: u32,
 }
 
+//0x11, 0x04
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x4)]
+pub struct StartGamePacket {
+    pub char_id: u32,
+    pub unk1: u32,
+    pub unk2: u32,
+}
+
 // 0x11, 0x05
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct CharacterCreatePacket {
@@ -153,6 +162,18 @@ pub struct NicknameResponsePacket {
     #[FixedUtf16(0x10)]
     #[SeekAfter(0x20)]
     pub nickname: String,
+}
+
+// 0x11, 0x2C
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x2C)]
+pub struct BlockBalancePacket {
+    pub unk1: [u8; 0x20],
+    #[FixedUtf16(0x20)]
+    pub blockname: String,
+    pub ip: Ipv4Addr,
+    pub port: u16,
+    pub unk2: [u8; 0x11A],
 }
 
 // 0x11, 0x2D
@@ -314,12 +335,12 @@ pub struct NetInterface {
     pub mac: String,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
 pub struct ShipEntry {
     pub id: u32,
     #[FixedUtf16(0x10)]
     pub name: String,
-    pub ip: [u8; 4],
+    pub ip: Ipv4Addr,
     #[Seek(4)]
     pub status: ShipStatus,
     #[SeekAfter(4)]
@@ -605,6 +626,18 @@ impl Default for ClientPongPacket {
     }
 }
 
+impl Default for BlockBalancePacket {
+    fn default() -> Self {
+        Self {
+            unk1: [0u8; 0x20],
+            blockname: String::new(),
+            ip: Ipv4Addr::UNSPECIFIED,
+            port: 0,
+            unk2: [0u8; 0x11A],
+        }
+    }
+}
+
 impl Default for ShipListPacket {
     fn default() -> Self {
         Self {
@@ -671,6 +704,18 @@ impl Default for Unk1Packet {
             unk6: [0; 0xC],
             unk7: [0; 0x40],
             unk8: [0; 0x20],
+        }
+    }
+}
+
+impl Default for ShipEntry {
+    fn default() -> Self {
+        Self {
+            id: 0,
+            name: String::new(),
+            ip: Ipv4Addr::UNSPECIFIED,
+            status: ShipStatus::Unknown,
+            order: 0,
         }
     }
 }
