@@ -68,9 +68,11 @@ fn packet_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
         #[automatically_derived]
         impl PacketReadWrite for #name {
             fn read(reader: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Result<Self> {
+                use byteorder::{LittleEndian, ReadBytesExt};
                 #read
             }
             fn write(self, is_ngs: bool) -> Vec<u8> {
+                use byteorder::{LittleEndian, WriteBytesExt};
                 let mut buf = PacketHeader::new(#id, #subid, #flags).write(is_ngs);
                 let writer = &mut buf;
                 #write
@@ -97,10 +99,12 @@ fn helper_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
     let gen = quote! {
         #[automatically_derived]
         impl HelperReadWrite for #name {
-            fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
+            fn read(reader: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Result<Self> {
+                use byteorder::{LittleEndian, ReadBytesExt};
                 #read
             }
-            fn write(self, writer: &mut impl Write) -> std::io::Result<()> {
+            fn write(self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+                use byteorder::{LittleEndian, WriteBytesExt};
                 #write
                 Ok(())
             }
@@ -446,7 +450,7 @@ fn check_code_type(
                 let #name = Ipv4Addr::from(ip_buf);
             });
             write.extend(quote! {
-                writer.write_all(&#write_name.octets())?;
+                writer.write_all(&#write_name.octets()).unwrap();
             })
         },
         "Duration" => {
