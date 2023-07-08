@@ -1,15 +1,16 @@
+pub mod character;
+use half::f16;
 use crate::protocol::HelperReadWrite;
 
-pub mod character;
-
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Position {
-    pub rot_x: u16,
-    pub rot_y: u16,
-    pub rot_z: u16,
-    pub rot_w: u16,
-    pub pos_x: u16,
-    pub pos_y: u16,
-    pub pos_z: u16,
+    pub rot_x: f16,
+    pub rot_y: f16,
+    pub rot_z: f16,
+    pub rot_w: f16,
+    pub pos_x: f16,
+    pub pos_y: f16,
+    pub pos_z: f16,
 }

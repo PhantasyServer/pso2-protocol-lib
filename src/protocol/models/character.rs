@@ -7,6 +7,7 @@ use std::io::{Read, Seek, Write};
 // ----------------------------------------------------------------
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Character {
     pub character_id: u32,
@@ -21,6 +22,7 @@ pub struct Character {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct HSVColor {
     pub hue: u16,
@@ -60,6 +62,7 @@ pub enum Gender {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, HelperReadWrite)]
 pub struct Look {
     pub running_animation: u16,
@@ -160,6 +163,7 @@ pub enum Class {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct ClassFlags {
     //TODO: figure out other classes
@@ -167,6 +171,7 @@ pub struct ClassFlags {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, HelperReadWrite)]
 pub struct ClassLevel {
     pub level1: u16,
@@ -175,6 +180,7 @@ pub struct ClassLevel {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct ClassInfo {
     pub unk1: u32,

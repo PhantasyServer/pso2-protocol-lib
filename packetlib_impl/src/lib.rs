@@ -21,7 +21,8 @@ use syn::{
         VariableUtf16,
         Flags,
         PSOTime,
-        Magic
+        Magic,
+        Len_u32,
     )
 )]
 pub fn packet_read_write_derive(input: TokenStream) -> TokenStream {
@@ -42,7 +43,8 @@ pub fn packet_read_write_derive(input: TokenStream) -> TokenStream {
         VariableAscii,
         VariableUtf16,
         PSOTime,
-        Magic
+        Magic,
+        Len_u32,
     )
 )]
 pub fn helper_read_write_derive(input: TokenStream) -> TokenStream {
@@ -67,12 +69,14 @@ fn packet_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
     let gen = quote! {
         #[automatically_derived]
         impl PacketReadWrite for #name {
-            fn read(reader: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Result<Self> {
+            fn read(reader: &mut (impl std::io::Read + std::io::Seek), flags: crate::protocol::Flags) -> std::io::Result<Self> {
                 use byteorder::{LittleEndian, ReadBytesExt};
+                use crate::protocol::HelperReadWrite;
                 #read
             }
             fn write(self, is_ngs: bool) -> Vec<u8> {
                 use byteorder::{LittleEndian, WriteBytesExt};
+                use crate::protocol::HelperReadWrite;
                 let mut buf = PacketHeader::new(#id, #subid, #flags).write(is_ngs);
                 let writer = &mut buf;
                 #write
@@ -283,9 +287,16 @@ fn get_attrs(
             }
             let magic: u32 = attrs.fields[0].base10_parse()?;
             let sub: u32 = attrs.fields[1].base10_parse()?;
-            read.extend(quote! {let len = read_magic(reader, #sub, #magic)? as usize;});
+            read.extend(quote! {let len = crate::protocol::read_magic(reader, #sub, #magic)? as usize;});
             write.extend(quote! {
-                writer.write_u32::<LittleEndian>(write_magic(self.#name.len() as u32, #sub, #magic))
+                writer.write_u32::<LittleEndian>(crate::protocol::write_magic(self.#name.len() as u32, #sub, #magic))
+                .unwrap();
+            });
+        }
+        "Len_u32" => {
+            read.extend(quote! { let len = reader.read_u32::<LittleEndian>()?; });
+            write.extend(quote! {
+                writer.write_u32::<LittleEndian>(self.#name.len() as u32)
                 .unwrap();
             });
         }
@@ -327,17 +338,30 @@ fn check_syn_type(
                                 set,
                                 false,
                             )?;
+                            // let seek_pad = if tmp_read.to_string().contains("read_u8()") {
+                            //     quote! { reader.seek(std::io::SeekFrom::Current((((len + 4 - 1) & (usize::MAX ^ (4 - 1))) - len) as i64))?; }
+                            // } else {
+                            //     quote! {}
+                            // };
+                            // let write_pad = if tmp_read.to_string().contains("read_u8()") {
+                            //     quote! { writer.write_all(&vec![0u8; ((len + 4 - 1) & (usize::MAX ^ (4 - 1))) - len]).unwrap(); }
+                            // } else {
+                            //     quote! {}
+                            // };
                             read.extend(quote! {
                                 let mut #name = vec![];
                                 for _ in 0..len {
                                     #tmp_read
-                                    #name.push(#tmp_name)
+                                    #name.push(#tmp_name);
                                 }
+                                // #seek_pad
                             });
                             write.extend(quote! {
+                                let len = self.#name.len();
                                 for #tmp_name in self.#name {
                                     #tmp_write
                                 }
+                                // #write_pad
                             });
                         }
                     }
@@ -435,6 +459,10 @@ fn check_code_type(
             read.extend(quote! {let #name = reader.read_i64::<LittleEndian>()?;});
             write.extend(quote! {writer.write_i64::<LittleEndian>(#write_name).unwrap();});
         },
+        "f16" => {
+            read.extend(quote! {let #name = half::f16::from_bits(reader.read_u16::<LittleEndian>()?);});
+            write.extend(quote! {writer.write_u16::<LittleEndian>(#write_name.to_bits()).unwrap();});
+        },
         "f32" => {
             read.extend(quote! {let #name = reader.read_f32::<LittleEndian>()?;});
             write.extend(quote! {writer.write_f32::<LittleEndian>(#write_name).unwrap();});
@@ -456,10 +484,10 @@ fn check_code_type(
         "Duration" => {
             if set.is_psotime {
                 read.extend(
-                    quote! {let #name = psotime_to_duration(reader.read_u64::<LittleEndian>()?);},
+                    quote! {let #name = crate::protocol::psotime_to_duration(reader.read_u64::<LittleEndian>()?);},
                 );
                 write.extend(
-                    quote! {writer.write_u64::<LittleEndian>(duration_to_psotime(#write_name))
+                    quote! {writer.write_u64::<LittleEndian>(crate::protocol::duration_to_psotime(#write_name))
                     .unwrap();},
                 );
             } else {
@@ -474,28 +502,28 @@ fn check_code_type(
             match set.str_type {
                 StringType::Unknown => return Err(syn::Error::new(span, "Unknown string type")),
                 StringType::FixedAscii(len) => {
-                    read.extend(quote! {let #name = read_utf8(reader, #len);});
+                    read.extend(quote! {let #name = crate::protocol::read_utf8(reader, #len);});
                     write.extend(
-                        quote! {writer.write_all(&write_utf8(&#write_name, #len as usize)).unwrap();},
+                        quote! {writer.write_all(&crate::protocol::write_utf8(&#write_name, #len as usize)).unwrap();},
                     );
                 }
                 StringType::FixedUtf16(len) => {
-                    read.extend(quote! {let #name = read_utf16(reader, #len);});
+                    read.extend(quote! {let #name = crate::protocol::read_utf16(reader, #len);});
                     write.extend(
-                        quote! {writer.write_all(&write_utf16(&#write_name, #len as usize)).unwrap();},
+                        quote! {writer.write_all(&crate::protocol::write_utf16(&#write_name, #len as usize)).unwrap();},
                     );
                 }
                 StringType::VariableAscii(magic, sub) => {
-                    read.extend(quote! {let #name = read_variable_utf8(reader, #sub, #magic);});
+                    read.extend(quote! {let #name = crate::protocol::read_variable_utf8(reader, #sub, #magic);});
                     write.extend(
-                        quote! {writer.write_all(&write_variable_utf8(&#write_name, #sub, #magic))
+                        quote! {writer.write_all(&crate::protocol::write_variable_utf8(&#write_name, #sub, #magic))
                         .unwrap();},
                     );
                 }
                 StringType::VariableUtf16(magic, sub) => {
-                    read.extend(quote! {let #name = read_variable_utf16(reader, #sub, #magic);});
+                    read.extend(quote! {let #name = crate::protocol::read_variable_utf16(reader, #sub, #magic);});
                     write.extend(
-                        quote! {writer.write_all(&write_variable_utf16(&#write_name, #sub, #magic))
+                        quote! {writer.write_all(&crate::protocol::write_variable_utf16(&#write_name, #sub, #magic))
                         .unwrap();},
                     );
                 }

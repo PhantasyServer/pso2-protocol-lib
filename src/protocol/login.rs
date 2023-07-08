@@ -1,8 +1,6 @@
 use super::{
-    duration_to_psotime, models::character::Character, psotime_to_duration, read_magic, read_utf16,
-    read_utf8, read_variable_utf16, read_variable_utf8, write_magic, write_utf16, write_utf8,
-    write_variable_utf16, write_variable_utf8, EntityType, Flags, HelperReadWrite, ObjectHeader,
-    PacketHeader, PacketReadWrite,
+    models::character::Character, EntityType, Flags, HelperReadWrite, ObjectHeader, PacketHeader,
+    PacketReadWrite,
 };
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::{
@@ -279,6 +277,22 @@ pub struct VitaLoginPacket {
     pub unk18: [u8; 0x10],
 }
 
+// 0x11, 0x67
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x67)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct SalonResponse {
+    pub reedit_time: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+    pub unk4: u32,
+    #[Magic(0xD536, 0xA4)]
+    pub unk5: Vec<SalonThing1>,
+    #[Magic(0xD536, 0xA4)]
+    pub unk6: Vec<SalonThing2>,
+    pub unk7: u32,
+}
+
 // 0x11, 0x87
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x87)]
@@ -359,6 +373,7 @@ pub enum ShipStatus {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, HelperReadWrite)]
 pub struct LoginAttempt {
     pub ip: Ipv4Addr,
@@ -391,12 +406,38 @@ pub enum LoginStatus {
     Failure,
 }
 
+#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+pub struct SalonThing1 {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+    pub unk4: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+pub struct SalonThing2 {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+    pub unk4: u32,
+    pub unk5: u32,
+    pub unk6: u32,
+    pub unk7: u32,
+    pub unk8: u32,
+    pub unk9: u32,
+    pub unk10: u32,
+    pub unk11: u32,
+    pub unk12: u32,
+    pub unk13: u32,
+    pub unk14: u32,
+}
+
 // ----------------------------------------------------------------
 // Read/Write implementations
 // ----------------------------------------------------------------
 
 impl PacketReadWrite for CharacterListPacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
+    fn read(reader: &mut (impl Read + Seek), _: Flags) -> std::io::Result<Self> {
         let char_amount = reader.read_u32::<LittleEndian>()?.clamp(0, 30);
         reader.seek(std::io::SeekFrom::Current(4))?;
         let mut characters = vec![];
@@ -497,7 +538,7 @@ impl PacketReadWrite for CharacterListPacket {
 }
 
 impl PacketReadWrite for CharacterCreatePacket {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
+    fn read(reader: &mut (impl Read + Seek), _: Flags) -> std::io::Result<Self> {
         let character = Character::read(reader)?;
         Ok(Self {
             character,
@@ -512,7 +553,7 @@ impl PacketReadWrite for CharacterCreatePacket {
 }
 
 impl PacketReadWrite for EncryptionRequestPacket {
-    fn read(reader: &mut impl Read) -> std::io::Result<Self> {
+    fn read(reader: &mut impl Read, _: Flags) -> std::io::Result<Self> {
         let mut rsa_data = vec![];
         reader.read_to_end(&mut rsa_data)?;
         let mut tmp_data = vec![];
@@ -533,7 +574,7 @@ impl PacketReadWrite for EncryptionRequestPacket {
 }
 
 impl PacketReadWrite for EncryptionResponsePacket {
-    fn read(reader: &mut impl Read) -> std::io::Result<Self> {
+    fn read(reader: &mut impl Read, _: Flags) -> std::io::Result<Self> {
         let mut data = vec![];
         reader.read_to_end(&mut data)?;
 
@@ -752,49 +793,49 @@ mod tests {
         let packet = Packet::SegaIDLogin(Default::default());
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_01() {
         let packet = Packet::LoginResponse(Default::default());
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_02() {
         let packet = Packet::CharacterListRequest;
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_03() {
         let packet = Packet::CharacterListResponse(Default::default());
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_05() {
         let packet = Packet::CharacterCreate(Default::default());
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_0b() {
         let packet = Packet::EncryptionRequest(Default::default());
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_0c() {
         let packet = Packet::EncryptionResponse(Default::default());
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_0d() {
@@ -803,7 +844,7 @@ mod tests {
         });
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_0e() {
@@ -813,35 +854,35 @@ mod tests {
         });
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_1e() {
         let packet = Packet::NicknameRequest(Default::default());
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_1d() {
         let packet = Packet::NicknameResponse(Default::default());
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_2b() {
         let packet = Packet::ClientGoodbye;
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_2d() {
         let packet = Packet::SystemInformation(Default::default());
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_3d() {
@@ -851,56 +892,56 @@ mod tests {
         });
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_41() {
         let packet = Packet::CreateCharacter1;
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_42() {
         let packet = Packet::CreateCharacter1Response(Default::default());
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_54() {
         let packet = Packet::CreateCharacter2;
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_55() {
         let packet = Packet::CreateCharacter2Response(Default::default());
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_63() {
         let packet = Packet::VitaLogin(Default::default());
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_6b() {
         let packet = Packet::SegaIDInfoRequest;
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_86() {
         let packet = Packet::LoginHistoryRequest;
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_87() {
@@ -909,27 +950,27 @@ mod tests {
         });
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_ea() {
         let packet = Packet::NicknameError(Default::default());
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_ee() {
         let packet = Packet::EmailCodeRequest(Default::default());
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
     #[test]
     fn check_11_ff() {
         let packet = Packet::Unk1(Default::default());
         let data = packet.clone().write(false);
         let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2.1[0]);
+        assert_eq!(packet, packet2[0]);
     }
 }
