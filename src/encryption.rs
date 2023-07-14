@@ -1,7 +1,3 @@
-use std::{
-    fmt::Debug,
-    io::{Error, ErrorKind},
-};
 #[cfg(any(feature = "base_enc", feature = "ngs_enc"))]
 use aes::cipher::{block_padding::Pkcs7, BlockDecryptMut, BlockEncryptMut, KeyIvInit};
 #[cfg(any(feature = "base_enc", feature = "ngs_enc"))]
@@ -15,6 +11,10 @@ use rsa::{
 };
 #[cfg(any(feature = "base_enc", feature = "ngs_enc"))]
 use sha2::Sha256;
+use std::{
+    fmt::Debug,
+    io::{Error, ErrorKind},
+};
 
 #[derive(Debug, Default)]
 pub enum Encryption {
@@ -77,7 +77,6 @@ impl Encryption {
             } else {
                 #[cfg(feature = "base_enc")]
                 return Ok(Self::Aes(Aes {
-                    iv,
                     key,
                     secret: key_d.to_vec(),
                 }));
@@ -146,16 +145,15 @@ impl Encryption {
 #[cfg(feature = "base_enc")]
 #[derive(Debug)]
 pub struct Aes {
-    iv: [u8; 0x10],
     key: [u8; 0x20],
     secret: Vec<u8>,
 }
 #[cfg(feature = "base_enc")]
 impl Aes {
     fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
-        let mut tmp_iv = [0u8; 0x10];
-        tmp_iv.copy_from_slice(&data[0x48..0x58]);
-        let aes = cbc::Decryptor::<aes::Aes256>::new(&self.key.into(), &tmp_iv.into());
+        let mut iv = [0u8; 0x10];
+        iv.copy_from_slice(&data[0x48..0x58]);
+        let aes = cbc::Decryptor::<aes::Aes256>::new(&self.key.into(), &iv.into());
         let mut data_copy = data[0x58..].to_vec();
         let plain_data = match aes.decrypt_padded_mut::<Pkcs7>(&mut data_copy[..]) {
             Ok(x) => x,
@@ -168,8 +166,11 @@ impl Aes {
     fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
         use hmac::Hmac;
         use hmac::Mac;
+        use rand::RngCore;
 
-        let aes = cbc::Encryptor::<aes::Aes256>::new(&self.key.into(), &self.iv.into());
+        let mut iv = [0u8; 0x10];
+        rand::thread_rng().fill_bytes(&mut iv);
+        let aes = cbc::Encryptor::<aes::Aes256>::new(&self.key.into(), &iv.into());
         let mut out_data = vec![0u8; 0x40];
         out_data.write_u32::<BigEndian>(0x01_00_FF_FF)?;
         let mut in_data = data.to_vec();
@@ -182,7 +183,7 @@ impl Aes {
             }
         };
         out_data.write_u32::<LittleEndian>((crypt_data.len() + 0x58) as u32)?;
-        out_data.extend_from_slice(&self.iv);
+        out_data.extend_from_slice(&iv);
         out_data.extend_from_slice(crypt_data);
         let mut sha = Hmac::<Sha256>::new_from_slice(b"passwordxxxxxxxx").unwrap();
         sha.update(&out_data[0x44..]);
@@ -190,7 +191,6 @@ impl Aes {
         let mut sha = Hmac::<Sha256>::new_from_slice(b"passwordxxxxxxxx").unwrap();
         sha.update(&out_data[..0x58]);
         out_data[..0x20].copy_from_slice(&sha.finalize().into_bytes().to_vec()[..]);
-        self.iv.copy_from_slice(&out_data[..0x10]);
         Ok(out_data)
     }
 }

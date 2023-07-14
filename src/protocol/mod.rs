@@ -1,10 +1,14 @@
+pub mod items;
 pub mod login;
 pub mod models;
 pub mod objects;
+pub mod server;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use items::*;
 use login::*;
 use objects::*;
-use packetlib_impl::{HelperReadWrite, PacketReadWrite};
+use packetlib_impl::{HelperReadWrite, PacketReadWrite, ProtocolReadWrite};
+use server::*;
 use std::{
     io::{Cursor, Read, Seek, Write},
     time::Duration,
@@ -12,473 +16,227 @@ use std::{
 
 use self::models::{character::Character, Position};
 
+// Code is getting really messy.
+
 pub(crate) trait PacketReadWrite: Sized {
     /// Read a packet from stream.
     fn read(reader: &mut (impl Read + Seek), flags: Flags) -> std::io::Result<Self>;
     /// Write a packet to a Vec.
-    fn write(self, is_ngs: bool) -> Vec<u8>;
+    fn write(&self, is_ngs: bool) -> Vec<u8>;
 }
 
 pub(crate) trait HelperReadWrite: Sized {
     fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self>;
-    fn write(self, writer: &mut impl Write) -> std::io::Result<()>;
+    fn write(&self, writer: &mut impl Write) -> std::io::Result<()>;
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, ProtocolReadWrite)]
 #[non_exhaustive]
 pub enum Packet {
     #[default]
+    #[Empty]
     None,
-    // 0x03, 0x03
+
+    // Server packets [0x03]
+    #[Id(0x03, 0x03)]
     InitialLoad,
-    // 0x03, 0x04
+    #[Id(0x03, 0x04)]
     LoadingScreenTransition,
-    // 0x03, 0x08
+    #[Id(0x03, 0x08)]
     ServerHello(ServerHelloPacket),
-    // 0x03, 0x0B
+    #[Id(0x03, 0x0B)]
     ServerPing,
-    // 0x03, 0x0C
+    #[Id(0x03, 0x0C)]
     ServerPong,
-    // 0x03, 0x23
+    #[Id(0x03, 0x23)]
     FinishLoading,
+    #[Id(0x03, 0x24)]
+    LoadLevel(LoadLevelPacket),
+    #[Id(0x03, 0x2B)]
+    UnlockControls,
 
-    // 0x04, 0x07
+    // Object related packets [0x04]
+    #[Id(0x04, 0x02)]
+    TeleportTransfer(TeleportTransferPacket),
+    #[Id(0x04, 0x07)]
     Movement(MovementPacket),
-    // 0x04, 0x15
+    #[Id(0x04, 0x08)]
+    MovementAction(MovementActionPacket),
+    #[Id(0x04, 0x13)]
+    Unk4_13(Unk4_13Packet),
+    #[Id(0x04, 0x14)]
+    Interact(InteractPacket),
+    #[Id(0x04, 0x15)]
     SetTag(SetTagPacket),
+    #[Id(0x04, 0x24)]
+    Unk4_24(Unk4_24Packet),
+    #[Id(0x04, 0x71)]
+    MovementEnd(MovementEndPacket),
 
-    // 0x06, 0x00
+    #[Id(0x06, 0x00)]
     SetPlayerID(SetPlayerIDPacket),
 
-    // 0x07, 0x00
+    #[Id(0x07, 0x00)]
+    #[Base]
     ChatMessage(ChatMessage),
+    #[Id(0x07, 0x00)]
+    #[NGS]
+    ChatMessageNGS(ChatMessageNGS),
 
     // Spawn packets [0x08]
-    // 0x08, 0x04
+    #[Id(0x08, 0x04)]
+    #[Base]
     CharacterSpawn(CharacterSpawnPacket),
-    // 0x08, 0x09
+    #[Id(0x08, 0x09)]
     EventSpawn(EventSpawnPacket),
-    // 0x08, 0x0B
+    #[Id(0x08, 0x0B)]
     ObjectSpawn(ObjectSpawnPacket),
-    // 0x08, 0x0C
+    #[Id(0x08, 0x0C)]
     NPCSpawn(NPCSpawnPacket),
 
-    // 0x0F, 0x00
-    FileTransfer(FileTransferPacket),
+    // Item packets [0x0F]
+    #[Id(0x0F, 0x00)]
+    LoadItemAttributes(ItemAttributesPacket),
+    #[Id(0x0F, 0x0D)]
+    #[Base]
+    LoadPlayerInventory(LoadPlayerInventoryPacket),
+    #[Id(0x0F, 0x0D)]
+    #[NGS]
+    LoadPlayerInventoryNGS(LoadPlayerInventoryNGSPacket),
+    #[Id(0x0F, 0x13)]
+    #[Base]
+    LoadStorages(LoadStoragesPacket),
+    #[Id(0x0F, 0x13)]
+    #[NGS]
+    LoadStoragesNGS(LoadStoragesNGSPacket),
+    #[Id(0x0F, 0x1C)]
+    GetItemDescription(GetItemDescriptionPacket),
+    #[Id(0x0F, 0x1D)]
+    LoadItemDescription(LoadItemDescriptionPacket),
+    #[Id(0x0F, 0x30)]
+    LoadItem(LoadItemPacket),
+    #[Id(0x0F, 0xDF)]
+    LoadMaterialStorage(LoadMaterialStoragePacket),
+    #[Id(0x0F, 0x9C)]
+    Unk0f9c(Unk0f9cPacket),
+    #[Id(0x0F, 0xEF)]
+    Unk0fef(Unk0fefPacket),
+    #[Id(0x0F, 0xFC)]
+    Unk0ffc(Unk0ffcPacket),
+
+    #[Id(0x10, 0x03)]
+    #[Base]
+    RunLua(LuaPacket),
 
     // Login packets [0x11]
-    // 0x11, 0x00
+    #[Id(0x11, 0x00)]
+    #[Base]
     SegaIDLogin(SegaIDLoginPacket),
-    // 0x11, 0x01
+    #[Id(0x11, 0x01)]
+    #[Base]
     LoginResponse(LoginResponsePacket),
-    // 0x11, 0x02
+    #[Id(0x11, 0x02)]
     CharacterListRequest,
-    // 0x11, 0x03
+    #[Id(0x11, 0x03)]
+    #[Base]
     CharacterListResponse(CharacterListPacket),
-    // 0x11, 0x04
+    #[Id(0x11, 0x04)]
+    #[Base]
     StartGame(StartGamePacket),
-    // 0x11, 0x05
+    #[Id(0x11, 0x05)]
+    #[Base]
     CharacterCreate(CharacterCreatePacket),
-    // 0x11, 0x0B
+    #[Id(0x11, 0x0B)]
     EncryptionRequest(EncryptionRequestPacket),
-    // 0x11, 0x0C
+    #[Id(0x11, 0x0C)]
     EncryptionResponse(EncryptionResponsePacket),
-    // 0x11, 0x0D
+    #[Id(0x11, 0x0D)]
     ClientPing(ClientPingPacket),
-    // 0x11, 0x0E
+    #[Id(0x11, 0x0E)]
     ClientPong(ClientPongPacket),
-    // 0x11, 0x1E
+    #[Id(0x11, 0x1E)]
     NicknameRequest(NicknameRequestPacket),
-    // 0x11, 0x1D
+    #[Id(0x11, 0x1D)]
     NicknameResponse(NicknameResponsePacket),
-    // 0x11, 0x2B
+    #[Id(0x11, 0x2B)]
     ClientGoodbye,
-    // 0x11, 0x2C
+    #[Id(0x11, 0x2C)]
+    #[Base]
     BlockBalance(BlockBalancePacket),
-    // 0x11, 0x2D
+    #[Id(0x11, 0x2D)]
     SystemInformation(SystemInformationPacket),
-    // 0x11, 0x3D
+    #[Id(0x11, 0x3D)]
     ShipList(ShipListPacket),
-    // 0x11, 0x41
+    #[Id(0x11, 0x41)]
     CreateCharacter1,
-    // 0x11, 0x42
+    #[Id(0x11, 0x42)]
     CreateCharacter1Response(CreateCharacter1ResponsePacket),
-    // 0x11, 0x54
+    #[Id(0x11, 0x54)]
     CreateCharacter2,
-    // 0x11, 0x55
+    #[Id(0x11, 0x55)]
     CreateCharacter2Response(CreateCharacter2ResponsePacket),
-    // 0x11, 0x63
+    #[Id(0x11, 0x63)]
+    #[Base]
     VitaLogin(VitaLoginPacket),
-    // 0x11, 0x66
+    #[Id(0x11, 0x66)]
     SalonEntryRequest,
-    // 0x11, 0x67
+    #[Id(0x11, 0x67)]
+    #[Base]
     SalonEntryResponse(SalonResponse),
-    // 0x11, 0x6B
+    #[Id(0x11, 0x6B)]
+    #[Base]
     SegaIDInfoRequest,
-    // 0x11, 0x86
+    #[Id(0x11, 0x86)]
     LoginHistoryRequest,
-    // 0x11, 0x87
+    #[Id(0x11, 0x87)]
     LoginHistoryResponse(LoginHistoryPacket),
-    // 0x11, 0xEA
+    #[Id(0x11, 0xEA)]
     NicknameError(NicknameErrorPacket),
-    // 0x11, 0xEE
+    #[Id(0x11, 0xED)]
+    #[Base]
+    BannerList(BannerListPacket),
+    #[Id(0x11, 0xEE)]
     EmailCodeRequest(EmailCodeRequestPacket),
-    // 0x11, 0xFF
+    #[Id(0x11, 0xFF)]
+    #[Base]
     Unk1(Unk1Packet),
 
-    // 0x19, 0x01
+    #[Id(0x19, 0x01)]
+    #[Base]
     SystemMessage(SystemMessagePacket),
 
     //Settings packets [0x2B]
-    // 0x2B, 0x00
+    #[Id(0x2B, 0x00)]
     SettingsRequest,
-    // 0x2B, 0x01
+    #[Id(0x2B, 0x01)]
     SaveSettings(SaveSettingsPacket),
-    // 0x2B, 0x02
+    #[Id(0x2B, 0x02)]
     LoadSettings(LoadSettingsPacket),
 
+    #[Id(0x2F, 0x06)]
+    SymbolArtListRequest,
+    #[Id(0x2F, 0x07)]
+    SymbolArtList(SymbolArtListPacket),
+
+    #[Id(0x4A, 0x00)]
+    MissionListRequest,
+    #[Id(0x4A, 0x01)]
+    MissionList(MissionListPacket),
+    #[Id(0x4A, 0x03)]
+    Unk4A03(Unk4A03Packet),
+
+    #[Id(0x4D, 0x00)]
+    MissionPassInfoRequest,
+    #[Id(0x4D, 0x01)]
+    MissionPassInfo(MissionPassInfoPacket),
+    #[Id(0x4D, 0x02)]
+    MissionPassRequest,
+    #[Id(0x4D, 0x03)]
+    MissionPass(MissionPassPacket),
+
     //Other packets
+    #[Unknown]
     Unknown((PacketHeader, Vec<u8>)),
-}
-
-impl Packet {
-    pub fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = vec![];
-        buf.write_u32::<LittleEndian>(0).unwrap();
-        buf.extend(match self {
-            Self::None => {
-                return vec![];
-            }
-
-            Self::InitialLoad => PacketHeader::new(0x03, 0x03, Flags::default()).write(is_ngs),
-            Self::LoadingScreenTransition => {
-                PacketHeader::new(0x03, 0x04, Flags::default()).write(is_ngs)
-            }
-            Self::ServerHello(packet) => packet.write(is_ngs),
-            Self::ServerPing => PacketHeader::new(0x03, 0x0B, Flags::default()).write(is_ngs),
-            Self::ServerPong => PacketHeader::new(0x03, 0x0C, Flags::default()).write(is_ngs),
-            Self::FinishLoading => PacketHeader::new(0x03, 0x23, Flags::default()).write(is_ngs),
-
-            Self::Movement(packet) => packet.write(is_ngs),
-            Self::SetTag(packet) => packet.write(is_ngs),
-
-            Self::SetPlayerID(packet) => packet.write(is_ngs),
-
-            Self::ChatMessage(packet) => packet.write(is_ngs),
-
-            Self::CharacterSpawn(packet) => packet.write(is_ngs),
-            Self::EventSpawn(packet) => packet.write(is_ngs),
-            Self::ObjectSpawn(packet) => packet.write(is_ngs),
-            Self::NPCSpawn(packet) => packet.write(is_ngs),
-
-            Self::FileTransfer(packet) => packet.write(is_ngs),
-
-            //Login packets
-            Self::SegaIDLogin(packet) => packet.write(is_ngs),
-            Self::LoginResponse(packet) => packet.write(is_ngs),
-            Self::CharacterListRequest => {
-                PacketHeader::new(0x11, 0x02, Flags::default()).write(is_ngs)
-            }
-            Self::CharacterListResponse(packet) => packet.write(is_ngs),
-            Self::StartGame(packet) => packet.write(is_ngs),
-            Self::CharacterCreate(packet) => packet.write(is_ngs),
-            Self::EncryptionRequest(packet) => packet.write(is_ngs),
-            Self::EncryptionResponse(packet) => packet.write(is_ngs),
-            Self::ClientPing(packet) => packet.write(is_ngs),
-            Self::ClientPong(packet) => packet.write(is_ngs),
-            Self::NicknameRequest(packet) => packet.write(is_ngs),
-            Self::NicknameResponse(packet) => packet.write(is_ngs),
-            Self::ClientGoodbye => PacketHeader::new(0x11, 0x2B, Flags::default()).write(is_ngs),
-            Self::BlockBalance(packet) => packet.write(is_ngs),
-            Self::SystemInformation(packet) => packet.write(is_ngs),
-            Self::ShipList(packet) => packet.write(is_ngs),
-            Self::CreateCharacter1 => PacketHeader::new(0x11, 0x41, Flags::default()).write(is_ngs),
-            Self::CreateCharacter1Response(packet) => packet.write(is_ngs),
-            Self::CreateCharacter2 => PacketHeader::new(0x11, 0x54, Flags::default()).write(is_ngs),
-            Self::CreateCharacter2Response(packet) => packet.write(is_ngs),
-            Self::VitaLogin(packet) => packet.write(is_ngs),
-            Self::SalonEntryRequest => {
-                PacketHeader::new(0x11, 0x66, Flags::default()).write(is_ngs)
-            }
-            Self::SalonEntryResponse(packet) => packet.write(is_ngs),
-            Self::SegaIDInfoRequest => {
-                PacketHeader::new(0x11, 0x6B, Flags::default()).write(is_ngs)
-            }
-            Self::LoginHistoryRequest => {
-                PacketHeader::new(0x11, 0x86, Flags::default()).write(is_ngs)
-            }
-            Self::LoginHistoryResponse(packet) => packet.write(is_ngs),
-            Self::NicknameError(packet) => packet.write(is_ngs),
-            Self::EmailCodeRequest(packet) => packet.write(is_ngs),
-            Self::Unk1(packet) => packet.write(is_ngs),
-
-            Self::SystemMessage(packet) => packet.write(is_ngs),
-
-            //Settings packets
-            Self::SettingsRequest => PacketHeader::new(0x2B, 0x00, Flags::default()).write(is_ngs),
-            Self::SaveSettings(packet) => packet.write(is_ngs),
-            Self::LoadSettings(packet) => packet.write(is_ngs),
-
-            //Other packets
-            Self::Unknown(data) => {
-                let mut out_data = data.0.write(is_ngs);
-                out_data.extend_from_slice(&data.1);
-                out_data
-            }
-        });
-        let len = (buf.len() + 3) & (usize::MAX ^ 3);
-        buf.resize(len, 0);
-        let len = (len as u32).to_le_bytes();
-        buf[..4].copy_from_slice(&len);
-        buf
-    }
-    pub fn read(input: &[u8], is_ngs: bool) -> std::io::Result<Vec<Self>> {
-        let mut packets: Vec<Self> = vec![];
-        let buffer_length = input.len();
-        let mut pointer = 0;
-        loop {
-            if pointer >= buffer_length {
-                break;
-            }
-            if input[pointer..].len() <= 4 {
-                break;
-            }
-            let len = (&input[pointer..pointer + 4]).read_u32::<LittleEndian>()? as usize - 4;
-            pointer += 4;
-            if input[pointer..].len() < len {
-                return Err(std::io::ErrorKind::UnexpectedEof.into());
-            }
-            let mut buf_tmp = Cursor::new(&input[pointer..pointer + len]);
-            let header = PacketHeader::read(&mut buf_tmp, is_ngs)?;
-            let flags = header.flag1.clone();
-            pointer += len;
-            match (header.id, header.subid, is_ngs) {
-                (0x03, 0x03, _) => packets.push(Self::InitialLoad),
-                (0x03, 0x04, _) => packets.push(Self::LoadingScreenTransition),
-                (0x03, 0x08, _) => packets.push(Self::ServerHello(ServerHelloPacket::read(
-                    &mut buf_tmp,
-                    flags,
-                )?)),
-                (0x03, 0x0B, _) => {
-                    packets.push(Self::ServerPing);
-                }
-                (0x03, 0x0C, _) => {
-                    packets.push(Self::ServerPong);
-                }
-                (0x03, 0x23, _) => packets.push(Self::FinishLoading),
-
-                (0x04, 0x07, _) => {
-                    packets.push(Self::Movement(MovementPacket::read(&mut buf_tmp, flags)?))
-                }
-                (0x04, 0x15, _) => {
-                    packets.push(Self::SetTag(SetTagPacket::read(&mut buf_tmp, flags)?))
-                }
-
-                (0x06, 0x00, _) => packets.push(Self::SetPlayerID(SetPlayerIDPacket::read(
-                    &mut buf_tmp,
-                    flags,
-                )?)),
-
-                (0x07, 0x00, _) => {
-                    packets.push(Self::ChatMessage(ChatMessage::read(&mut buf_tmp, flags)?))
-                }
-
-                (0x08, 0x04, false) => packets.push(Self::CharacterSpawn(
-                    CharacterSpawnPacket::read(&mut buf_tmp, flags)?,
-                )),
-                (0x08, 0x09, _) => packets.push(Self::EventSpawn(EventSpawnPacket::read(
-                    &mut buf_tmp,
-                    flags,
-                )?)),
-                (0x08, 0x0B, _) => packets.push(Self::ObjectSpawn(ObjectSpawnPacket::read(
-                    &mut buf_tmp,
-                    flags,
-                )?)),
-                (0x08, 0x0C, _) => {
-                    packets.push(Self::NPCSpawn(NPCSpawnPacket::read(&mut buf_tmp, flags)?))
-                }
-
-                (0x0F, 0x00, _) => {
-                    packets.push(Self::FileTransfer(FileTransferPacket::read(
-                    &mut buf_tmp, flags
-                )?))},
-
-                //Login packets
-                (0x11, 0x00, _) => {
-                    packets.push(Self::SegaIDLogin(SegaIDLoginPacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0x01, false) => {
-                    packets.push(Self::LoginResponse(LoginResponsePacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0x02, _) => {
-                    packets.push(Self::CharacterListRequest);
-                }
-                (0x11, 0x03, false) => {
-                    packets.push(Self::CharacterListResponse(CharacterListPacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0x04, false) => {
-                    packets.push(Self::StartGame(StartGamePacket::read(&mut buf_tmp, flags)?));
-                }
-                (0x11, 0x05, false) => {
-                    packets.push(Self::CharacterCreate(CharacterCreatePacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0x0B, _) => {
-                    packets.push(Self::EncryptionRequest(EncryptionRequestPacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0x0C, _) => {
-                    packets.push(Self::EncryptionResponse(EncryptionResponsePacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0x0D, _) => {
-                    packets.push(Self::ClientPing(ClientPingPacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0x0E, _) => {
-                    packets.push(Self::ClientPong(ClientPongPacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0x1E, _) => {
-                    packets.push(Self::NicknameRequest(NicknameRequestPacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0x1D, _) => {
-                    packets.push(Self::NicknameResponse(NicknameResponsePacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0x2B, _) => {
-                    packets.push(Self::ClientGoodbye);
-                }
-                (0x11, 0x2C, false) => {
-                    packets.push(Self::BlockBalance(BlockBalancePacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0x2D, _) => {
-                    packets.push(Self::SystemInformation(SystemInformationPacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0x3D, _) => {
-                    packets.push(Self::ShipList(ShipListPacket::read(&mut buf_tmp, flags)?));
-                }
-                (0x11, 0x41, _) => {
-                    packets.push(Self::CreateCharacter1);
-                }
-                (0x11, 0x42, _) => {
-                    packets.push(Self::CreateCharacter1Response(
-                        CreateCharacter1ResponsePacket::read(&mut buf_tmp, flags)?,
-                    ));
-                }
-                (0x11, 0x54, _) => {
-                    packets.push(Self::CreateCharacter2);
-                }
-                (0x11, 0x55, _) => {
-                    packets.push(Self::CreateCharacter2Response(
-                        CreateCharacter2ResponsePacket::read(&mut buf_tmp, flags)?,
-                    ));
-                }
-                (0x11, 0x63, false) => {
-                    packets.push(Self::VitaLogin(VitaLoginPacket::read(&mut buf_tmp, flags)?));
-                }
-                (0x11, 0x66, _) => {
-                    packets.push(Self::SalonEntryRequest);
-                }
-                (0x11, 0x67, false) => {
-                    packets.push(Self::SalonEntryResponse(SalonResponse::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0x6B, false) => {
-                    packets.push(Self::SegaIDInfoRequest);
-                }
-                (0x11, 0x86, _) => {
-                    packets.push(Self::LoginHistoryRequest);
-                }
-                (0x11, 0x87, _) => {
-                    packets.push(Self::LoginHistoryResponse(LoginHistoryPacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0xEA, _) => {
-                    packets.push(Self::NicknameError(NicknameErrorPacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0xEE, _) => {
-                    packets.push(Self::EmailCodeRequest(EmailCodeRequestPacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x11, 0xFF, _) => {
-                    packets.push(Self::Unk1(Unk1Packet::read(&mut buf_tmp, flags)?));
-                }
-
-                (0x19, 0x01, _) => {
-                    packets.push(Self::SystemMessage(SystemMessagePacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-
-                //Settings packets
-                (0x2B, 0x00, _) => packets.push(Self::SettingsRequest),
-                (0x2B, 0x01, _) => {
-                    packets.push(Self::SaveSettings(SaveSettingsPacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-                (0x2B, 0x02, _) => {
-                    packets.push(Self::LoadSettings(LoadSettingsPacket::read(
-                        &mut buf_tmp,
-                        flags,
-                    )?));
-                }
-
-                //Other packets
-                (_, _, _) => {
-                    packets.push(Self::Unknown({
-                        let mut data = vec![];
-                        buf_tmp.read_to_end(&mut data)?;
-                        (header, data)
-                    }));
-                }
-            }
-        }
-
-        Ok(packets)
-    }
 }
 
 // ----------------------------------------------------------------
@@ -490,7 +248,7 @@ pub struct PacketHeader {
     pub id: u8,
     pub subid: u16,
     pub flag1: Flags,
-    pub flag2: Flags,
+    pub unk: u8,
 }
 impl PacketHeader {
     fn new(id: u8, subid: u16, flag1: Flags) -> Self {
@@ -498,38 +256,38 @@ impl PacketHeader {
             id,
             subid,
             flag1,
-            flag2: Flags::default(),
+            unk: 0,
         }
     }
     fn read(reader: &mut (impl Read + Seek), is_ngs: bool) -> std::io::Result<Self> {
-        let (id, subid, flag1, flag2) = if !is_ngs {
+        let (id, subid, flag1, unk) = if !is_ngs {
             let id = reader.read_u8()?;
             let subid = reader.read_u8()? as u16;
             let flag1 = Flags::read(reader)?;
-            let flag2 = Flags::read(reader)?;
-            (id, subid, flag1, flag2)
+            let unk = reader.read_u8()?;
+            (id, subid, flag1, unk)
         } else {
             let flag1 = Flags::read(reader)?;
             let id = reader.read_u8()?;
             let subid = reader.read_u16::<LittleEndian>()?;
-            let flag2 = Flags::default();
-            (id, subid, flag1, flag2)
+            let unk = 0;
+            (id, subid, flag1, unk)
         };
 
         Ok(Self {
             id,
             subid,
             flag1,
-            flag2,
+            unk,
         })
     }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
+    fn write(&self, is_ngs: bool) -> Vec<u8> {
         let mut buf = vec![];
         if !is_ngs {
             buf.write_u8(self.id).unwrap();
             buf.write_u8(self.subid as u8).unwrap();
             self.flag1.write(&mut buf).unwrap();
-            self.flag2.write(&mut buf).unwrap();
+            buf.write_u8(self.unk).unwrap();
         } else {
             self.flag1.write(&mut buf).unwrap();
             buf.write_u8(self.id).unwrap();
@@ -572,7 +330,7 @@ impl HelperReadWrite for Flags {
         }
         Ok(flags)
     }
-    fn write(self, writer: &mut impl Write) -> std::io::Result<()> {
+    fn write(&self, writer: &mut impl Write) -> std::io::Result<()> {
         let mut num = 0;
         if self.packed {
             num += 0x4;
@@ -591,7 +349,8 @@ impl HelperReadWrite for Flags {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 #[repr(u16)]
 pub enum EntityType {
     #[default]
@@ -599,33 +358,28 @@ pub enum EntityType {
     Player = 4,
     Map = 5,
     Object = 6,
+    Unk1 = 7,
+    Unk2 = 22,
+
+    #[Read_default]
+    Undefined = 0xFFFF,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct ObjectHeader {
     pub id: u32,
-    #[Seek(4)]
-    #[SeekAfter(2)]
+    // #[Seek(4)]
+    pub unk: u32,
+    // #[SeekAfter(2)]
     pub entity_type: EntityType,
+    pub unk2: u16,
 }
 
 // ----------------------------------------------------------------
 // Packets
 // ----------------------------------------------------------------
-
-// 0x03, 0x08
-#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x08)]
-pub struct ServerHelloPacket {
-    #[Const_u16(0x03)]
-    #[SeekAfter(8)]
-    pub version: u16,
-}
-impl Default for ServerHelloPacket {
-    fn default() -> Self {
-        Self { version: 0xc9 }
-    }
-}
 
 // 0x06, 0x00
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
@@ -641,7 +395,7 @@ pub struct SetPlayerIDPacket {
 #[Id(0x07, 0x00)]
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
 pub struct ChatMessage {
-    pub unk1: [u8; 0xC],
+    pub object: ObjectHeader,
     pub area: u8,
     pub unk3: u8,
     pub unk4: u16,
@@ -651,13 +405,32 @@ pub struct ChatMessage {
     pub message: String,
 }
 
+// 0x07, 0x00
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x07, 0x00)]
+#[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
+pub struct ChatMessageNGS {
+    pub object: ObjectHeader,
+    pub unk2: u8,
+    pub unk3: u8,
+    pub unk4: u16,
+    pub unk5: u16,
+    pub unk6: u16,
+    #[VariableUtf16(0x9D3F, 0x44)]
+    pub unk7: String,
+    #[VariableUtf16(0x9D3F, 0x44)]
+    pub message: String,
+}
+
 //0x08, 0x04
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x08, 0x04)]
 pub struct CharacterSpawnPacket {
     // unsure about real structure
     pub player_obj: ObjectHeader,
     pub position: Position,
     pub unk1: u16, // padding?
+    #[FixedAscii(0x20)]
     pub unk2: String,
     pub unk3: u16,
     pub unk4: u16,
@@ -668,80 +441,21 @@ pub struct CharacterSpawnPacket {
     pub is_me: u32, //47 - me, 39 - otherwise
     pub character: Character,
     pub is_global: bool,
+    #[FixedUtf16(0x20)]
     pub unk9: String, // title?
     pub unk10: u32,
     pub unk11: u32, // gmflag?
+    #[FixedUtf16(0x10)]
     pub nickname: String,
     pub unk12: [u8; 0x40],
-}
-impl PacketReadWrite for CharacterSpawnPacket {
-    fn read(reader: &mut (impl Read + Seek), _: Flags) -> std::io::Result<Self> {
-        let player_obj = ObjectHeader::read(reader)?;
-        let position = Position::read(reader)?;
-        let unk1 = reader.read_u16::<LittleEndian>()?;
-        let unk2 = read_utf8(reader, 0x20);
-        let unk3 = reader.read_u16::<LittleEndian>()?;
-        let unk4 = reader.read_u16::<LittleEndian>()?;
-        let unk5 = reader.read_u32::<LittleEndian>()?;
-        let unk6 = reader.read_u32::<LittleEndian>()?;
-        let unk7 = reader.read_u32::<LittleEndian>()?;
-        let unk8 = reader.read_u32::<LittleEndian>()?;
-        let is_me = reader.read_u32::<LittleEndian>()?;
-        let character = Character::read(reader)?;
-        let unk9 = read_utf16(reader, 0x20);
-        let unk10 = reader.read_u32::<LittleEndian>()?;
-        let unk11 = reader.read_u32::<LittleEndian>()?;
-        let nickname = read_utf16(reader, 0x10);
-        let mut unk12 = [0u8; 0x40];
-        reader.read_exact(&mut unk12)?;
-        Ok(Self {
-            player_obj,
-            position,
-            unk1,
-            unk2,
-            unk3,
-            unk4,
-            unk5,
-            unk6,
-            unk7,
-            unk8,
-            is_me,
-            character,
-            is_global: false,
-            unk9,
-            unk10,
-            unk11,
-            nickname,
-            unk12,
-        })
-    }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
-        let mut buf = PacketHeader::new(0x08, 0x04, Flags::default()).write(is_ngs);
-        self.player_obj.write(&mut buf).unwrap();
-        self.position.write(&mut buf).unwrap();
-        buf.write_u16::<LittleEndian>(self.unk1).unwrap();
-        buf.write_all(&write_utf8(&self.unk2, 0x20)).unwrap();
-        buf.write_u16::<LittleEndian>(self.unk3).unwrap();
-        buf.write_u16::<LittleEndian>(self.unk4).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk5).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk6).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk7).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk8).unwrap();
-        buf.write_u32::<LittleEndian>(self.is_me).unwrap();
-        self.character.write(&mut buf, self.is_global).unwrap();
-        buf.write_all(&write_utf16(&self.unk9, 0x20)).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk10).unwrap();
-        buf.write_u32::<LittleEndian>(self.unk11).unwrap();
-        buf.write_all(&write_utf16(&self.nickname, 0x10)).unwrap();
-        buf.write_all(&self.unk12).unwrap();
-        buf
-    }
 }
 impl Default for CharacterSpawnPacket {
     fn default() -> Self {
         Self {
             player_obj: ObjectHeader {
                 id: 0,
+                unk: 0,
+                unk2: 0,
                 entity_type: EntityType::Player,
             },
             position: Position {
@@ -800,6 +514,8 @@ pub struct EventSpawnPacket {
 }
 
 // 0x08, 0x0B
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x08, 0x0B)]
 pub struct ObjectSpawnPacket {
@@ -814,6 +530,8 @@ pub struct ObjectSpawnPacket {
 }
 
 // 0x08, 0x0C
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x08, 0x0C)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -838,18 +556,6 @@ pub struct NPCSpawnPacket {
     pub unk13: String,
 }
 
-// 0x0F, 0x00
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x00)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-pub struct FileTransferPacket {
-    pub id: u16,
-    pub segment: u16,
-    pub total_size: u32,
-    #[Magic(0x8A92, 0x30)]
-    pub data: Vec<u8>,
-}
-
 // 0x19, 0x01
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x19, 0x01)]
@@ -860,18 +566,175 @@ pub struct SystemMessagePacket {
     #[VariableUtf16(0x78F7, 0xA2)]
     pub unk: String,
     pub msg_type: MessageType,
-    pub unk2: u32,
+    pub msg_num: u32,
 }
 
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, Default, PartialEq, HelperReadWrite)]
 pub enum MessageType {
-    GoldenTicker,
-    AdminMessage,
+    AdminMessage = 1,
     AdminMessageInstant,
-    SystemMessage,
     #[default]
-    GenericMessage,
+    SystemMessage,
+    GoldenMessage,
+    EventInformationYellow,
+    EventInformationGreen,
+    ImportantMessage,
+    PopupMessage,
+
+    #[Read_default]
+    Undefined = 0xFFFF_FFFF,
+}
+
+// 0x2F, 0x07
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x2F, 0x07)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct SymbolArtListPacket {
+    pub object: ObjectHeader,
+    pub unk1: u32,
+    #[Magic(0xE80C, 0xED)]
+    pub uuids: Vec<u128>,
+}
+
+// 0x4A, 0x01
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x4A, 0x01)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct MissionListPacket {
+    pub unk1: u32,
+    #[Magic(0xC691, 0x47)]
+    pub missions: Vec<Mission>,
+    pub daily_update: u32,
+    pub weekly_update: u32,
+    pub tier_update: u32,
+}
+#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+pub struct Mission {
+    /*5 - main
+    1 - daily
+    2 - weekly
+    7 - tier */
+    pub mission_type: u32,
+    pub start_date: u32,
+    pub end_date: u32,
+    pub unk4: u32,
+    pub unk5: u32,
+    pub completion_date: u32,
+    pub unk7: u32,
+    pub unk8: u32,
+    pub unk9: u32,
+    pub unk10: u32,
+    pub unk11: u32,
+    pub unk12: u32,
+    pub unk13: u32,
+    pub unk14: u32,
+    pub unk15: u32,
+}
+
+// 0x4A, 0x03
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x4A, 0x03)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct Unk4A03Packet {
+    pub unk1: u32,
+    #[Magic(0xD20D, 0xDD)]
+    pub unk2: Vec<Mission>,
+    #[Magic(0xD20D, 0xDD)]
+    pub unk3: Vec<u32>,
+    #[Magic(0xD20D, 0xDD)]
+    pub unk4: Vec<Unk2Struct>,
+    pub unk5: u32,
+}
+#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+pub struct Unk2Struct {
+    pub unk1: [u32; 0x40],
+}
+
+// 0x4D, 0x01
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x4D, 0x01)]
+pub struct MissionPassInfoPacket {
+    pub unk1: [u32; 47],
+}
+
+// 0x4D, 0x03
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x4D, 0x03)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct MissionPassPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    #[VariableUtf16(0xB0C, 0x35)]
+    pub cur_season: String,
+    pub stars_to_next_tier: u32,
+    pub tiers: u32,
+    pub overrun_tiers: u32,
+    pub unk7: u32,
+    pub unk8: u32,
+    pub end_date: u32,
+    pub unk10: u32,
+    pub unk11: u32,
+    #[VariableUtf16(0xB0C, 0x35)]
+    pub unk12: String,
+    pub price_per_tier: u32,
+    pub gold_pass_price: u32,
+    #[Magic(0xB0C, 0x35)]
+    pub unk15: Vec<MissionPassItem>,
+    pub unk16: u32,
+    #[VariableUtf16(0xB0C, 0x35)]
+    pub last_season: String,
+    pub unk18: u32,
+    pub unk19: u32,
+    pub unk20: u32,
+    pub unk21: u32,
+    pub unk22: u32,
+    pub unk23: u32,
+    pub unk24: u32,
+    pub unk25: u32,
+    #[VariableUtf16(0xB0C, 0x35)]
+    pub unk26: String,
+    pub unk27: u32,
+    pub unk28: u32,
+    #[Magic(0xB0C, 0x35)]
+    pub unk29: Vec<MissionPassItem>,
+    pub unk30: u32,
+    pub unk31: u32,
+}
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+pub struct MissionPassItem {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+    pub unk4: u32,
+    pub unk5: u32,
+    pub unk6: u32,
+    pub unk7: u32,
+    pub unk8: u32,
+    pub unk9: u32,
+    pub unk10: u32,
+    pub unk11: u32,
+    pub unk12: u32,
+    pub unk13: u32,
+    pub unk14: u32,
+    pub unk15: u32,
+    pub unk16: u32,
+    pub unk17: u32,
+    pub unk18: u32,
+    pub unk19: u32,
+    pub unk20: u32,
+    pub unk21: u32,
+    pub unk22: u32,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x10, 0x03)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct LuaPacket {
+    pub unk1: u16,
+    pub unk2: u16,
+    #[VariableAscii(0xD975, 0x2F)]
+    pub lua: String,
 }
 
 // ----------------------------------------------------------------

@@ -312,6 +312,15 @@ pub struct NicknameErrorPacket {
     pub nickname: String,
 }
 
+// 0x11, 0xED
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0xED)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct BannerListPacket {
+    #[VariableAscii(0xD67D, 0xF5)]
+    pub banners: String,
+}
+
 // 0x11, 0xEE
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0xEE)]
@@ -370,6 +379,9 @@ pub enum ShipStatus {
     Busy,
     Full,
     Offline,
+
+    #[Read_default]
+    Undefined = 0xFFFF,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -395,6 +407,9 @@ pub enum LoginResult {
     OTPError,
     InMaintenance,
     GenericError,
+
+    #[Read_default]
+    Undefined = 0xFFFF_FFFF,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -404,6 +419,9 @@ pub enum LoginStatus {
     #[default]
     Success,
     Failure,
+
+    #[Read_default]
+    Undefined = 0xFFFF_FFFF,
 }
 
 #[derive(Debug, Clone, PartialEq, HelperReadWrite)]
@@ -481,15 +499,16 @@ impl PacketReadWrite for CharacterListPacket {
             ad,
         })
     }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
+    fn write(&self, is_ngs: bool) -> Vec<u8> {
         let mut buf = PacketHeader::new(0x11, 0x03, Flags::default()).write(is_ngs);
         buf.write_u32::<LittleEndian>((self.characters.len() as u32).clamp(0, 30))
             .unwrap();
         buf.write_u32::<LittleEndian>(0).unwrap();
 
-        let mut characters = self.characters;
+        let mut characters = &self.characters;
+        let default_character = vec![Character::default()];
         if characters.is_empty() {
-            characters.push(Character::default());
+            characters = &default_character;
         }
 
         for character in characters.into_iter().cycle().take(30) {
@@ -545,7 +564,7 @@ impl PacketReadWrite for CharacterCreatePacket {
             is_global: false,
         })
     }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
+    fn write(&self, is_ngs: bool) -> Vec<u8> {
         let mut buf = PacketHeader::new(0x11, 0x05, Flags::default()).write(is_ngs);
         self.character.write(&mut buf, self.is_global).unwrap();
         buf
@@ -564,11 +583,12 @@ impl PacketReadWrite for EncryptionRequestPacket {
         }
         Ok(Self { rsa_data: tmp_data })
     }
-    fn write(mut self, is_ngs: bool) -> Vec<u8> {
+    fn write(&self, is_ngs: bool) -> Vec<u8> {
         let mut buf = PacketHeader::new(0x11, 0x0B, Flags::default()).write(is_ngs);
-        self.rsa_data.reverse();
-        self.rsa_data.resize(0x104, 0);
-        buf.extend(self.rsa_data);
+        let mut data = self.rsa_data.clone();
+        data.reverse();
+        data.resize(0x104, 0);
+        buf.extend(data);
         buf
     }
 }
@@ -580,9 +600,9 @@ impl PacketReadWrite for EncryptionResponsePacket {
 
         Ok(Self { data })
     }
-    fn write(self, is_ngs: bool) -> Vec<u8> {
+    fn write(&self, is_ngs: bool) -> Vec<u8> {
         let mut buf = PacketHeader::new(0x11, 0x0C, Flags::default()).write(is_ngs);
-        buf.extend(self.data);
+        buf.extend(self.data.iter());
         buf
     }
 }
@@ -626,6 +646,8 @@ impl Default for LoginResponsePacket {
             error: String::new(),
             player: ObjectHeader {
                 id: 0,
+                unk: 0,
+                unk2: 0,
                 entity_type: EntityType::Player,
             },
             blockname: String::new(),

@@ -43,11 +43,13 @@ pub struct AccessoryData(pub i8, pub i8, pub i8);
 #[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 #[repr(u16)]
 pub enum Race {
+    #[default]
     Human,
     Newman,
     Cast,
     Deuman,
-    #[default]
+
+    #[Read_default]
     Unknown = 0xFFFF,
 }
 
@@ -58,6 +60,8 @@ pub enum Gender {
     #[default]
     Male,
     Female,
+
+    #[Read_default]
     Unknown = 0xFFFF,
 }
 
@@ -159,6 +163,8 @@ pub enum Class {
     Phantom,
     Etole,
     Luster,
+
+    #[Read_default]
     Unknown = 0xFF,
 }
 
@@ -166,8 +172,21 @@ pub enum Class {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct ClassFlags {
-    //TODO: figure out other classes
     pub hunter: bool,
+    pub ranger: bool,
+    pub force: bool,
+    pub fighter: bool,
+    pub gunner: bool,
+    pub techer: bool,
+    pub braver: bool,
+    pub bouncer: bool,
+    pub challenger: bool,
+    pub summoner: bool,
+    pub battlewarrior: bool,
+    pub hero: bool,
+    pub phantom: bool,
+    pub etole: bool,
+    pub luster: bool,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -270,7 +289,7 @@ impl Character {
             classes,
         })
     }
-    pub(crate) fn write(self, writer: &mut impl Write, is_global: bool) -> std::io::Result<()> {
+    pub(crate) fn write(&self, writer: &mut impl Write, is_global: bool) -> std::io::Result<()> {
         writer.write_u32::<LittleEndian>(self.character_id)?;
         writer.write_u32::<LittleEndian>(self.player_id)?;
         writer.write_u32::<LittleEndian>(self.unk1)?;
@@ -298,11 +317,66 @@ impl ClassFlags {
     fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
         let mut num = reader.read_u16::<LittleEndian>()?;
         let mut flags = Self::default();
-        if num & 0b0000_0001 != 0 {
+        if num & 0b0000_0000_0000_0001 != 0 {
             flags.hunter = true;
-            num -= 0b0000_0001;
+            num -= 0b0000_0000_0000_0001;
         }
-
+        if num & 0b0000_0000_0000_0010 != 0 {
+            flags.ranger = true;
+            num -= 0b0000_0000_0000_0010;
+        }
+        if num & 0b0000_0000_0000_0100 != 0 {
+            flags.force = true;
+            num -= 0b0000_0000_0000_0100;
+        }
+        if num & 0b0000_0000_0000_1000 != 0 {
+            flags.fighter = true;
+            num -= 0b0000_0000_0000_1000;
+        }
+        if num & 0b0000_0000_0001_0000 != 0 {
+            flags.gunner = true;
+            num -= 0b0000_0000_0001_0000;
+        }
+        if num & 0b0000_0000_0010_0000 != 0 {
+            flags.techer = true;
+            num -= 0b0000_0000_0010_0000;
+        }
+        if num & 0b0000_0000_0100_0000 != 0 {
+            flags.braver = true;
+            num -= 0b0000_0000_0100_0000;
+        }
+        if num & 0b0000_0000_1000_0000 != 0 {
+            flags.bouncer = true;
+            num -= 0b0000_0000_1000_0000;
+        }
+        if num & 0b0000_0001_0000_0000 != 0 {
+            flags.challenger = true;
+            num -= 0b0000_0001_0000_0000;
+        }
+        if num & 0b0000_0010_0000_0000 != 0 {
+            flags.summoner = true;
+            num -= 0b0000_0010_0000_0000;
+        }
+        if num & 0b0000_0100_0000_0000 != 0 {
+            flags.battlewarrior = true;
+            num -= 0b0000_0100_0000_0000;
+        }
+        if num & 0b0000_1000_0000_0000 != 0 {
+            flags.hero = true;
+            num -= 0b0000_1000_0000_0000;
+        }
+        if num & 0b0001_0000_0000_0000 != 0 {
+            flags.phantom = true;
+            num -= 0b0001_0000_0000_0000;
+        }
+        if num & 0b0010_0000_0000_0000 != 0 {
+            flags.etole = true;
+            num -= 0b0010_0000_0000_0000;
+        }
+        if num & 0b0100_0000_0000_0000 != 0 {
+            flags.luster = true;
+            num -= 0b0100_0000_0000_0000;
+        }
         if num != 0 {
             println!("Unknown flags: {num}");
         }
@@ -311,7 +385,49 @@ impl ClassFlags {
     fn write(&self, writer: &mut impl Write) -> std::io::Result<()> {
         let mut num = 0;
         if self.hunter {
-            num += 0b0000_0001;
+            num += 0b0000_0000_0000_0001;
+        }
+        if self.ranger {
+            num += 0b0000_0000_0000_0010;
+        }
+        if self.force {
+            num += 0b0000_0000_0000_0100;
+        }
+        if self.fighter {
+            num += 0b0000_0000_0000_1000;
+        }
+        if self.gunner {
+            num += 0b0000_0000_0001_0000;
+        }
+        if self.techer {
+            num += 0b0000_0000_0010_0000;
+        }
+        if self.braver {
+            num += 0b0000_0000_0100_0000;
+        }
+        if self.bouncer {
+            num += 0b0000_0000_1000_0000;
+        }
+        if self.challenger {
+            num += 0b0000_0001_0000_0000;
+        }
+        if self.summoner {
+            num += 0b0000_0010_0000_0000;
+        }
+        if self.battlewarrior {
+            num += 0b0000_0100_0000_0000;
+        }
+        if self.hero {
+            num += 0b0000_1000_0000_0000;
+        }
+        if self.phantom {
+            num += 0b0001_0000_0000_0000;
+        }
+        if self.etole {
+            num += 0b0010_0000_0000_0000;
+        }
+        if self.luster {
+            num += 0b0100_0000_0000_0000;
         }
         writer.write_u16::<LittleEndian>(num)?;
         Ok(())

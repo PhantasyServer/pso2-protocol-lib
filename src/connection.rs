@@ -94,8 +94,8 @@ impl Connection {
     }
 
     /// Send a packet. Return bytes written.
-    pub fn write_packet(&mut self, packet: Packet) -> std::io::Result<usize> {
-        if let Packet::EncryptionRequest(data) = &packet {
+    pub fn write_packet(&mut self, packet: &Packet) -> std::io::Result<usize> {
+        if let Packet::EncryptionRequest(data) = packet {
             if let Some(out_keyfile) = &self.out_keyfile {
                 if let Some(in_keyfile) = &self.in_keyfile {
                     let mut new_packet = EncryptionRequestPacket::default();
@@ -127,7 +127,7 @@ impl Connection {
         if self.write_buffer.is_empty() {
             return Ok(0);
         }
-        self.write_packet(Packet::None)
+        self.write_packet(&Packet::None)
     }
     fn get_one_packet(&mut self) -> Packet {
         self.read_packets.remove(0)
@@ -141,17 +141,17 @@ impl Connection {
                 len = u32::from_le_bytes(data[0x44..0x48].try_into().unwrap()) as usize;
             }
         }
-        #[cfg(feature = "base_enc")] 
+        #[cfg(feature = "base_enc")]
         if matches!(self.encryption, Encryption::Aes(_)) {
-            if data.len() >= 0x58 && data[0x50..0x54] == [1, 0, 255, 255] {
-                len = u32::from_le_bytes(data[0x54..0x58].try_into().unwrap()) as usize;
+            if data.len() >= 0x48 && data[0x40..0x44] == [1, 0, 255, 255] {
+                len = u32::from_le_bytes(data[0x44..0x48].try_into().unwrap()) as usize;
             }
         }
         #[cfg(feature = "vita_enc")]
         if matches!(self.encryption, Encryption::Rc4(_)) {
             len = u32::from_le_bytes(data[0x0..0x4].try_into().unwrap()) as usize;
         }
-        if matches!(self.encryption, Encryption::None ) {
+        if matches!(self.encryption, Encryption::None) {
             len = u32::from_le_bytes(data[0x0..0x4].try_into().unwrap()) as usize;
         }
         self.packet_length = len
@@ -164,6 +164,9 @@ fn check_disconnect(to_check: std::io::Result<usize>) -> std::io::Result<usize> 
         Ok(data) => Ok(data),
         Err(err) if err.kind() == std::io::ErrorKind::ConnectionReset => {
             Err(std::io::ErrorKind::ConnectionAborted.into())
+        }
+        Err(err) if err.kind() == std::io::ErrorKind::Interrupted => {
+            Err(std::io::ErrorKind::WouldBlock.into())
         }
         Err(err) => Err(err),
     }

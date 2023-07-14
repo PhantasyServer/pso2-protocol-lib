@@ -1,6 +1,6 @@
 pub mod character;
-use half::f16;
 use crate::protocol::HelperReadWrite;
+use half::f16;
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
