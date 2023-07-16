@@ -1,13 +1,16 @@
+#![allow(unused_imports)]
 pub mod items;
 pub mod login;
 pub mod models;
 pub mod objects;
+pub mod questlist;
 pub mod server;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use items::*;
 use login::*;
 use objects::*;
 use packetlib_impl::{HelperReadWrite, PacketReadWrite, ProtocolReadWrite};
+use questlist::*;
 use server::*;
 use std::{
     io::{Cursor, Read, Seek, Write},
@@ -30,6 +33,7 @@ pub(crate) trait HelperReadWrite: Sized {
     fn write(&self, writer: &mut impl Write) -> std::io::Result<()>;
 }
 
+#[cfg(not(feature = "proxy"))]
 #[derive(Debug, Default, Clone, PartialEq, ProtocolReadWrite)]
 #[non_exhaustive]
 pub enum Packet {
@@ -94,6 +98,22 @@ pub enum Packet {
     #[Id(0x08, 0x0C)]
     NPCSpawn(NPCSpawnPacket),
 
+    // Quest List packets [0x0B]
+    #[Id(0x0B, 0x09)]
+    Unk0B09(Unk0B09Packet),
+    #[Id(0x0B, 0x15)]
+    AvailableQuestsRequest(AvailableQuestsRequestPacket),
+    #[Id(0x0B, 0x16)]
+    AvailableQuests(AvailableQuestsPacket),
+    #[Id(0x0B, 0x17)]
+    QuestCategoryRequest(QuestCategoryRequestPacket),
+    #[Id(0x0B, 0x18)]
+    QuestCategory(QuestCategoryPacket),
+    #[Id(0x0B, 0x30)]
+    QuestCounterRequest,
+    #[Id(0x0B, 0xAF)]
+    Unk0BAF(Unk0BAFPacket),
+
     // Item packets [0x0F]
     #[Id(0x0F, 0x00)]
     LoadItemAttributes(ItemAttributesPacket),
@@ -115,10 +135,22 @@ pub enum Packet {
     LoadItemDescription(LoadItemDescriptionPacket),
     #[Id(0x0F, 0x30)]
     LoadItem(LoadItemPacket),
-    #[Id(0x0F, 0xDF)]
-    LoadMaterialStorage(LoadMaterialStoragePacket),
+    #[Id(0x0F, 0x6F)]
+    AccountCapaignsRequest,
+    #[Id(0x0F, 0x70)]
+    AccountCapaigns(AccountCapaignsPacket),
+    #[Id(0x0F, 0x71)]
+    CampaignItemsRequest(CampaignItemsRequestPacket),
+    #[Id(0x0F, 0x72)]
+    CampaignItemList(CampaignItemListPacket),
+    #[Id(0x0F, 0x73)]
+    ReceiveCampaignRequest(ReceiveCampaignRequestPacket),
     #[Id(0x0F, 0x9C)]
     Unk0f9c(Unk0f9cPacket),
+    #[Id(0x0F, 0xDF)]
+    LoadMaterialStorage(LoadMaterialStoragePacket),
+    #[Id(0x0f, 0xE0)]
+    MoveToMaterialStorage(MoveToMaterialStoragePacket),
     #[Id(0x0F, 0xEF)]
     Unk0fef(Unk0fefPacket),
     #[Id(0x0F, 0xFC)]
@@ -154,6 +186,12 @@ pub enum Packet {
     ClientPing(ClientPingPacket),
     #[Id(0x11, 0x0E)]
     ClientPong(ClientPongPacket),
+    #[Id(0x11, 0x1B)]
+    #[NGS]
+    UserInfoNGS(UserInfoNGSPacket),
+    #[Id(0x11, 0x1b)]
+    #[Base]
+    UserInfo(UserInfoPacket),
     #[Id(0x11, 0x1E)]
     NicknameRequest(NicknameRequestPacket),
     #[Id(0x11, 0x1D)]
@@ -213,6 +251,11 @@ pub enum Packet {
     #[Id(0x2B, 0x02)]
     LoadSettings(LoadSettingsPacket),
 
+    // Symbol art packets [0x2F]
+    #[Id(0x2F, 0x01)]
+    SymbolArtDataRequest(SymbolArtDataRequestPacket),
+    #[Id(0x2F, 0x02)]
+    SymbolArtData(SymbolArtDataPacket),
     #[Id(0x2F, 0x06)]
     SymbolArtListRequest,
     #[Id(0x2F, 0x07)]
@@ -235,6 +278,24 @@ pub enum Packet {
     MissionPass(MissionPassPacket),
 
     //Other packets
+    #[Unknown]
+    Unknown((PacketHeader, Vec<u8>)),
+}
+
+#[cfg(feature = "proxy")]
+#[derive(Debug, Default, Clone, PartialEq, ProtocolReadWrite)]
+// bare minimum specifically for proxies
+pub enum Packet {
+    // TODO: we need to implement other "server changing" packets
+    #[default]
+    #[Empty]
+    None,
+    #[Id(0x11, 0x0B)]
+    EncryptionRequest(EncryptionRequestPacket),
+    #[Id(0x11, 0x0C)]
+    EncryptionResponse(EncryptionResponsePacket),
+    #[Id(0x11, 0x3D)]
+    ShipList(ShipListPacket),
     #[Unknown]
     Unknown((PacketHeader, Vec<u8>)),
 }
@@ -584,6 +645,25 @@ pub enum MessageType {
 
     #[Read_default]
     Undefined = 0xFFFF_FFFF,
+}
+
+// 0x2F, 0x01
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x2F, 0x01)]
+pub struct SymbolArtDataRequestPacket {
+    pub uuid: u128,
+}
+
+// 0x2F, 0x02
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x2F, 0x02)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct SymbolArtDataPacket {
+    pub uuid: u128,
+    #[Magic(0x4B58, 0x76)]
+    pub data: Vec<u8>,
+    #[VariableUtf16(0x4B58, 0x76)]
+    pub name: String,
 }
 
 // 0x2F, 0x07

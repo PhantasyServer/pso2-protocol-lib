@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
@@ -104,6 +106,42 @@ pub struct LoadItemPacket {
     pub name_length: Vec<u8>,
 }
 
+// 0x0F, 0x70
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x70)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct AccountCapaignsPacket {
+    pub unk1: u32,
+    #[Magic(0x0D8C, 0x0D)]
+    pub campaigns: Vec<Campaign>,
+}
+
+// 0x0F, 0x71
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x71)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct CampaignItemsRequestPacket {
+    #[Magic(0x934A, 0x58)]
+    pub ids: Vec<u32>,
+}
+
+// 0x0F, 0x72
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x72)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct CampaignItemListPacket {
+    pub unk1: u32,
+    #[Magic(0x1908, 0xA3)]
+    pub items: Vec<CampaignItemDefinition>,
+}
+
+// 0x0F, 0x73
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x73)]
+pub struct ReceiveCampaignRequestPacket {
+    pub id: u32,
+}
+
 // 0x0F, 0x9C
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x9C)]
@@ -120,8 +158,17 @@ pub struct Unk0f9cPacket {
 pub struct LoadMaterialStoragePacket {
     pub unk1: u32,
     #[Magic(0xAC9, 0x9F)]
-    pub items: Vec<Unk0fdf>,
+    pub items: Vec<MaterialStorageItem>,
     pub unk3: [u8; 0xC],
+}
+
+// 0x0F, 0xE0
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0xE0)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct MoveToMaterialStoragePacket {
+    #[Magic(0x9087, 0xEA)]
+    pub items: Vec<MaterialStorageItem>,
 }
 
 // 0x0F, 0xEF
@@ -210,12 +257,37 @@ pub struct WeaponItemNGS {
     pub unk7: u32,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, HelperReadWrite)]
 pub struct ItemId {
     pub item_type: u16,
     pub id: u16,
     pub unk3: u16,
     pub subid: u16,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+pub struct Campaign {
+    pub id: u32,
+    pub start_date: Duration,
+    pub end_date: Duration,
+    #[FixedUtf16(0x3E)]
+    pub title: String,
+    #[FixedUtf16(0x102)]
+    pub conditions: String,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+pub struct CampaignItemDefinition {
+    pub campaign_id: u32,
+    pub item_amount: u32,
+    pub items: [CampaignItem; 8],
+}
+
+#[derive(Debug, Default, Copy, Clone, PartialEq, HelperReadWrite)]
+pub struct CampaignItem {
+    pub id: ItemId,
+    pub amount: u32,
+    pub unk: u32,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
@@ -248,7 +320,7 @@ pub struct Unk0f9c {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-pub struct Unk0fdf {
+pub struct MaterialStorageItem {
     pub id: u16,
     pub subid: u16,
     pub amount: u16,

@@ -1,6 +1,6 @@
 use super::{
-    models::character::Character, EntityType, Flags, HelperReadWrite, ObjectHeader, PacketHeader,
-    PacketReadWrite,
+    models::{character::Character, FunValue, SGValue},
+    EntityType, Flags, HelperReadWrite, ObjectHeader, PacketHeader, PacketReadWrite,
 };
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::{
@@ -142,6 +142,67 @@ pub struct ClientPongPacket {
     pub client_time: Duration,
     #[PSOTime]
     pub server_time: Duration,
+}
+
+// 0x11, 0x1B
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x1B)]
+pub struct UserInfoNGSPacket {
+    // i'm unsure about real types, just deriving from base version struct
+    pub unk1: [u32; 22],
+    pub unk2: u16,
+    pub unk3: [u32; 16],
+    pub fun: FunValue,
+    pub unk4: [u32; 2],
+    pub free_sg: SGValue,
+    pub unk5: u16,
+    pub unk6: [u32; 24],
+    pub premium_expiration: Duration,
+    pub unk7: u32,
+    pub pq_expiration: Duration,
+    pub pshop_expiration: Duration,
+    pub unk8: [u32; 2],
+    pub expand_max_orders_expiration: Duration,
+    pub unk9: [u32; 19],
+    pub material_storage_expiration: Duration,
+    pub ex_storage4_expiration: Duration,
+    pub ex_storage5_expiration: Duration,
+    pub unk10: [u32; 4],
+}
+
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x1B)]
+pub struct UserInfoPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub ac1: u32,
+    pub unk3: u32,
+    pub ac2: u32,
+    pub ac3: u32,
+    pub ac4: u32,
+    // also pso2es char id
+    pub ac5: u32,
+    pub ac6: u32,
+    // also unlnked es account flag?
+    pub ac7: u32,
+    pub ac8: [u32; 11],
+    pub fun: u32,
+    pub unk4: u16,
+    pub sg1: SGValue,
+    pub free_sg: SGValue,
+    pub sg2: [SGValue; 18],
+    pub unk5: u16,
+    pub unk6: [u32; 6],
+    pub premium_expiration: Duration,
+    pub unk7: u32,
+    pub pq_expiration: Duration,
+    pub pshop_expiration: Duration,
+    pub unk8: [u32; 2],
+    pub expand_max_orders_expiration: Duration,
+    pub unk9: [u32; 19],
+    pub material_storage_expiration: Duration,
+    pub ex_storage4_expiration: Duration,
+    pub ex_storage5_expiration: Duration,
 }
 
 // 0x11, 0x1E

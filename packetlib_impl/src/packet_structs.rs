@@ -164,7 +164,7 @@ fn parse_struct_field(read: &mut TS2, write: &mut TS2, data: &DataStruct) -> syn
         return_token.extend(quote! {#name,});
 
         if name.to_string() == "is_global" {
-            read.extend(quote!{let is_global = false;});
+            read.extend(quote! {let is_global = false;});
             continue;
         }
 
@@ -378,7 +378,7 @@ fn check_syn_type(
                     }
                 });
                 write.extend(quote! {
-                    for #tmp_name in self.#name {
+                    for #tmp_name in &self.#name {
                         #tmp_write
                     }
                 });
@@ -450,8 +450,9 @@ fn check_code_type(
             read.extend(
                 quote! {let #name = half::f16::from_bits(reader.read_u16::<LittleEndian>()?);},
             );
-            write
-                .extend(quote! {writer.write_u16::<LittleEndian>(#write_name.clone().to_bits()).unwrap();});
+            write.extend(
+                quote! {writer.write_u16::<LittleEndian>(#write_name.clone().to_bits()).unwrap();},
+            );
         }
         "f32" => {
             read.extend(quote! {let #name = reader.read_f32::<LittleEndian>()?;});
