@@ -87,7 +87,7 @@ There are 3 know encryption algorithms:
  - AES (Pre-NGS Global)
  - NGS_AES (NGS)
 
-For more information about NGS_AES see [this gist](https://gist.github.com/AntonnMal/268ba76b260539e83644f3a58abd2935). AES encryption is similar to the NGS_AES, except IV is located between the second SHA256 hash and magic number.
+For more information about NGS_AES see [this gist](https://gist.github.com/AntonnMal/268ba76b260539e83644f3a58abd2935). AES encryption is similar to the NGS_AES, except IV is located between the packet length and data.
 
 TODO: Move all information to here.
 
