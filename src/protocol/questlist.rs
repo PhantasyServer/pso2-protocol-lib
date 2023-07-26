@@ -1,4 +1,5 @@
 use super::{HelperReadWrite, PacketReadWrite};
+use crate::AsciiString;
 
 // 0x0B, 0x09
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -52,7 +53,8 @@ pub struct AvailableQuestsPacket {
     pub bonus_count: u16,
     pub unk7: u16,
     pub training_count: [u16; 10],
-    pub unk8: [u16; 30],
+    pub trigger_count: u16,
+    pub unk8: [u16; 29],
     pub unk9: u64,
     pub unk10: u64,
     pub unk11: u64,
@@ -88,8 +90,8 @@ pub struct Unk0BAFPacket {
 // copied from polaris server
 #[derive(Debug, /* Default, */ Clone, PartialEq, HelperReadWrite)]
 pub struct Quest {
-    #[FixedAscii(0x18)]
-    pub date: String,
+    #[FixedStr(0x18)]
+    pub date: AsciiString,
     pub unk1: [u32; 4],
     pub unk2: [u16; 2],
     pub name_id: u32,
@@ -116,8 +118,7 @@ pub struct Quest {
     pub unk15: [u8; 0x320],
 }
 
-// should this be copy?
-#[derive(Debug, Default, Copy, Clone, PartialEq, HelperReadWrite)]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct QuestThing {
     pub unk1: [u32; 2],
     pub unk2: [u8; 2],

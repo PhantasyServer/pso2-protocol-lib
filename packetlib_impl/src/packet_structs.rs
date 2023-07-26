@@ -24,11 +24,13 @@ pub fn packet_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
             fn read(reader: &mut (impl std::io::Read + std::io::Seek), flags: crate::protocol::Flags) -> std::io::Result<Self> {
                 use byteorder::{LittleEndian, ReadBytesExt};
                 use crate::protocol::HelperReadWrite;
+                use crate::asciistring::StringRW;
                 #read
             }
             fn write(&self, is_ngs: bool) -> Vec<u8> {
                 use byteorder::{LittleEndian, WriteBytesExt};
                 use crate::protocol::{HelperReadWrite, Flags};
+                use crate::asciistring::StringRW;
                 use std::io::Write;
                 let mut buf = crate::protocol::PacketHeader::new(#id, #subid, #flags).write(is_ngs);
                 let writer = &mut buf;
@@ -46,8 +48,13 @@ pub fn helper_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
     let mut read = quote! {};
     let mut write = quote! {};
     let repr_type = get_repr(&ast.attrs)?;
+    let is_flags = get_flags_struct(&ast.attrs)?;
 
     match &ast.data {
+        Data::Struct(data) if matches!(is_flags, Some(_)) => {
+            let Some(repr_type) = is_flags else {unreachable!()};
+            parse_flags_struct(&mut read, &mut write, data, repr_type)?
+        }
         Data::Struct(data) => parse_struct_field(&mut read, &mut write, data)?,
         Data::Enum(data) => parse_enum_field(&mut read, &mut write, data, repr_type)?,
         _ => {}
@@ -58,10 +65,12 @@ pub fn helper_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
         impl HelperReadWrite for #name {
             fn read(reader: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Result<Self> {
                 use byteorder::{LittleEndian, ReadBytesExt};
+                use crate::asciistring::StringRW;
                 #read
             }
             fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
                 use byteorder::{LittleEndian, WriteBytesExt};
+                use crate::asciistring::StringRW;
                 #write
                 Ok(())
             }
@@ -74,20 +83,20 @@ fn parse_enum_field(
     read: &mut TS2,
     write: &mut TS2,
     data: &DataEnum,
-    repr_type: EnumRepr,
+    repr_type: Size,
 ) -> syn::Result<()> {
     let mut default_token = quote! {};
     let mut match_expr = quote! {};
     match repr_type {
-        EnumRepr::U8 => {
+        Size::U8 => {
             read.extend(quote! {let num = reader.read_u8()? as u32;});
             write.extend(quote! {writer.write_u8(*self as u8)?;});
         }
-        EnumRepr::U16 => {
+        Size::U16 => {
             read.extend(quote! {let num = reader.read_u16::<LittleEndian>()? as u32;});
             write.extend(quote! {writer.write_u16::<LittleEndian>(*self as u16)?;});
         }
-        EnumRepr::U32 => {
+        Size::U32 => {
             read.extend(quote! {let num = reader.read_u32::<LittleEndian>()?;});
             write.extend(quote! {writer.write_u32::<LittleEndian>(*self as u32)?;});
         }
@@ -130,6 +139,64 @@ fn parse_enum_field(
         #match_expr
         #default_token
     })});
+    Ok(())
+}
+
+fn parse_flags_struct(
+    read: &mut TS2,
+    write: &mut TS2,
+    data: &DataStruct,
+    repr: Size,
+) -> syn::Result<()> {
+    let mut return_token = quote! {};
+    let mut discriminant = 1u64;
+    write.extend(quote! {let mut num = 0;});
+    let write_after = match repr {
+        Size::U8 => {
+            read.extend(quote! {let num = reader.read_u8()? as u64;});
+            quote! {writer.write_u8(num as u8)?;}
+        }
+        Size::U16 => {
+            read.extend(quote! {let num = reader.read_u16::<LittleEndian>()? as u64;});
+            quote! {writer.write_u16::<LittleEndian>(num as u16)?;}
+        }
+        Size::U32 => {
+            read.extend(quote! {let num = reader.read_u32::<LittleEndian>()? as u64;});
+            quote! {writer.write_u32::<LittleEndian>(num as u32)?;}
+        }
+    };
+    for field in data.fields.iter() {
+        let name = field.ident.as_ref().unwrap();
+        return_token.extend(quote! {#name,});
+
+        for attr in &field.attrs {
+            match &attr.meta {
+                syn::Meta::NameValue(_) => {}
+                syn::Meta::Path(path) => {
+                    let string = path.get_ident().unwrap().to_string();
+                    if string == "Skip" {
+                        discriminant <<= 1;
+                    }
+                }
+                syn::Meta::List(_) => {}
+            }
+        }
+
+        read.extend(quote! {
+            let mut #name = false;
+            if num & #discriminant != 0 {
+                #name = true;
+            }
+        });
+        write.extend(quote! {
+            if self.#name {
+                num += #discriminant;
+            }
+        });
+        discriminant <<= 1;
+    }
+    read.extend(quote! {Ok(Self{#return_token})});
+    write.extend(write_after);
     Ok(())
 }
 
@@ -200,6 +267,7 @@ struct Settings {
     seek_after: i64,
     str_type: StringType,
     is_default: bool,
+    to_skip: bool,
 }
 
 fn get_attrs(
@@ -213,6 +281,7 @@ fn get_attrs(
     match string {
         "Read_default" => set.is_default = true,
         "PSOTime" => set.is_psotime = true,
+        "Skip" => set.to_skip = true,
         "Seek" => {
             let amount: LitInt = list.unwrap().parse_args()?;
             let amount: i64 = amount.base10_parse()?;
@@ -229,33 +298,19 @@ fn get_attrs(
             read.extend(quote! {reader.seek(std::io::SeekFrom::Current(2))?;});
             write.extend(quote! {writer.write_u16::<LittleEndian>(#num).unwrap();});
         }
-        "FixedAscii" => {
+        "FixedStr" => {
             let len: LitInt = list.unwrap().parse_args()?;
             let len = len.base10_parse()?;
-            set.str_type = StringType::FixedAscii(len);
+            set.str_type = StringType::Fixed(len);
         }
-        "FixedUtf16" => {
-            let len: LitInt = list.unwrap().parse_args()?;
-            let len = len.base10_parse()?;
-            set.str_type = StringType::FixedUtf16(len);
-        }
-        "VariableAscii" => {
+        "VariableStr" => {
             let attrs: AttributeList = list.unwrap().parse_args()?;
             if attrs.fields.len() != 2 {
                 return Err(syn::Error::new(list.span(), "Invalid number of arguments"));
             }
             let magic = attrs.fields[0].base10_parse()?;
             let sub = attrs.fields[1].base10_parse()?;
-            set.str_type = StringType::VariableAscii(magic, sub);
-        }
-        "VariableUtf16" => {
-            let attrs: AttributeList = list.unwrap().parse_args()?;
-            if attrs.fields.len() != 2 {
-                return Err(syn::Error::new(list.span(), "Invalid number of arguments"));
-            }
-            let magic = attrs.fields[0].base10_parse()?;
-            let sub = attrs.fields[1].base10_parse()?;
-            set.str_type = StringType::VariableUtf16(magic, sub);
+            set.str_type = StringType::Variable(magic, sub);
         }
         "Magic" => {
             let attrs: AttributeList = list.unwrap().parse_args()?;
@@ -317,30 +372,34 @@ fn check_syn_type(
                                 set,
                                 false,
                             )?;
-                            // let seek_pad = if tmp_read.to_string().contains("read_u8()") {
-                            //     quote! { reader.seek(std::io::SeekFrom::Current((((len + 4 - 1) & (usize::MAX ^ (4 - 1))) - len) as i64))?; }
-                            // } else {
-                            //     quote! {}
-                            // };
-                            // let write_pad = if tmp_read.to_string().contains("read_u8()") {
-                            //     quote! { writer.write_all(&vec![0u8; ((len + 4 - 1) & (usize::MAX ^ (4 - 1))) - len]).unwrap(); }
-                            // } else {
-                            //     quote! {}
-                            // };
+                            let seek_pad = if tmp_read.to_string().contains("read_u8()") {
+                                quote! { reader.seek(std::io::SeekFrom::Current((((len + 4 - 1) & (usize::MAX ^ (4 - 1))) - len) as i64))?; }
+                            } else if tmp_read.to_string().contains("read_u16()") {
+                                quote! { reader.seek(std::io::SeekFrom::Current(((((len * 2) + 4 - 1) & (usize::MAX ^ (4 - 1))) - (len * 2)) as i64))?; }
+                            } else {
+                                quote! {}
+                            };
+                            let write_pad = if tmp_read.to_string().contains("read_u8()") {
+                                quote! { writer.write_all(&vec![0u8; ((len + 4 - 1) & (usize::MAX ^ (4 - 1))) - len]).unwrap(); }
+                            } else if tmp_read.to_string().contains("read_u16()") {
+                                quote! { writer.write_all(&vec![0u8; (((len * 2) + 4 - 1) & (usize::MAX ^ (4 - 1))) - (len * 2)]).unwrap(); }
+                            } else {
+                                quote! {}
+                            };
                             read.extend(quote! {
                                 let mut #name = vec![];
                                 for _ in 0..len {
                                     #tmp_read
                                     #name.push(#tmp_name);
                                 }
-                                // #seek_pad
+                                #seek_pad
                             });
                             write.extend(quote! {
                                 let len = self.#name.len();
                                 for #tmp_name in &self.#name {
                                     #tmp_write
                                 }
-                                // #write_pad
+                                #write_pad
                             });
                         }
                     }
@@ -371,11 +430,12 @@ fn check_syn_type(
                 });
             } else {
                 read.extend(quote! {
-                    let mut #name = [Default::default(); #len];
+                    let mut #name = vec![];
                     for i in 0..#len {
                         #tmp_read
-                        #name[i] = #tmp_name;
+                        #name.push(#tmp_name);
                     }
+                    let #name = #name.try_into().unwrap();
                 });
                 write.extend(quote! {
                     for #tmp_name in &self.#name {
@@ -489,37 +549,38 @@ fn check_code_type(
                 );
             }
         }
-        "String" => {
-            match set.str_type {
-                StringType::Unknown => return Err(syn::Error::new(span, "Unknown string type")),
-                StringType::FixedAscii(len) => {
-                    read.extend(quote! {let #name = crate::protocol::read_utf8(reader, #len);});
-                    write.extend(
-                        quote! {writer.write_all(&crate::protocol::write_utf8(&#write_name, #len as usize)).unwrap();},
-                    );
-                }
-                StringType::FixedUtf16(len) => {
-                    read.extend(quote! {let #name = crate::protocol::read_utf16(reader, #len);});
-                    write.extend(
-                        quote! {writer.write_all(&crate::protocol::write_utf16(&#write_name, #len as usize)).unwrap();},
-                    );
-                }
-                StringType::VariableAscii(magic, sub) => {
-                    read.extend(quote! {let #name = crate::protocol::read_variable_utf8(reader, #sub, #magic);});
-                    write.extend(
-                        quote! {writer.write_all(&crate::protocol::write_variable_utf8(&#write_name, #sub, #magic))
-                        .unwrap();},
-                    );
-                }
-                StringType::VariableUtf16(magic, sub) => {
-                    read.extend(quote! {let #name = crate::protocol::read_variable_utf16(reader, #sub, #magic);});
-                    write.extend(
-                        quote! {writer.write_all(&crate::protocol::write_variable_utf16(&#write_name, #sub, #magic))
-                        .unwrap();},
-                    );
-                }
+        "String" => match set.str_type {
+            StringType::Unknown => return Err(syn::Error::new(span, "Unknown string type")),
+            StringType::Fixed(len) => {
+                read.extend(quote! {let #name = String::read(reader, #len);});
+                write
+                    .extend(quote! {writer.write_all(&#write_name.write(#len as usize)).unwrap();});
             }
-        }
+            StringType::Variable(magic, sub) => {
+                read.extend(quote! {let #name = String::read_variable(reader, #sub, #magic);});
+                write.extend(
+                    quote! {writer.write_all(&#write_name.write_variable(#sub, #magic))
+                    .unwrap();},
+                );
+            }
+        },
+        "AsciiString" => match set.str_type {
+            StringType::Fixed(len) => {
+                read.extend(quote! {let #name = crate::AsciiString::read(reader, #len);});
+                write
+                    .extend(quote! {writer.write_all(&#write_name.write(#len as usize)).unwrap();});
+            }
+            StringType::Variable(magic, sub) => {
+                read.extend(
+                    quote! {let #name = crate::AsciiString::read_variable(reader, #sub, #magic);},
+                );
+                write.extend(
+                    quote! {writer.write_all(&#write_name.write_variable(#sub, #magic))
+                    .unwrap();},
+                );
+            }
+            _ => return Err(syn::Error::new(span, "Unknown string type")),
+        },
         "Character" => {
             read.extend(quote! {let #name = Character::read(reader)?;});
             write.extend(quote! {#write_name.write(writer, self.is_global).unwrap();});
@@ -585,7 +646,7 @@ fn get_flags(attrs: &Vec<Attribute>) -> syn::Result<TS2> {
     return Ok(quote! {Flags::default()});
 }
 
-fn get_repr(attrs: &Vec<Attribute>) -> syn::Result<EnumRepr> {
+fn get_repr(attrs: &Vec<Attribute>) -> syn::Result<Size> {
     for attr in attrs.iter() {
         if !attr.path().is_ident("repr") {
             continue;
@@ -595,19 +656,45 @@ fn get_repr(attrs: &Vec<Attribute>) -> syn::Result<EnumRepr> {
             syn::Meta::Path(_) => {}
             syn::Meta::List(x) => {
                 return Ok(match x.tokens.to_string().as_str() {
-                    "u8" => EnumRepr::U8,
-                    "u16" => EnumRepr::U16,
-                    "u32" => EnumRepr::U32,
-                    _ => EnumRepr::U8,
+                    "u8" => Size::U8,
+                    "u16" => Size::U16,
+                    "u32" => Size::U32,
+                    _ => Size::U8,
                 })
             }
         }
     }
-    return Ok(EnumRepr::U8);
+    return Ok(Size::U8);
+}
+
+fn get_flags_struct(attrs: &Vec<Attribute>) -> syn::Result<Option<Size>> {
+    for attr in attrs.iter() {
+        if !attr.path().is_ident("Flags") {
+            continue;
+        }
+        match &attr.meta {
+            syn::Meta::NameValue(_) => {}
+            syn::Meta::Path(_) => {
+                return Err(syn::Error::new(
+                    attr.span(),
+                    "Invalid syntax \nPerhaps you ment Flags(..)?",
+                ));
+            }
+            syn::Meta::List(x) => {
+                return Ok(match x.tokens.to_string().as_str() {
+                    "u8" => Some(Size::U8),
+                    "u16" => Some(Size::U16),
+                    "u32" => Some(Size::U32),
+                    _ => None,
+                })
+            }
+        }
+    }
+    return Ok(None);
 }
 
 #[derive(Default)]
-enum EnumRepr {
+enum Size {
     #[default]
     U8,
     U16,
@@ -619,13 +706,9 @@ enum StringType {
     #[default]
     Unknown,
     // len
-    FixedAscii(u64),
+    Fixed(u64),
     // magic, sub
-    VariableAscii(u32, u32),
-    // len
-    FixedUtf16(u64),
-    // magic, sub
-    VariableUtf16(u32, u32),
+    Variable(u32, u32),
 }
 
 struct AttributeList {

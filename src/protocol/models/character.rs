@@ -1,4 +1,4 @@
-use crate::protocol::{read_utf16, write_utf16, HelperReadWrite};
+use crate::{asciistring::StringRW, protocol::HelperReadWrite};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Read, Seek, Write};
 
@@ -170,7 +170,8 @@ pub enum Class {
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+#[Flags(u16)]
 pub struct ClassFlags {
     pub hunter: bool,
     pub ranger: bool,
@@ -191,7 +192,7 @@ pub struct ClassFlags {
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[derive(Debug, Copy, Clone, PartialEq, HelperReadWrite)]
 pub struct ClassLevel {
     pub level1: u16,
     pub level2: u16,
@@ -261,7 +262,7 @@ impl Character {
         let voice_type = reader.read_u32::<LittleEndian>()?;
         let unk2 = reader.read_u16::<LittleEndian>()?;
         let voice_pitch = reader.read_u16::<LittleEndian>()?;
-        let name = read_utf16(reader, 16);
+        let name = String::read(reader, 16);
 
         let is_global = reader.read_u8()? != 0;
         reader.seek(std::io::SeekFrom::Current(-1))?;
@@ -296,7 +297,7 @@ impl Character {
         writer.write_u32::<LittleEndian>(self.voice_type)?;
         writer.write_u16::<LittleEndian>(self.unk2)?;
         writer.write_u16::<LittleEndian>(self.voice_pitch)?;
-        writer.write_all(&write_utf16(&self.name, 16))?;
+        writer.write_all(&self.name.write(16))?;
 
         if !is_global {
             writer.write_u32::<LittleEndian>(0)?;
@@ -313,124 +314,30 @@ impl Character {
     }
 }
 
-impl ClassFlags {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
-        let mut num = reader.read_u16::<LittleEndian>()?;
-        let mut flags = Self::default();
-        if num & 0b0000_0000_0000_0001 != 0 {
-            flags.hunter = true;
-            num -= 0b0000_0000_0000_0001;
+// ----------------------------------------------------------------
+// Other implementations
+// ----------------------------------------------------------------
+
+impl Character {
+    pub fn get_level(&self) -> ClassLevel {
+        match self.classes.main_class {
+            Class::Hunter => self.classes.hunter_info,
+            Class::Ranger => self.classes.ranger_info,
+            Class::Force => self.classes.force_info,
+            Class::Fighter => self.classes.fighter_info,
+            Class::Gunner => self.classes.gunner_info,
+            Class::Techer => self.classes.techer_info,
+            Class::Braver => self.classes.braver_info,
+            Class::Bouncer => self.classes.bouncer_info,
+            Class::Challenger => self.classes.challenger_info,
+            Class::Summoner => self.classes.summoner_info,
+            Class::BattleWarrior => self.classes.battle_warrior_info,
+            Class::Hero => self.classes.hero_info,
+            Class::Phantom => self.classes.phantom_info,
+            Class::Etole => self.classes.etole_info,
+            Class::Luster => self.classes.luster_info,
+            Class::Unknown => Default::default(),
         }
-        if num & 0b0000_0000_0000_0010 != 0 {
-            flags.ranger = true;
-            num -= 0b0000_0000_0000_0010;
-        }
-        if num & 0b0000_0000_0000_0100 != 0 {
-            flags.force = true;
-            num -= 0b0000_0000_0000_0100;
-        }
-        if num & 0b0000_0000_0000_1000 != 0 {
-            flags.fighter = true;
-            num -= 0b0000_0000_0000_1000;
-        }
-        if num & 0b0000_0000_0001_0000 != 0 {
-            flags.gunner = true;
-            num -= 0b0000_0000_0001_0000;
-        }
-        if num & 0b0000_0000_0010_0000 != 0 {
-            flags.techer = true;
-            num -= 0b0000_0000_0010_0000;
-        }
-        if num & 0b0000_0000_0100_0000 != 0 {
-            flags.braver = true;
-            num -= 0b0000_0000_0100_0000;
-        }
-        if num & 0b0000_0000_1000_0000 != 0 {
-            flags.bouncer = true;
-            num -= 0b0000_0000_1000_0000;
-        }
-        if num & 0b0000_0001_0000_0000 != 0 {
-            flags.challenger = true;
-            num -= 0b0000_0001_0000_0000;
-        }
-        if num & 0b0000_0010_0000_0000 != 0 {
-            flags.summoner = true;
-            num -= 0b0000_0010_0000_0000;
-        }
-        if num & 0b0000_0100_0000_0000 != 0 {
-            flags.battlewarrior = true;
-            num -= 0b0000_0100_0000_0000;
-        }
-        if num & 0b0000_1000_0000_0000 != 0 {
-            flags.hero = true;
-            num -= 0b0000_1000_0000_0000;
-        }
-        if num & 0b0001_0000_0000_0000 != 0 {
-            flags.phantom = true;
-            num -= 0b0001_0000_0000_0000;
-        }
-        if num & 0b0010_0000_0000_0000 != 0 {
-            flags.etole = true;
-            num -= 0b0010_0000_0000_0000;
-        }
-        if num & 0b0100_0000_0000_0000 != 0 {
-            flags.luster = true;
-            num -= 0b0100_0000_0000_0000;
-        }
-        if num != 0 {
-            println!("Unknown flags: {num}");
-        }
-        Ok(flags)
-    }
-    fn write(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        let mut num = 0;
-        if self.hunter {
-            num += 0b0000_0000_0000_0001;
-        }
-        if self.ranger {
-            num += 0b0000_0000_0000_0010;
-        }
-        if self.force {
-            num += 0b0000_0000_0000_0100;
-        }
-        if self.fighter {
-            num += 0b0000_0000_0000_1000;
-        }
-        if self.gunner {
-            num += 0b0000_0000_0001_0000;
-        }
-        if self.techer {
-            num += 0b0000_0000_0010_0000;
-        }
-        if self.braver {
-            num += 0b0000_0000_0100_0000;
-        }
-        if self.bouncer {
-            num += 0b0000_0000_1000_0000;
-        }
-        if self.challenger {
-            num += 0b0000_0001_0000_0000;
-        }
-        if self.summoner {
-            num += 0b0000_0010_0000_0000;
-        }
-        if self.battlewarrior {
-            num += 0b0000_0100_0000_0000;
-        }
-        if self.hero {
-            num += 0b0000_1000_0000_0000;
-        }
-        if self.phantom {
-            num += 0b0001_0000_0000_0000;
-        }
-        if self.etole {
-            num += 0b0010_0000_0000_0000;
-        }
-        if self.luster {
-            num += 0b0100_0000_0000_0000;
-        }
-        writer.write_u16::<LittleEndian>(num)?;
-        Ok(())
     }
 }
 

@@ -1,4 +1,5 @@
 use super::{models::Position, Flags, ObjectHeader, PacketHeader, PacketReadWrite};
+use crate::AsciiString;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use half::f16;
 use std::{
@@ -54,13 +55,13 @@ pub struct MovementPacket {
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
 pub struct MovementActionPacket {
     pub unk1: ObjectHeader,
-    pub unk2: ObjectHeader,
+    pub performer: ObjectHeader,
     pub unk3: u32,
     pub unk4: [u8; 0x10],
     pub unk5: [u8; 0x8],
     pub unk6: [u8; 0xC],
-    #[VariableAscii(0x922D, 0x45)]
-    pub action: String,
+    #[VariableStr(0x922D, 0x45)]
+    pub action: AsciiString,
     pub unk7: u32,
     pub unk8: u32,
     #[Magic(0x922D, 0x45)]
@@ -72,7 +73,7 @@ pub struct MovementActionPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x13)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
-pub struct Unk4_13Packet {
+pub struct Unk0413Packet {
     pub unk1: [u8; 0xC],
     pub unk2: ObjectHeader,
     pub unk3: ObjectHeader,
@@ -89,8 +90,8 @@ pub struct InteractPacket {
     pub unk2: [u8; 0x4],
     pub object3: ObjectHeader,
     pub object4: [u8; 0x10],
-    #[VariableAscii(0xD711, 0xCA)]
-    pub action: String,
+    #[VariableStr(0xD711, 0xCA)]
+    pub action: AsciiString,
 }
 
 // 0x04, 0x15
@@ -107,15 +108,38 @@ pub struct SetTagPacket {
     pub unk3: u8,
     pub unk4: u8,
     pub unk5: u8,
-    #[VariableAscii(0x5CCF, 0x15)]
-    pub attribute: String,
+    #[VariableStr(0x5CCF, 0x15)]
+    pub attribute: AsciiString,
+}
+
+// 0x04, 0x22
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x22)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct Unk0422Packet {
+    pub unk1: ObjectHeader,
+    pub unk2: ObjectHeader,
+    pub unk3: u32,
+    pub unk4: u32,
+    pub unk5: [u8; 0x20],
+}
+
+// 0x04, 0x23
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x23)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct Unk0423Packet {
+    pub unk1: [u8; 0xC],
+    pub unk2: ObjectHeader,
+    pub unk3: ObjectHeader,
+    pub unk4: u32,
 }
 
 // 0x04, 0x24
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x24)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
-pub struct Unk4_24Packet {
+pub struct Unk0424Packet {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
     pub unk3: ObjectHeader,
@@ -123,6 +147,24 @@ pub struct Unk4_24Packet {
     pub unk5: u32,
     pub unk6: [u8; 0xC],
     pub unk7: [u8; 0xC],
+}
+
+// 0x04, 0x2B
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x2B)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct Unk042BPacket {
+    pub unk1: [u8; 0xC],
+    pub unk2: ObjectHeader,
+}
+
+// 0x04, 0x3B
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x3B)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct RemoveObjectPacket {
+    pub receiver: ObjectHeader,
+    pub removed_object: ObjectHeader,
 }
 
 // 0x04, 0x71
@@ -140,6 +182,26 @@ pub struct MovementEndPacket {
     pub unk_z: f16,
     pub unk7: u16,
     pub unk8: u32,
+}
+
+// 0x04, 0x80
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x80)]
+#[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
+pub struct MovementActionServerPacket {
+    pub receiver: ObjectHeader,
+    pub performer: ObjectHeader,
+    pub unk3: u32,
+    pub unk4: [u8; 0x10],
+    pub unk5: [u8; 0x8],
+    pub unk6: [u8; 0xC],
+    #[VariableStr(0x4315, 0x7A)]
+    pub action: AsciiString,
+    pub unk7: u32,
+    pub unk8: u32,
+    #[Magic(0x4315, 0x7A)]
+    pub unk9: Vec<u32>,
+    pub unk10: u32,
 }
 
 // ----------------------------------------------------------------
