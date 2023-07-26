@@ -2,7 +2,7 @@ use std::io::{Read, Write};
 
 use crate::{
     encryption::{reencrypt, Encryption},
-    protocol::{login::EncryptionRequestPacket, Packet},
+    protocol::{login::EncryptionRequestPacket, Packet, ProtocolRW},
 };
 
 /// Represents a connection between a client and a server

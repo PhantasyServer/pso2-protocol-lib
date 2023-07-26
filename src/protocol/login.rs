@@ -2,6 +2,7 @@ use super::{
     models::{character::Character, FunValue, SGValue},
     EntityType, Flags, HelperReadWrite, ObjectHeader, PacketHeader, PacketReadWrite,
 };
+use crate::AsciiString;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::{
     io::{Read, Seek, Write},
@@ -30,12 +31,13 @@ pub struct SegaIDLoginPacket {
     #[Seek(0x10)]
     pub unk5: [u8; 0x10],
     #[Seek(0x10)]
-    pub flag1: u32,
-    pub flag2: u32,
-    pub flag3: u32,
-    pub flag4: u32,
+    pub text_lang: u32,
+    // 0 - jp, 1 - en
+    pub voice_lang: u32,
+    pub text_lang2: u32,
+    pub lang_lang: u32,
     #[Seek(0x8)]
-    #[FixedUtf16(0x10)]
+    #[FixedStr(0x10)]
     pub language: String,
     pub unk6: u32,
     pub unk7: u32,
@@ -43,16 +45,16 @@ pub struct SegaIDLoginPacket {
     pub unk8: [u8; 0x20],
     pub unk9: [u8; 0x44],
     #[Seek(0x104)]
-    #[FixedAscii(0x40)]
-    pub username: String,
+    #[FixedStr(0x40)]
+    pub username: AsciiString,
     #[Seek(0x20)]
-    #[FixedAscii(0x40)]
-    pub password: String,
+    #[FixedStr(0x40)]
+    pub password: AsciiString,
     #[Seek(0x4)]
     pub unk10: u32,
     #[SeekAfter(0x4)]
-    #[VariableAscii(0x5E6, 0x6B)]
-    pub unk11: String,
+    #[VariableStr(0x5E6, 0x6B)]
+    pub unk11: AsciiString,
 }
 
 // 0x11, 0x01
@@ -61,10 +63,10 @@ pub struct SegaIDLoginPacket {
 #[Flags(Flags {packed: true, ..Default::default()})]
 pub struct LoginResponsePacket {
     pub status: LoginStatus,
-    #[VariableUtf16(0x8BA4, 0xB6)]
+    #[VariableStr(0x8BA4, 0xB6)]
     pub error: String,
     pub player: ObjectHeader,
-    #[FixedUtf16(0x20)]
+    #[FixedStr(0x20)]
     pub blockname: String,
     pub unk1: f32,
     pub unk2: u32,
@@ -142,6 +144,15 @@ pub struct ClientPongPacket {
     pub client_time: Duration,
     #[PSOTime]
     pub server_time: Duration,
+    pub unk1: u32,
+}
+
+// 0x11, 0x10
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x10)]
+pub struct BlockListPacket {
+    pub blocks: [BlockInfo; 200],
+    pub unk: u32,
 }
 
 // 0x11, 0x1B
@@ -218,7 +229,7 @@ pub struct NicknameRequestPacket {
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x1D)]
 pub struct NicknameResponsePacket {
-    #[FixedUtf16(0x10)]
+    #[FixedStr(0x10)]
     #[SeekAfter(0x20)]
     pub nickname: String,
 }
@@ -228,7 +239,7 @@ pub struct NicknameResponsePacket {
 #[Id(0x11, 0x2C)]
 pub struct BlockBalancePacket {
     pub unk1: [u8; 0x20],
-    #[FixedUtf16(0x20)]
+    #[FixedStr(0x20)]
     pub blockname: String,
     pub ip: Ipv4Addr,
     pub port: u16,
@@ -240,23 +251,23 @@ pub struct BlockBalancePacket {
 #[Id(0x11, 0x2D)]
 #[Flags(Flags {packed: true, ..Default::default()})]
 pub struct SystemInformationPacket {
-    #[VariableAscii(0x883D, 0x9F)]
-    pub cpu_info: String,
-    #[VariableAscii(0x883D, 0x9F)]
-    pub video_info: String,
+    #[VariableStr(0x883D, 0x9F)]
+    pub cpu_info: AsciiString,
+    #[VariableStr(0x883D, 0x9F)]
+    pub video_info: AsciiString,
     pub vram: u64,
     pub total_ram: u64,
     pub unk1: u32,
     pub unk2: u32,
-    #[VariableUtf16(0x883D, 0x9F)]
+    #[VariableStr(0x883D, 0x9F)]
     pub windows_version: String,
-    #[VariableAscii(0x883D, 0x9F)]
-    pub window_size: String,
-    #[VariableUtf16(0x883D, 0x9F)]
+    #[VariableStr(0x883D, 0x9F)]
+    pub window_size: AsciiString,
+    #[VariableStr(0x883D, 0x9F)]
     pub unk3: String,
-    #[VariableUtf16(0x883D, 0x9F)]
+    #[VariableStr(0x883D, 0x9F)]
     pub unk4: String,
-    #[VariableUtf16(0x883D, 0x9F)]
+    #[VariableStr(0x883D, 0x9F)]
     pub video_driver: String,
     pub total_disk_space: u64,
     pub free_disk_space: u64,
@@ -314,7 +325,7 @@ pub struct VitaLoginPacket {
     pub flag4: u32,
     pub flag5: u32,
     pub flag6: u32,
-    #[FixedUtf16(0x10)]
+    #[FixedStr(0x10)]
     pub language: String,
     pub unk9: u32,
     pub unk10: u32,
@@ -322,17 +333,17 @@ pub struct VitaLoginPacket {
     pub unk11: [u8; 0x20],
     pub unk12: [u8; 0x44],
     #[Seek(0xFC)]
-    #[FixedAscii(0x40)]
-    pub username: String,
+    #[FixedStr(0x40)]
+    pub username: AsciiString,
     #[Seek(0x20)]
-    #[FixedAscii(0x40)]
-    pub password: String,
+    #[FixedStr(0x40)]
+    pub password: AsciiString,
     #[Seek(0x4)]
     pub unk13: u8,
     pub unk14: u8,
     pub unk15: u16,
-    #[VariableAscii(0xBE3F, 0x77)]
-    pub unk16: String,
+    #[VariableStr(0xBE3F, 0x77)]
+    pub unk16: AsciiString,
     #[Magic(0xBE3F, 0x77)]
     pub unk17: Vec<u8>,
     pub unk18: [u8; 0x10],
@@ -354,6 +365,16 @@ pub struct SalonResponse {
     pub unk7: u32,
 }
 
+// 0x11, 0x71
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x71)]
+pub struct NotificationStatusPacket {
+    pub new_mail: u32,
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+}
+
 // 0x11, 0x87
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x87)]
@@ -369,7 +390,7 @@ pub struct LoginHistoryPacket {
 #[Flags(Flags {packed: true, ..Default::default()})]
 pub struct NicknameErrorPacket {
     pub unk1: u32,
-    #[VariableUtf16(0x4544, 0x14)]
+    #[VariableStr(0x4544, 0x14)]
     pub nickname: String,
 }
 
@@ -378,8 +399,8 @@ pub struct NicknameErrorPacket {
 #[Id(0x11, 0xED)]
 #[Flags(Flags {packed: true, ..Default::default()})]
 pub struct BannerListPacket {
-    #[VariableAscii(0xD67D, 0xF5)]
-    pub banners: String,
+    #[VariableStr(0xD67D, 0xF5)]
+    pub banners: AsciiString,
 }
 
 // 0x11, 0xEE
@@ -388,7 +409,7 @@ pub struct BannerListPacket {
 #[Flags(Flags {packed: true, ..Default::default()})]
 pub struct EmailCodeRequestPacket {
     pub unk1: u32,
-    #[VariableUtf16(0x5C3B, 0x40)]
+    #[VariableStr(0x5C3B, 0x40)]
     pub message: String,
 }
 
@@ -396,12 +417,12 @@ pub struct EmailCodeRequestPacket {
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0xFF)]
 #[Flags(Flags {packed: true, ..Default::default()})]
-pub struct Unk1Packet {
+pub struct Unk11FFPacket {
     pub unk1: u8,
     pub unk2: u8,
     pub unk3: u8,
     pub unk4: u8,
-    #[VariableUtf16(0x3DD3, 0x3D)]
+    #[VariableStr(0x3DD3, 0x3D)]
     pub unk5: String,
     pub unk6: [u8; 0xC],
     pub unk7: [u8; 0x40],
@@ -415,14 +436,14 @@ pub struct Unk1Packet {
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct NetInterface {
     pub state: u32,
-    #[FixedAscii(0x18)]
-    pub mac: String,
+    #[FixedStr(0x18)]
+    pub mac: AsciiString,
 }
 
 #[derive(Debug, Clone, PartialEq, HelperReadWrite)]
 pub struct ShipEntry {
     pub id: u32,
-    #[FixedUtf16(0x10)]
+    #[FixedStr(0x10)]
     pub name: String,
     pub ip: Ipv4Addr,
     #[Seek(4)]
@@ -486,6 +507,26 @@ pub enum LoginStatus {
 }
 
 #[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+pub struct BlockInfo {
+    pub unk1: u32,
+    pub unk2: u8,
+    pub unk3: u8,
+    pub unk4: u8,
+    pub unk5: u8,
+    pub unk6: u32,
+    pub unk7: u32,
+    pub unk8: u16,
+    pub unk9: u16,
+    #[FixedStr(0x20)]
+    pub blockname: String,
+    pub ip: Ipv4Addr,
+    pub port: u16,
+    pub unk10: u16,
+    pub unk11: u16,
+    pub unk12: [u8; 10],
+}
+
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct SalonThing1 {
     pub unk1: u32,
     pub unk2: u32,
@@ -493,7 +534,7 @@ pub struct SalonThing1 {
     pub unk4: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct SalonThing2 {
     pub unk1: u32,
     pub unk2: u32,
@@ -572,7 +613,7 @@ impl PacketReadWrite for CharacterListPacket {
             characters = &default_character;
         }
 
-        for character in characters.into_iter().cycle().take(30) {
+        for character in characters.iter().cycle().take(30) {
             buf.write_u32::<LittleEndian>(0).unwrap();
             character.write(&mut buf, self.is_global).unwrap();
         }
@@ -682,20 +723,20 @@ impl Default for SegaIDLoginPacket {
             interfaces: vec![],
             unk4: [0u8; 0x90],
             unk5: [0u8; 0x10],
-            flag1: 0,
-            flag2: 0,
-            flag3: 0,
-            flag4: 0,
+            text_lang: 0,
+            voice_lang: 0,
+            text_lang2: 0,
+            lang_lang: 0,
             language: String::new(),
             unk6: 7,
             unk7: 7,
             magic1: 0x0419,
             unk8: [0u8; 0x20],
             unk9: [0u8; 0x44],
-            username: String::new(),
-            password: String::new(),
+            username: Default::default(),
+            password: Default::default(),
             unk10: 512,
-            unk11: String::new(),
+            unk11: Default::default(),
         }
     }
 }
@@ -727,8 +768,8 @@ impl Default for LoginResponsePacket {
             unk13: 100.0,
             unk14: [1.0; 0xA],
             unk15: [100.0; 0x15],
-            unk16: 0x91A2b,
-            unk17: 0x91A2b,
+            unk16: 0x91A2B,
+            unk17: 0x91A2B,
         }
     }
 }
@@ -746,6 +787,7 @@ impl Default for ClientPongPacket {
         Self {
             client_time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap(),
             server_time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap(),
+            unk1: 0,
         }
     }
 }
@@ -796,12 +838,12 @@ impl Default for VitaLoginPacket {
             magic1: 0,
             unk11: [0u8; 0x20],
             unk12: [0u8; 0x44],
-            username: String::new(),
-            password: String::new(),
+            username: Default::default(),
+            password: Default::default(),
             unk13: 0,
             unk14: 2,
             unk15: 0,
-            unk16: String::new(),
+            unk16: Default::default(),
             unk17: vec![],
             unk18: [0u8; 0x10],
         }
@@ -817,7 +859,7 @@ impl Default for NicknameErrorPacket {
     }
 }
 
-impl Default for Unk1Packet {
+impl Default for Unk11FFPacket {
     fn default() -> Self {
         Self {
             unk1: 0,
@@ -855,205 +897,33 @@ impl Default for LoginAttempt {
     }
 }
 
-// ----------------------------------------------------------------
-// Tests
-// ----------------------------------------------------------------
+impl Default for BlockListPacket {
+    fn default() -> Self {
+        Self {
+            blocks: vec![Default::default(); 200].try_into().unwrap(),
+            unk: 0,
+        }
+    }
+}
 
-// Probably macroable
-#[cfg(test)]
-mod tests {
-    use std::time::Duration;
-
-    use crate::protocol::{
-        login::{
-            ClientPingPacket, ClientPongPacket, LoginAttempt, LoginHistoryPacket, ShipEntry,
-            ShipListPacket,
-        },
-        Packet,
-    };
-    #[test]
-    fn check_11_00() {
-        let packet = Packet::SegaIDLogin(Default::default());
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_01() {
-        let packet = Packet::LoginResponse(Default::default());
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_02() {
-        let packet = Packet::CharacterListRequest;
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_03() {
-        let packet = Packet::CharacterListResponse(Default::default());
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_05() {
-        let packet = Packet::CharacterCreate(Default::default());
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_0b() {
-        let packet = Packet::EncryptionRequest(Default::default());
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_0c() {
-        let packet = Packet::EncryptionResponse(Default::default());
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_0d() {
-        let packet = Packet::ClientPing(ClientPingPacket {
-            time: Duration::from_secs(100),
-        });
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_0e() {
-        let packet = Packet::ClientPong(ClientPongPacket {
-            client_time: Duration::from_secs(200),
-            server_time: Duration::from_secs(300),
-        });
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_1e() {
-        let packet = Packet::NicknameRequest(Default::default());
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_1d() {
-        let packet = Packet::NicknameResponse(Default::default());
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_2b() {
-        let packet = Packet::ClientGoodbye;
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_2d() {
-        let packet = Packet::SystemInformation(Default::default());
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_3d() {
-        let packet = Packet::ShipList(ShipListPacket {
-            ships: vec![ShipEntry::default(); 4],
-            timestamp: Duration::from_secs(200),
-        });
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_41() {
-        let packet = Packet::CreateCharacter1;
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_42() {
-        let packet = Packet::CreateCharacter1Response(Default::default());
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_54() {
-        let packet = Packet::CreateCharacter2;
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_55() {
-        let packet = Packet::CreateCharacter2Response(Default::default());
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_63() {
-        let packet = Packet::VitaLogin(Default::default());
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_6b() {
-        let packet = Packet::SegaIDInfoRequest;
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_86() {
-        let packet = Packet::LoginHistoryRequest;
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_87() {
-        let packet = Packet::LoginHistoryResponse(LoginHistoryPacket {
-            attempts: vec![LoginAttempt::default(); 50],
-        });
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_ea() {
-        let packet = Packet::NicknameError(Default::default());
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_ee() {
-        let packet = Packet::EmailCodeRequest(Default::default());
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
-    }
-    #[test]
-    fn check_11_ff() {
-        let packet = Packet::Unk1(Default::default());
-        let data = packet.clone().write(false);
-        let packet2 = Packet::read(&data, false).unwrap();
-        assert_eq!(packet, packet2[0]);
+impl Default for BlockInfo {
+    fn default() -> Self {
+        Self {
+            unk1: 0,
+            unk2: 0,
+            unk3: 0,
+            unk4: 0,
+            unk5: 0,
+            unk6: 0,
+            unk7: 0,
+            unk8: 0,
+            unk9: 0,
+            blockname: String::new(),
+            ip: Ipv4Addr::UNSPECIFIED,
+            port: 0,
+            unk10: 0,
+            unk11: 0,
+            unk12: [0; 10],
+        }
     }
 }

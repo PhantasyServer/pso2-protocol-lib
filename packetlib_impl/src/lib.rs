@@ -14,10 +14,8 @@ use syn::{parse_macro_input, DeriveInput};
         Seek,
         SeekAfter,
         Const_u16,
-        FixedAscii,
-        FixedUtf16,
-        VariableAscii,
-        VariableUtf16,
+        FixedStr,
+        VariableStr,
         Flags,
         PSOTime,
         Magic,
@@ -37,14 +35,14 @@ pub fn packet_read_write_derive(input: TokenStream) -> TokenStream {
         Seek,
         SeekAfter,
         Const_u16,
-        FixedAscii,
-        FixedUtf16,
-        VariableAscii,
-        VariableUtf16,
+        FixedStr,
+        VariableStr,
         PSOTime,
         Magic,
         Len_u32,
         Read_default,
+        Skip,
+        Flags,
     )
 )]
 pub fn helper_read_write_derive(input: TokenStream) -> TokenStream {
@@ -54,7 +52,7 @@ pub fn helper_read_write_derive(input: TokenStream) -> TokenStream {
         .into()
 }
 
-#[proc_macro_derive(ProtocolReadWrite, attributes(Id, Empty, Unknown, Base, NGS,))]
+#[proc_macro_derive(ProtocolReadWrite, attributes(Id, Empty, Unknown, Base, NGS, Category))]
 pub fn protocol_read_write_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     protocol_deriver(&input)

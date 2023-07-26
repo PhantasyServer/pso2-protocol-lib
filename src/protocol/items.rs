@@ -1,8 +1,6 @@
-use std::time::Duration;
-
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-
 use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use std::time::Duration;
 
 // ----------------------------------------------------------------
 // Loading packets
@@ -27,7 +25,7 @@ pub struct ItemAttributesPacket {
 #[Flags(Flags {packed: true, ..Default::default()})]
 pub struct LoadPlayerInventoryPacket {
     pub object: ObjectHeader,
-    #[VariableUtf16(0x5533, 0x1)]
+    #[VariableStr(0x5533, 0x1)]
     pub name: String,
     pub meseta: u64,
     pub max_capacity: u32,
@@ -40,7 +38,7 @@ pub struct LoadPlayerInventoryPacket {
 #[Flags(Flags {packed: true, ..Default::default()})]
 pub struct LoadPlayerInventoryNGSPacket {
     pub object: ObjectHeader,
-    #[VariableUtf16(0x5533, 0x1)]
+    #[VariableStr(0x5533, 0x1)]
     pub name: String,
     pub meseta: u64,
     pub max_capacity: u32,
@@ -89,21 +87,14 @@ pub struct GetItemDescriptionPacket {
 pub struct LoadItemDescriptionPacket {
     pub unk1: u32,
     pub item: ItemId,
-    #[VariableUtf16(0xB10E, 0xB2)]
+    #[VariableStr(0xB10E, 0xB2)]
     pub desc: String,
 }
 
-// 0x0F, 0x30
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x30)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+// 0x0F, 0x30 see internal repr
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct LoadItemPacket {
-    #[Magic(0x9E22, 0x46)]
-    pub ids: Vec<ItemId>,
-    #[VariableUtf16(0x9E22, 0x46)]
-    pub names: String,
-    #[Magic(0x9E22, 0x46)]
-    pub name_length: Vec<u8>,
+    pub items: Vec<NamedId>,
 }
 
 // 0x0F, 0x70
@@ -185,13 +176,36 @@ pub struct Unk0fefPacket {
 #[Id(0x0F, 0xFC)]
 #[Flags(Flags {packed: true, ..Default::default()})]
 pub struct Unk0ffcPacket {
-    #[Magic(0xB703, 0x6C)]
+    #[Magic(0x3145, 0x21)]
     pub ids: Vec<Unk0ffc>,
+}
+
+// ----------------------------------------------------------------
+// Internal structs
+// ----------------------------------------------------------------
+
+// 0x0F, 0x30
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x30)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct LoadItemInternal {
+    #[Magic(0x9E22, 0x46)]
+    pub ids: Vec<ItemId>,
+    #[VariableStr(0x9E22, 0x46)]
+    pub names: String,
+    #[Magic(0x9E22, 0x46)]
+    pub name_length: Vec<u8>,
 }
 
 // ----------------------------------------------------------------
 // Additional structs
 // ----------------------------------------------------------------
+
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct NamedId {
+    pub name: String,
+    pub id: ItemId,
+}
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Item {
@@ -270,9 +284,9 @@ pub struct Campaign {
     pub id: u32,
     pub start_date: Duration,
     pub end_date: Duration,
-    #[FixedUtf16(0x3E)]
+    #[FixedStr(0x3E)]
     pub title: String,
-    #[FixedUtf16(0x102)]
+    #[FixedStr(0x102)]
     pub conditions: String,
 }
 
@@ -338,6 +352,39 @@ pub struct Unk0ffc {
 // ----------------------------------------------------------------
 // Read/Write implementations
 // ----------------------------------------------------------------
+
+impl PacketReadWrite for LoadItemPacket {
+    fn read(
+        reader: &mut (impl std::io::Read + std::io::Seek),
+        flags: super::Flags,
+    ) -> std::io::Result<Self> {
+        let packet = LoadItemInternal::read(reader, flags)?;
+        let mut names = packet.names.chars();
+        let mut items = vec![];
+        for (id, name_length) in packet.ids.into_iter().zip(packet.name_length.into_iter()) {
+            let name = names.by_ref().take(name_length as usize).collect();
+            items.push(NamedId { name, id });
+        }
+        Ok(Self { items })
+    }
+
+    fn write(&self, is_ngs: bool) -> Vec<u8> {
+        let mut names = String::new();
+        let mut name_length = vec![];
+        let mut ids = vec![];
+        for item in self.items.iter() {
+            name_length.push(item.name.chars().count() as u8);
+            names.push_str(&item.name);
+            ids.push(item.id);
+        }
+        LoadItemInternal {
+            ids,
+            names,
+            name_length,
+        }
+        .write(is_ngs)
+    }
+}
 
 impl HelperReadWrite for Item {
     fn read(reader: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Result<Self> {

@@ -1,4 +1,5 @@
-use super::{HelperReadWrite, PacketReadWrite};
+use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
+use crate::AsciiString;
 
 // ----------------------------------------------------------------
 // Server packets
@@ -13,20 +14,44 @@ pub struct ServerHelloPacket {
     pub version: u16,
 }
 
-// 0x03, 0x24
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x08)]
+pub struct ServerHelloNGSPacket {
+    #[Const_u16(0x03)]
+    #[SeekAfter(4)]
+    pub version: u16,
+    pub unk: u32,
+}
+
+// 0x03, 0x10
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x10)]
+pub struct MapLoadedPacket {
+    pub map_object: ObjectHeader,
+    pub unk: [u8; 0x20],
+}
+
+// 0x03, 0x24
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x03, 0x24)]
 #[Flags(Flags {packed: true, ..Default::default()})]
 // This was somewhat checked against NGS's implementation, however PSO2 seems to have extra fields?(they are commented out)
 pub struct LoadLevelPacket {
-    pub unk1: [u8; 0xC],
-    pub unk2: [u8; 0xC],
-    pub unk3: [u8; 0x34],
+    pub map_object: ObjectHeader,
+    #[cfg_attr(feature = "serde", serde(skip))]
+    pub receiver: ObjectHeader,
+    pub unk1: u64,
+    pub map_type: u32,
+    pub map_id: u32,
+    pub flags: u32,
+    pub unk3: [u8; 0x20],
     pub unk4: [u8; 0xC],
     pub unk5: [u8; 0xC],
     pub unk6: [u8; 0xC],
-    #[VariableAscii(0x7542, 0x5E)]
-    pub unk7: String,
+    #[VariableStr(0x7542, 0x5E)]
+    pub unk7: AsciiString,
     #[Magic(0x7542, 0x5E)]
     pub unk8: Vec<LoadLevelThing1>,
     #[Magic(0x7542, 0x5E)]
@@ -45,24 +70,26 @@ pub struct LoadLevelPacket {
     pub unk15: Vec<LoadLevelThing8>,
     #[Magic(0x7542, 0x5E)]
     pub unk16: Vec<UnkThing1>,
-    #[VariableAscii(0x7542, 0x5E)]
-    pub unk17: String,
+    #[VariableStr(0x7542, 0x5E)]
+    pub unk17: AsciiString,
     pub unk18: u32,
     pub unk19: u32,
     pub unk20: u32,
-    pub unk21: [u8; 0x3C],
+    pub unk21_1: [u8; 0x20],
+    pub unk21_2: [u8; 0x1C],
     pub unk22: u32,
     pub unk23: [u8; 0x10],
     pub unk24: [u8; 0x10],
     #[Magic(0x7542, 0x5E)]
     pub unk25: Vec<u32>,
-    pub unk26: [u8; 0x200],
+    pub unk26_1: [u64; 0x20],
+    pub unk26_2: [u64; 0x20],
     #[Magic(0x7542, 0x5E)]
     pub unk27: Vec<UnkThing2>,
-    #[VariableAscii(0x7542, 0x5E)]
-    pub unk28: String,
-    #[VariableAscii(0x7542, 0x5E)]
-    pub unk29: String,
+    #[VariableStr(0x7542, 0x5E)]
+    pub unk28: AsciiString,
+    #[VariableStr(0x7542, 0x5E)]
+    pub unk29: AsciiString,
     pub unk30: u64,
     pub unk31: u64,
     pub unk32: u8,
@@ -86,8 +113,8 @@ pub struct LoadLevelPacket {
     // pub unk47: u32,
     #[Magic(0x7542, 0x5E)]
     pub unk48: Vec<LoadLevelThing9>,
-    #[VariableAscii(0x7542, 0x5E)]
-    pub unk49: String,
+    #[VariableStr(0x7542, 0x5E)]
+    pub unk49: AsciiString,
     #[Magic(0x7542, 0x5E)]
     pub unk50: Vec<LoadLevelThing10>,
     pub unk51: u32,
@@ -100,7 +127,9 @@ pub struct LoadLevelPacket {
 // Additional structs
 // ----------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct LoadLevelThing1 {
     pub unk1: u32,
     pub unk2: u32,
@@ -116,7 +145,9 @@ pub struct LoadLevelThing1 {
     pub unk12: u32,
     pub unk13: u32,
 }
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct LoadLevelThing2 {
     pub unk1: u32,
     pub unk2: u32,
@@ -124,12 +155,16 @@ pub struct LoadLevelThing2 {
     pub unk4: u32,
     pub unk5: u32,
 }
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct LoadLevelThing3 {
     pub unk1: u32,
     pub unk2: u32,
 }
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct LoadLevelThing4 {
     pub unk1: u32,
     pub unk2: u32,
@@ -166,7 +201,9 @@ pub struct LoadLevelThing4 {
     pub unk33: u32,
     pub unk34: u32,
 }
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct LoadLevelThing5 {
     pub unk1: u32,
     pub unk2: u32,
@@ -225,7 +262,9 @@ pub struct LoadLevelThing5 {
     pub unk55: u32,
     pub unk56: u32,
 }
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct LoadLevelThing6 {
     pub unk1: u32,
     pub unk2: u32,
@@ -268,7 +307,9 @@ pub struct LoadLevelThing6 {
     pub unk39: u32,
     pub unk40: u32,
 }
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct LoadLevelThing7 {
     pub unk1: u32,
     pub unk2: u32,
@@ -331,7 +372,9 @@ pub struct LoadLevelThing7 {
     pub unk59: u32,
     pub unk60: u32,
 }
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct LoadLevelThing8 {
     pub unk1: u32,
     pub unk2: u32,
@@ -375,12 +418,16 @@ pub struct LoadLevelThing8 {
     pub unk40: u32,
     pub unk41: u32,
 }
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct LoadLevelThing9 {
     pub unk1: u32,
     pub unk2: u32,
 }
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct LoadLevelThing10 {
     pub unk1: u32,
     pub unk2: u32,
@@ -396,7 +443,9 @@ pub struct LoadLevelThing10 {
     pub unk12: u32,
     pub unk13: u32,
 }
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct UnkThing1 {
     pub unk1: u32,
     pub unk2: u32,
@@ -409,7 +458,9 @@ pub struct UnkThing1 {
     pub unk9: u32,
     pub unk10: u32,
 }
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct UnkThing2 {
     pub unk1: u32,
     pub unk2: u32,
