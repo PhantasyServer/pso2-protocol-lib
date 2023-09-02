@@ -12,6 +12,7 @@ pub mod spawn;
 pub mod symbolart;
 use crate::AsciiString;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use half::f16;
 use items::*;
 use login::*;
 use mail::*;
@@ -120,14 +121,24 @@ pub enum Packet {
     Unk042B(Unk042BPacket),
     #[Id(0x04, 0x3B)]
     RemoveObject(RemoveObjectPacket),
+    #[Id(0x04, 0x3C)]
+    ActionUpdate(ActionUpdatePacket),
+    #[Id(0x04, 0x52)]
+    DamageReceive(DamageReceivePacket),
     #[Id(0x04, 0x71)]
     MovementEnd(MovementEndPacket),
+    #[Id(0x04, 0x75)]
+    ActionEnd(ActionEndPacket),
     #[Id(0x04, 0x80)]
     MovementActionServer(MovementActionServerPacket),
+    #[Id(0x04, 0x81)]
+    ActionUpdateServer(ActionUpdateServerPacket),
 
     #[Category(PacketCategory::Unknown)]
     #[Id(0x06, 0x00)]
     SetPlayerID(SetPlayerIDPacket),
+    #[Id(0x06, 0x01)]
+    DealDamage(DealDamagePacket),
 
     #[Id(0x07, 0x00)]
     #[Base]
@@ -175,8 +186,16 @@ pub enum Packet {
     #[Id(0x0E, 0x02)]
     #[NGS]
     PartyInitNGS(PartyInitNGSPacket),
+    #[Id(0x0E, 0x0C)]
+    NewPartySettings(NewPartySettingsPacket),
+    #[Id(0x0E, 0x0D)]
+    PartySettings(PartySettingsPacket),
+    #[Id(0x0E, 0x19)]
+    Unk0E19(Unk0E19Packet),
     #[Id(0x0E, 0x2B)]
     Unk0E2B(Unk0E2BPacket),
+    #[Id(0x0E, 0x2C)]
+    SetInviteDecline(InviteDeclinePacket),
 
     // Item packets [0x0F]
     #[Category(PacketCategory::Item)]
@@ -225,7 +244,7 @@ pub enum Packet {
     #[Id(0x0F, 0xFC)]
     Unk0ffc(Unk0ffcPacket),
 
-    #[Id(0x10, 0x03)]
+    #[Id(0x10, 0x00)]
     #[Base]
     RunLua(LuaPacket),
 
@@ -318,6 +337,8 @@ pub enum Packet {
     #[Id(0x19, 0x01)]
     #[Base]
     SystemMessage(SystemMessagePacket),
+    #[Id(0x19, 0x0F)]
+    LobbyMonitor(LobbyMonitorPacket),
 
     // Mail packets [0x1A]
     #[Category(PacketCategory::Mail)]
@@ -559,6 +580,24 @@ pub struct SetPlayerIDPacket {
     pub unk2: u32,
 }
 
+// 0x06, 0x01
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x06, 0x01)]
+pub struct DealDamagePacket {
+    pub inflicter: ObjectHeader,
+    pub target: ObjectHeader,
+    pub attack_id: u32,
+    pub unk2: u64,
+    pub hitbox_id: u32,
+    pub x_pos: f16,
+    pub y_pos: f16,
+    pub z_pos: f16,
+
+    pub unk4: u16,
+    pub unk5: u64,
+    pub unk6: [u8; 0x18],
+}
+
 // 0x07, 0x00
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x07, 0x00)]
@@ -617,6 +656,13 @@ pub struct SystemMessagePacket {
     pub unk: String,
     pub msg_type: MessageType,
     pub msg_num: u32,
+}
+
+// 0x19, 0x0F
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x19, 0x0F)]
+pub struct LobbyMonitorPacket {
+    pub video_id: u32,
 }
 
 #[repr(u32)]
@@ -766,12 +812,12 @@ pub struct MissionPassItem {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x10, 0x03)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Id(0x10, 0x00)]
 pub struct LuaPacket {
     pub unk1: u16,
     pub unk2: u16,
-    #[VariableStr(0xD975, 0x2F)]
+    // #[VariableStr(0xD975, 0x2F)]
+    #[VariableStr(0, 0)]
     pub lua: AsciiString,
 }
 

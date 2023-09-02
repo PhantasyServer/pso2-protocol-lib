@@ -167,6 +167,34 @@ pub struct RemoveObjectPacket {
     pub removed_object: ObjectHeader,
 }
 
+// 0x04, 0x3C
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x3C)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct ActionUpdatePacket {
+    pub unk1: ObjectHeader,
+    pub performer: ObjectHeader,
+    pub unk2: [u8; 0x20],
+}
+
+// 0x04, 0x52
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x52)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct DamageReceivePacket {
+    pub receiver: ObjectHeader,
+    pub dmg_target: ObjectHeader,
+    pub dmg_inflicter: ObjectHeader,
+    pub unk1: u32,
+    pub dmg_amount: i32,
+    pub new_hp: u32,
+    pub is_crit: u32,
+    pub x_pos: f16,
+    pub y_pos: f16,
+    pub z_pos: f16,
+    pub unk4: [u8; 0xE],
+}
+
 // 0x04, 0x71
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x71)]
@@ -182,6 +210,21 @@ pub struct MovementEndPacket {
     pub unk_z: f16,
     pub unk7: u16,
     pub unk8: u32,
+}
+
+// 0x04, 0x75
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x75)]
+#[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
+pub struct ActionEndPacket {
+    pub unk1: [u8; 0xC],
+    pub performer: ObjectHeader,
+    pub unk2: u32,
+    pub unk3: ObjectHeader,
+    pub unk4: ObjectHeader,
+    pub unk5: [u8; 4],
+    #[VariableStr(0x83EF, 0x40)]
+    pub unk6: AsciiString,
 }
 
 // 0x04, 0x80
@@ -202,6 +245,16 @@ pub struct MovementActionServerPacket {
     #[Magic(0x4315, 0x7A)]
     pub unk9: Vec<u32>,
     pub unk10: u32,
+}
+
+// 0x04, 0x81
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x81)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct ActionUpdateServerPacket {
+    pub receiver: ObjectHeader,
+    pub performer: ObjectHeader,
+    pub unk2: [u8; 0x20],
 }
 
 // ----------------------------------------------------------------

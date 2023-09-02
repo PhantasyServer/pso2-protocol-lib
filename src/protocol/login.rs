@@ -371,7 +371,7 @@ pub struct SalonResponse {
 pub struct NotificationStatusPacket {
     pub new_mail: u32,
     pub unk1: u32,
-    pub unk2: u32,
+    pub campaigns: u32,
     pub unk3: u32,
 }
 
