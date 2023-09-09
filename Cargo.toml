@@ -8,6 +8,7 @@ edition = "2021"
 [features]
 connection = ["dep:rsa"]
 proxy = []
+ppac = []
 vita_enc = ["dep:rc4", "dep:rand"]
 base_enc = ["dep:rand", "dep:aes", "dep:cbc", "dep:sha2", "dep:hmac"]
 ngs_enc = ["dep:rand", "dep:aes", "dep:cbc", "dep:sha2", "dep:zstd"]

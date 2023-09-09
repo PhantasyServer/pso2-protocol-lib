@@ -43,9 +43,8 @@ pub struct EventSpawnPacket {
     pub object: ObjectHeader,
     pub position: Position,
     pub unk1: u16,
-    #[FixedStr(0x1C)]
+    #[FixedStr(0x20)]
     pub name: AsciiString,
-    pub unk2: u32,
     pub unk3: u32,
     pub unk4: [u8; 0xC],
     pub unk5: u16,
@@ -72,8 +71,9 @@ pub struct ObjectSpawnPacket {
     pub object: ObjectHeader,
     pub position: Position,
     pub unk1: u16,
-    #[FixedStr(0x34)]
+    #[FixedStr(0x20)]
     pub name: AsciiString,
+    pub unk2: [u32; 5],
     pub flags: u32,
     #[Len_u32]
     pub data: Vec<u32>,
@@ -134,6 +134,10 @@ pub struct EnemySpawnPacket {
     pub unk13: u16,
     pub unk14: [u8; 0xC],
 }
+
+// ----------------------------------------------------------------
+// Additional structs
+// ----------------------------------------------------------------
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 #[repr(u32)]

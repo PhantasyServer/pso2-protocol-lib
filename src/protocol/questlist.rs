@@ -1,6 +1,10 @@
 use super::{HelperReadWrite, PacketReadWrite};
 use crate::AsciiString;
 
+// ----------------------------------------------------------------
+// Quests packets
+// ----------------------------------------------------------------
+
 // 0x0B, 0x09
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x09)]
@@ -86,6 +90,10 @@ pub struct Unk0BAFPacket {
     pub unk1: u32,
     pub unk2: u32,
 }
+
+// ----------------------------------------------------------------
+// Additional structs
+// ----------------------------------------------------------------
 
 // copied from polaris server
 #[derive(Debug, /* Default, */ Clone, PartialEq, HelperReadWrite)]

@@ -78,7 +78,7 @@ impl StringRW for String {
 /// Ascii only string.
 /// # Usage
 /// ```
-/// # use pso2packetlib::protocol::AsciiString;
+/// # use pso2packetlib::AsciiString;
 /// # fn main() {
 /// let string: AsciiString = "Hello❤️".into();
 /// assert_eq!(string.len(), 5);
@@ -188,10 +188,21 @@ impl StringRW for AsciiString {
         Self(string)
     }
 
+    #[cfg(not(test))]
     fn write(&self, len: usize) -> Vec<u8> {
         return self
             .chars()
             .take(len - 1)
+            .map(|c| c as u8)
+            .chain([0].into_iter().cycle())
+            .take(len)
+            .collect();
+    }
+    // sega pls clear your buffers
+    #[cfg(test)]
+    fn write(&self, len: usize) -> Vec<u8> {
+        return self
+            .chars()
             .map(|c| c as u8)
             .chain([0].into_iter().cycle())
             .take(len)

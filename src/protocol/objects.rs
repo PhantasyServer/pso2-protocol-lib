@@ -1,4 +1,4 @@
-use super::{models::Position, Flags, ObjectHeader, PacketHeader, PacketReadWrite};
+use super::{models::Position, Flags, ObjectHeader, PacketHeader, PacketReadWrite, PacketType};
 use crate::AsciiString;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use half::f16;
@@ -193,6 +193,7 @@ pub struct DamageReceivePacket {
     pub y_pos: f16,
     pub z_pos: f16,
     pub unk4: [u8; 0xE],
+    pub unk5: u32,
 }
 
 // 0x04, 0x71
@@ -262,7 +263,7 @@ pub struct ActionUpdateServerPacket {
 // ----------------------------------------------------------------
 
 impl PacketReadWrite for MovementPacket {
-    fn read(reader: &mut (impl Read + Seek), flags: Flags) -> std::io::Result<Self> {
+    fn read(reader: &mut (impl Read + Seek), flags: Flags, _: PacketType) -> std::io::Result<Self> {
         let mut packet = Self::default();
         reader.read_exact(&mut packet.unk)?;
         if flags.full_movement {
@@ -359,7 +360,7 @@ impl PacketReadWrite for MovementPacket {
         }
         Ok(packet)
     }
-    fn write(&self, is_ngs: bool) -> Vec<u8> {
+    fn write(&self, packet_type: PacketType) -> Vec<u8> {
         let mut tmp_buf = vec![];
         let mut flags = 0u32;
         if let Some(n) = self.ent1_id {
@@ -458,7 +459,7 @@ impl PacketReadWrite for MovementPacket {
                     ..Default::default()
                 },
             )
-            .write(is_ngs)
+            .write(packet_type)
         } else {
             PacketHeader::new(
                 0x04,
@@ -469,7 +470,7 @@ impl PacketReadWrite for MovementPacket {
                     ..Default::default()
                 },
             )
-            .write(is_ngs)
+            .write(packet_type)
         };
         buf.write_all(&self.unk).unwrap();
         if flags != 0xFFFFF {

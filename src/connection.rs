@@ -1,9 +1,10 @@
-use std::io::{Read, Write};
-
+#[cfg(feature = "ppac")]
+use crate::ppac::{Direction, PPACWriter};
 use crate::{
     encryption::{reencrypt, Encryption},
-    protocol::{login::EncryptionRequestPacket, Packet, ProtocolRW},
+    protocol::{login::EncryptionRequestPacket, Packet, PacketType, ProtocolRW},
 };
+use std::io::{Read, Write};
 
 /// Represents a connection between a client and a server
 #[derive(Debug)]
@@ -16,7 +17,11 @@ pub struct Connection {
     packet_length: usize,
     in_keyfile: Option<std::path::PathBuf>,
     out_keyfile: Option<std::path::PathBuf>,
-    is_ngs: bool,
+    packet_type: PacketType,
+    #[cfg(feature = "ppac")]
+    ppac: Option<PPACWriter<std::fs::File>>,
+    #[cfg(feature = "ppac")]
+    direction: Direction,
 }
 impl Connection {
     /// Create a new connection.
@@ -25,7 +30,7 @@ impl Connection {
     /// (only useful to proxies).
     pub fn new(
         stream: std::net::TcpStream,
-        is_ngs: bool,
+        packet_type: PacketType,
         in_keyfile: Option<std::path::PathBuf>,
         out_keyfile: Option<std::path::PathBuf>,
     ) -> Self {
@@ -38,8 +43,20 @@ impl Connection {
             packet_length: 0,
             in_keyfile,
             out_keyfile,
-            is_ngs,
+            packet_type,
+            #[cfg(feature = "ppac")]
+            ppac: None,
+            #[cfg(feature = "ppac")]
+            direction: Direction::ToServer,
         }
+    }
+    /// Change connection type.
+    pub fn change_packet_type(&mut self, packet_type: PacketType) {
+        #[cfg(feature = "ppac")]
+        if let Some(writer) = &mut self.ppac {
+            let _ = writer.change_packet_type(packet_type);
+        }
+        self.packet_type = packet_type;
     }
     /// Read a packet from stream.
     pub fn read_packet(&mut self) -> std::io::Result<Packet> {
@@ -66,6 +83,23 @@ impl Connection {
         }
     }
 
+    /// Create a packet dump file. `direction` is the direction of the `write` side of the
+    /// connection.
+    #[cfg_attr(docsrs, doc(cfg(feature = "ppac")))]
+    #[cfg(feature = "ppac")]
+    pub fn create_ppac<P: AsRef<std::path::Path>>(
+        &mut self,
+        path: P,
+        direction: Direction,
+    ) -> std::io::Result<()> {
+        self.ppac = Some(PPACWriter::new(
+            std::fs::File::create(path)?,
+            self.packet_type,
+        )?);
+        self.direction = direction;
+        Ok(())
+    }
+
     fn get_packet(&mut self) -> std::io::Result<Option<Packet>> {
         let mut output_data = vec![0u8; 0];
         if self.packet_length == 0 {
@@ -79,13 +113,24 @@ impl Connection {
             } else {
                 self.encryption.decrypt(&output_data)?
             };
-            let mut packets = Packet::read(&output_data, self.is_ngs)?;
+            #[cfg(feature = "ppac")]
+            if let Some(writer) = &mut self.ppac {
+                let direction = match self.direction {
+                    Direction::ToServer => Direction::ToClient,
+                    Direction::ToClient => Direction::ToServer,
+                };
+                writer.write_data(crate::ppac::get_now(), direction, &output_data)?;
+            }
+            let mut packets = Packet::read(&output_data, self.packet_type)?;
             self.read_packets.append(&mut packets);
             let packet = self.get_one_packet();
             if let Packet::EncryptionRequest(data) = &packet {
                 if let Some(keyfile) = &self.in_keyfile {
-                    self.encryption =
-                        Encryption::from_rsa_data(&data.rsa_data, self.is_ngs, keyfile)?;
+                    self.encryption = Encryption::from_rsa_data(
+                        &data.rsa_data,
+                        matches!(self.packet_type, PacketType::NGS),
+                        keyfile,
+                    )?;
                 }
             }
             return Ok(Some(packet));
@@ -99,17 +144,32 @@ impl Connection {
             if let Some(out_keyfile) = &self.out_keyfile {
                 if let Some(in_keyfile) = &self.in_keyfile {
                     let mut new_packet = EncryptionRequestPacket::default();
-                    self.encryption =
-                        Encryption::from_rsa_data(&data.rsa_data, self.is_ngs, in_keyfile)?;
+                    self.encryption = Encryption::from_rsa_data(
+                        &data.rsa_data,
+                        matches!(self.packet_type, PacketType::NGS),
+                        in_keyfile,
+                    )?;
                     new_packet.rsa_data = reencrypt(&data.rsa_data, in_keyfile, out_keyfile)?;
-                    self.write_buffer.extend_from_slice(
-                        &Packet::EncryptionRequest(new_packet).write(self.is_ngs),
-                    );
+                    self.write_buffer.extend_from_slice(&{
+                        let packet = Packet::EncryptionRequest(new_packet).write(self.packet_type);
+                        #[cfg(feature = "ppac")]
+                        if let Some(writer) = &mut self.ppac {
+                            writer.write_data(crate::ppac::get_now(), self.direction, &packet)?;
+                        }
+                        packet
+                    });
                 }
             }
         } else {
             self.write_buffer
-                .extend_from_slice(&self.encryption.encrypt(&{ packet.write(self.is_ngs) })?);
+                .extend_from_slice(&self.encryption.encrypt(&{
+                    let packet = packet.write(self.packet_type);
+                    #[cfg(feature = "ppac")]
+                    if let Some(writer) = &mut self.ppac {
+                        writer.write_data(crate::ppac::get_now(), self.direction, &packet)?;
+                    }
+                    packet
+                })?);
         }
         if self.write_buffer.is_empty() {
             return Ok(0);

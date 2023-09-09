@@ -21,18 +21,18 @@ pub fn packet_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
     let gen = quote! {
         #[automatically_derived]
         impl PacketReadWrite for #name {
-            fn read(reader: &mut (impl std::io::Read + std::io::Seek), flags: crate::protocol::Flags) -> std::io::Result<Self> {
+            fn read(reader: &mut (impl std::io::Read + std::io::Seek), flags: crate::protocol::Flags, packet_type: crate::protocol::PacketType) -> std::io::Result<Self> {
                 use byteorder::{LittleEndian, ReadBytesExt};
                 use crate::protocol::HelperReadWrite;
                 use crate::asciistring::StringRW;
                 #read
             }
-            fn write(&self, is_ngs: bool) -> Vec<u8> {
+            fn write(&self, packet_type: crate::protocol::PacketType) -> Vec<u8> {
                 use byteorder::{LittleEndian, WriteBytesExt};
                 use crate::protocol::{HelperReadWrite, Flags};
                 use crate::asciistring::StringRW;
                 use std::io::Write;
-                let mut buf = crate::protocol::PacketHeader::new(#id, #subid, #flags).write(is_ngs);
+                let mut buf = crate::protocol::PacketHeader::new(#id, #subid, #flags).write(packet_type);
                 let writer = &mut buf;
                 #write
                 buf
@@ -52,7 +52,9 @@ pub fn helper_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
 
     match &ast.data {
         Data::Struct(data) if matches!(is_flags, Some(_)) => {
-            let Some(repr_type) = is_flags else {unreachable!()};
+            let Some(repr_type) = is_flags else {
+                unreachable!()
+            };
             parse_flags_struct(&mut read, &mut write, data, repr_type)?
         }
         Data::Struct(data) => parse_struct_field(&mut read, &mut write, data)?,
@@ -63,12 +65,12 @@ pub fn helper_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
     let gen = quote! {
         #[automatically_derived]
         impl HelperReadWrite for #name {
-            fn read(reader: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Result<Self> {
+            fn read(reader: &mut (impl std::io::Read + std::io::Seek), packet_type: crate::protocol::PacketType) -> std::io::Result<Self> {
                 use byteorder::{LittleEndian, ReadBytesExt};
                 use crate::asciistring::StringRW;
                 #read
             }
-            fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+            fn write(&self, writer: &mut impl std::io::Write, packet_type: crate::protocol::PacketType) -> std::io::Result<()> {
                 use byteorder::{LittleEndian, WriteBytesExt};
                 use crate::asciistring::StringRW;
                 #write
@@ -250,7 +252,30 @@ fn parse_struct_field(read: &mut TS2, write: &mut TS2, data: &DataStruct) -> syn
                 }
             }
         }
-        check_syn_type(&field.ty, read, write, name, &settings, true)?;
+        let mut tmp_read = quote! {};
+        let mut tmp_write = quote! {};
+        check_syn_type(
+            &field.ty,
+            &mut tmp_read,
+            &mut tmp_write,
+            name,
+            &settings,
+            true,
+        )?;
+        if let Some(data) = settings.only_on {
+            read.extend(quote! {let #name = if matches!(packet_type, #data) {
+                #tmp_read
+                #name
+            } else {
+                Default::default()
+            };});
+            write.extend(quote! {if matches!(packet_type, #data) {
+                #tmp_write
+            }});
+        } else {
+            read.extend(tmp_read);
+            write.extend(tmp_write)
+        }
         if settings.seek_after != 0 {
             let seek_after = settings.seek_after;
             read.extend(quote! {reader.seek(std::io::SeekFrom::Current(#seek_after))?;});
@@ -268,6 +293,7 @@ struct Settings {
     str_type: StringType,
     is_default: bool,
     to_skip: bool,
+    only_on: Option<TS2>,
 }
 
 fn get_attrs(
@@ -282,6 +308,18 @@ fn get_attrs(
         "Read_default" => set.is_default = true,
         "PSOTime" => set.is_psotime = true,
         "Skip" => set.to_skip = true,
+        "OnlyOn" => {
+            let attrs = match list {
+                Some(x) => &x.tokens,
+                None => {
+                    return Err(syn::Error::new(
+                        Span::call_site(),
+                        "Invalid syntax \nPerhaps you ment OnlyOn(..)?",
+                    ))
+                }
+            };
+            set.only_on = Some(attrs.clone());
+        }
         "Seek" => {
             let amount: LitInt = list.unwrap().parse_args()?;
             let amount: i64 = amount.base10_parse()?;
@@ -581,14 +619,10 @@ fn check_code_type(
             }
             _ => return Err(syn::Error::new(span, "Unknown string type")),
         },
-        "Character" => {
-            read.extend(quote! {let #name = Character::read(reader)?;});
-            write.extend(quote! {#write_name.write(writer, self.is_global).unwrap();});
-        }
         _ => {
             let out_type = Ident::new(&string, Span::call_site());
-            read.extend(quote! {let #name = #out_type::read(reader)?;});
-            write.extend(quote! {#write_name.write(writer).unwrap();});
+            read.extend(quote! {let #name = #out_type::read(reader, packet_type)?;});
+            write.extend(quote! {#write_name.write(writer, packet_type).unwrap();});
         }
     }
     Ok((read, write))

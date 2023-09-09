@@ -1,7 +1,17 @@
-#![allow(unused_imports)]
+use crate::AsciiString;
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use half::f16;
+use packetlib_impl::{HelperReadWrite, PacketReadWrite, ProtocolReadWrite};
+use std::{
+    io::{Cursor, Read, Seek, Write},
+    time::Duration,
+};
+
+pub mod friends;
 pub mod items;
 pub mod login;
 pub mod mail;
+pub mod missions;
 pub mod models;
 pub mod objects;
 pub mod orders;
@@ -10,24 +20,17 @@ pub mod questlist;
 pub mod server;
 pub mod spawn;
 pub mod symbolart;
-use crate::AsciiString;
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use half::f16;
+use friends::*;
 use items::*;
 use login::*;
 use mail::*;
-use models::{character::Character, Position};
+use missions::*;
 use objects::*;
 use orders::*;
-use packetlib_impl::{HelperReadWrite, PacketReadWrite, ProtocolReadWrite};
 use party::*;
 use questlist::*;
 use server::*;
 use spawn::*;
-use std::{
-    io::{Cursor, Read, Seek, Write},
-    time::Duration,
-};
 use symbolart::*;
 
 // Code is getting really messy.
@@ -37,28 +40,44 @@ mod private {
     impl Sealed for crate::protocol::Packet {}
 }
 
+#[repr(u8)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub enum PacketType {
+    #[default]
+    NGS,
+    Classic,
+    NA,
+    JP,
+    Vita,
+    Raw,
+}
+
 /// Read/Write trait for [`Packet`].
 ///
 /// This trait is sealed and cannot be implemented for other types.
 pub trait ProtocolRW: private::Sealed {
     /// Read packets from input slice.
-    fn read(input: &[u8], is_ngs: bool) -> std::io::Result<Vec<Self>>;
+    fn read(input: &[u8], packet_type: PacketType) -> std::io::Result<Vec<Self>>;
     /// Write a packet to a byte vector.
-    fn write(&self, is_ngs: bool) -> Vec<u8>;
+    fn write(&self, packet_type: PacketType) -> Vec<u8>;
     /// Get category of the packet.
     fn get_category(&self) -> PacketCategory;
 }
 
 pub(crate) trait PacketReadWrite: Sized {
     /// Read a packet from stream.
-    fn read(reader: &mut (impl Read + Seek), flags: Flags) -> std::io::Result<Self>;
+    fn read(
+        reader: &mut (impl Read + Seek),
+        flags: Flags,
+        packet_type: PacketType,
+    ) -> std::io::Result<Self>;
     /// Write a packet to a Vec.
-    fn write(&self, is_ngs: bool) -> Vec<u8>;
+    fn write(&self, packet_type: PacketType) -> Vec<u8>;
 }
 
 pub(crate) trait HelperReadWrite: Sized {
-    fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self>;
-    fn write(&self, writer: &mut impl Write) -> std::io::Result<()>;
+    fn read(reader: &mut (impl Read + Seek), packet_type: PacketType) -> std::io::Result<Self>;
+    fn write(&self, writer: &mut impl Write, packet_type: PacketType) -> std::io::Result<()>;
 }
 
 /// All known packets
@@ -77,7 +96,7 @@ pub enum Packet {
     #[Id(0x03, 0x04)]
     LoadingScreenTransition,
     #[Id(0x03, 0x08)]
-    #[Base]
+    #[Classic]
     ServerHello(ServerHelloPacket),
     #[Id(0x03, 0x08)]
     #[NGS]
@@ -141,7 +160,7 @@ pub enum Packet {
     DealDamage(DealDamagePacket),
 
     #[Id(0x07, 0x00)]
-    #[Base]
+    #[Classic]
     ChatMessage(ChatMessage),
     #[Id(0x07, 0x00)]
     #[NGS]
@@ -150,10 +169,12 @@ pub enum Packet {
     // Spawn packets [0x08]
     #[Category(PacketCategory::Spawning)]
     #[Id(0x08, 0x04)]
-    #[Base]
+    #[Classic]
     CharacterSpawn(CharacterSpawnPacket),
+    #[cfg(not(test))]
     #[Id(0x08, 0x09)]
     EventSpawn(EventSpawnPacket),
+    #[cfg(not(test))]
     #[Id(0x08, 0x0B)]
     ObjectSpawn(ObjectSpawnPacket),
     #[Id(0x08, 0x0D)]
@@ -180,35 +201,87 @@ pub enum Packet {
 
     // Party packets [0x0E]
     #[Category(PacketCategory::Party)]
+    #[Id(0x0E, 0x00)]
+    #[Classic]
+    AddMember(AddMemberPacket),
+    #[Id(0x0E, 0x00)]
+    #[NGS]
+    AddMemberNGS(AddMemberNGSPacket),
+    #[Id(0x0E, 0x01)]
+    RemoveMember(RemoveMemberPacket),
     #[Id(0x0E, 0x02)]
-    #[Base]
+    #[Classic]
     PartyInit(PartyInitPacket),
     #[Id(0x0E, 0x02)]
     #[NGS]
     PartyInitNGS(PartyInitNGSPacket),
+    #[Id(0x0E, 0x03)]
+    RemovedFromParty,
+    #[Id(0x0E, 0x04)]
+    PartyInviteResult(PartyInviteResultPacket),
+    #[Id(0x0E, 0x05)]
+    PartyInviteRequest(PartyInviteRequestPacket),
+    #[Id(0x0E, 0x06)]
+    NewInvite(NewInvitePacket),
+    #[Id(0x0E, 0x07)]
+    AcceptInvite(AcceptInvitePacket),
+    #[Id(0x0E, 0x09)]
+    LeaveParty,
     #[Id(0x0E, 0x0C)]
     NewPartySettings(NewPartySettingsPacket),
     #[Id(0x0E, 0x0D)]
     PartySettings(PartySettingsPacket),
+    #[Id(0x0E, 0x0E)]
+    TransferLeader(TransferLeaderPacket),
+    #[Id(0x0E, 0x0F)]
+    NewLeader(NewLeaderPacket),
+    #[Id(0x0E, 0x10)]
+    KickMember(KickMemberPacket),
+    #[Id(0x0E, 0x11)]
+    KickedMember(KickedMemberPacket),
+    #[Id(0x0E, 0x17)]
+    DisbandParty(DisbandPartyPacket),
+    #[Id(0x0E, 0x18)]
+    PartyDisbandedMarker,
     #[Id(0x0E, 0x19)]
     Unk0E19(Unk0E19Packet),
+    #[Id(0x0E, 0x1B)]
+    PartyInfo(PartyInfoPacket),
+    #[Id(0x0E, 0x1C)]
+    PartyInfoStopper(PartyInfoStopperPacker),
+    #[Id(0x0E, 0x1D)]
+    GetPartyDetails(GetPartyDetailsPacket),
+    #[Id(0x0E, 0x1E)]
+    PartyDetails(PartyDetailsPacket),
+    #[Id(0x0E, 0x1F)]
+    PartyDetailsStopper,
+    #[Id(0x0E, 0x28)]
+    SetBusy,
+    #[Id(0x0E, 0x29)]
+    SetNotBusy,
     #[Id(0x0E, 0x2B)]
-    Unk0E2B(Unk0E2BPacket),
+    NewBusyState(NewBusyStatePacket),
     #[Id(0x0E, 0x2C)]
     SetInviteDecline(InviteDeclinePacket),
+    #[Id(0x0E, 0x2E)]
+    GetPartyInfo(GetPartyInfoPacket),
+    #[Id(0x0E, 0x4F)]
+    SetPartyColor(SetPartyColorPacket),
+    #[Id(0x0E, 0x67)]
+    PartySetupFinish(PartySetupFinishPacket),
 
     // Item packets [0x0F]
     #[Category(PacketCategory::Item)]
     #[Id(0x0F, 0x00)]
     LoadItemAttributes(ItemAttributesPacket),
     #[Id(0x0F, 0x0D)]
-    #[Base]
+    #[Classic]
     LoadPlayerInventory(LoadPlayerInventoryPacket),
     #[Id(0x0F, 0x0D)]
     #[NGS]
     LoadPlayerInventoryNGS(LoadPlayerInventoryNGSPacket),
     #[Id(0x0F, 0x13)]
-    #[Base]
+    #[Classic]
     LoadStorages(LoadStoragesPacket),
     #[Id(0x0F, 0x13)]
     #[NGS]
@@ -245,27 +318,31 @@ pub enum Packet {
     Unk0ffc(Unk0ffcPacket),
 
     #[Id(0x10, 0x00)]
-    #[Base]
+    #[Classic]
     RunLua(LuaPacket),
 
     // Login packets [0x11]
     #[Category(PacketCategory::Login)]
     #[Id(0x11, 0x00)]
-    #[Base]
+    #[Classic]
     SegaIDLogin(SegaIDLoginPacket),
     #[Id(0x11, 0x01)]
-    #[Base]
+    #[Classic]
     LoginResponse(LoginResponsePacket),
     #[Id(0x11, 0x02)]
     CharacterListRequest,
     #[Id(0x11, 0x03)]
-    #[Base]
+    #[Classic]
     CharacterListResponse(CharacterListPacket),
     #[Id(0x11, 0x04)]
     StartGame(StartGamePacket),
     #[Id(0x11, 0x05)]
-    #[Base]
+    #[Classic]
     CharacterCreate(CharacterCreatePacket),
+    #[Id(0x11, 0x06)]
+    CharacterDeletionRequest(CharacterDeletionRequestPacket),
+    #[Id(0x11, 0x08)]
+    CharacterDeletion(CharacterDeletionPacket),
     #[Id(0x11, 0x0B)]
     EncryptionRequest(EncryptionRequestPacket),
     #[Id(0x11, 0x0C)]
@@ -282,7 +359,7 @@ pub enum Packet {
     #[NGS]
     UserInfoNGS(UserInfoNGSPacket),
     #[Id(0x11, 0x1B)]
-    #[Base]
+    #[Classic]
     UserInfo(UserInfoPacket),
     #[Id(0x11, 0x1E)]
     NicknameRequest(NicknameRequestPacket),
@@ -291,7 +368,7 @@ pub enum Packet {
     #[Id(0x11, 0x2B)]
     ClientGoodbye,
     #[Id(0x11, 0x2C)]
-    #[Base]
+    #[Classic]
     BlockBalance(BlockBalancePacket),
     #[Id(0x11, 0x2D)]
     SystemInformation(SystemInformationPacket),
@@ -306,15 +383,15 @@ pub enum Packet {
     #[Id(0x11, 0x55)]
     CreateCharacter2Response(CreateCharacter2ResponsePacket),
     #[Id(0x11, 0x63)]
-    #[Base]
+    #[Classic]
     VitaLogin(VitaLoginPacket),
     #[Id(0x11, 0x66)]
     SalonEntryRequest,
     #[Id(0x11, 0x67)]
-    #[Base]
+    #[Classic]
     SalonEntryResponse(SalonResponse),
     #[Id(0x11, 0x6B)]
-    #[Base]
+    #[Classic]
     SegaIDInfoRequest,
     #[Id(0x11, 0x71)]
     NotificationStatus(NotificationStatusPacket),
@@ -322,20 +399,42 @@ pub enum Packet {
     LoginHistoryRequest,
     #[Id(0x11, 0x87)]
     LoginHistoryResponse(LoginHistoryPacket),
+    #[Id(0x11, 0x90)]
+    CharacterUndeletionRequest(CharacterUndeletionRequestPacket),
+    #[Id(0x11, 0x91)]
+    CharacterUndeletion(CharacterUndeletionPacket),
+    #[Id(0x11, 0x97)]
+    CharacterRenameRequest(CharacterRenameRequestPacket),
+    #[Id(0x11, 0x98)]
+    CharacterRename(CharacterRenamePacket),
+    #[Id(0x11, 0xB8)]
+    CharacterMoveRequest(CharacterMoveRequestPacket),
+    #[Id(0x11, 0xB9)]
+    CharacterMove(CharacterMovePacket),
     #[Id(0x11, 0xEA)]
     NicknameError(NicknameErrorPacket),
     #[Id(0x11, 0xED)]
-    #[Base]
+    #[Classic]
     BannerList(BannerListPacket),
     #[Id(0x11, 0xEE)]
     EmailCodeRequest(EmailCodeRequestPacket),
     #[Id(0x11, 0xFF)]
-    #[Base]
+    #[Classic]
     Unk11FF(Unk11FFPacket),
+
+    // Friends packets [0x18]
+    #[Category(PacketCategory::Friends)]
+    #[Id(0x18, 0x14)]
+    FriendListRequest(FriendListRequestPacket),
+    #[Id(0x18, 0x15)]
+    FriendList(FriendListPacket),
+    #[Id(0x18, 0x18)]
+    SendFriendRequest(SendFriendRequestPacket),
+    #[Id(0x18, 0x1A)]
+    AddedRequest(AddedRequestPacket),
 
     #[Category(PacketCategory::Unknown)]
     #[Id(0x19, 0x01)]
-    #[Base]
     SystemMessage(SystemMessagePacket),
     #[Id(0x19, 0x0F)]
     LobbyMonitor(LobbyMonitorPacket),
@@ -356,6 +455,11 @@ pub enum Packet {
     MailBody(MailBodyPacket),
     #[Id(0x1A, 0x0D)]
     NewMailMarker,
+
+    // Character packets [0x1C]
+    #[Category(PacketCategory::Characters)]
+    #[Id(0x1C, 0x10)]
+    GetNearbyCharacters,
 
     // Daily order packets [0x1F]
     #[Category(PacketCategory::DailyOrders)]
@@ -396,10 +500,10 @@ pub enum Packet {
     #[Id(0x2F, 0x07)]
     SymbolArtList(SymbolArtListPacket),
     #[Id(0x2F, 0x08)]
-    #[Base]
+    #[Classic]
     SendSymbolArt(SendSymbolArtPacket),
     #[Id(0x2F, 0x09)]
-    #[Base]
+    #[Classic]
     ReceiveSymbolArt(ReceiveSymbolArtPacket),
 
     // ARKS Misions packets [0x4A]
@@ -410,8 +514,10 @@ pub enum Packet {
     MissionList(MissionListPacket),
     #[Id(0x4A, 0x03)]
     Unk4A03(Unk4A03Packet),
+    #[Id(0x4A, 0x0C)]
+    SetTrackedMission(SetTrackedMissionPacket),
 
-    // Base Mission Pass packets [0x4D]
+    // Classic Mission Pass packets [0x4D]
     #[Category(PacketCategory::MissionPass)]
     #[Id(0x4D, 0x00)]
     MissionPassInfoRequest,
@@ -424,6 +530,8 @@ pub enum Packet {
 
     //Other packets
     #[Unknown]
+    Raw(Vec<u8>),
+    #[Unknown]
     Unknown((PacketHeader, Vec<u8>)),
 }
 
@@ -431,7 +539,6 @@ pub enum Packet {
 #[derive(Debug, Default, Clone, PartialEq, ProtocolReadWrite)]
 // bare minimum specifically for proxies
 pub enum Packet {
-    // TODO: we need to implement other "server changing" packets
     #[default]
     #[Empty]
     None,
@@ -441,6 +548,8 @@ pub enum Packet {
     EncryptionResponse(EncryptionResponsePacket),
     #[Id(0x11, 0x3D)]
     ShipList(ShipListPacket),
+    #[Unknown]
+    Raw(Vec<u8>),
     #[Unknown]
     Unknown((PacketHeader, Vec<u8>)),
 }
@@ -465,15 +574,19 @@ pub enum PacketCategory {
     Item,
     /// Login related packets. See [`login`]
     Login,
+    /// Friends related packets. See [`friends`]
+    Friends,
     /// Mail related packets. See [`mail`]
     Mail,
+    /// Charater related packets.
+    Characters,
     /// Daily orders related packets.
     DailyOrders,
     /// Settings related packets.
     Settings,
     /// Symbol Art related packets. See [`symbolart`]
     SymbolArt,
-    /// ARKS Missions related packets.
+    /// ARKS Missions related packets. See [`missions`]
     ARKSMissions,
     /// Classic Mission pass related packets.
     MissionPass,
@@ -493,15 +606,15 @@ impl PacketHeader {
     fn new(id: u8, subid: u16, flag: Flags) -> Self {
         Self { id, subid, flag }
     }
-    fn read(reader: &mut (impl Read + Seek), is_ngs: bool) -> std::io::Result<Self> {
-        let (id, subid, flag) = if !is_ngs {
+    fn read(reader: &mut (impl Read + Seek), packet_type: PacketType) -> std::io::Result<Self> {
+        let (id, subid, flag) = if !matches!(packet_type, PacketType::NGS) {
             let id = reader.read_u8()?;
             let subid = reader.read_u8()? as u16;
-            let flag = Flags::read(reader)?;
+            let flag = Flags::read(reader, packet_type)?;
             reader.read_u8()?;
             (id, subid, flag)
         } else {
-            let flag = Flags::read(reader)?;
+            let flag = Flags::read(reader, packet_type)?;
             let id = reader.read_u8()?;
             let subid = reader.read_u16::<LittleEndian>()?;
             (id, subid, flag)
@@ -509,15 +622,15 @@ impl PacketHeader {
 
         Ok(Self { id, subid, flag })
     }
-    fn write(&self, is_ngs: bool) -> Vec<u8> {
+    fn write(&self, packet_type: PacketType) -> Vec<u8> {
         let mut buf = vec![];
-        if !is_ngs {
+        if !matches!(packet_type, PacketType::NGS) {
             buf.write_u8(self.id).unwrap();
             buf.write_u8(self.subid as u8).unwrap();
-            self.flag.write(&mut buf).unwrap();
+            self.flag.write(&mut buf, packet_type).unwrap();
             buf.write_u8(0).unwrap();
         } else {
-            self.flag.write(&mut buf).unwrap();
+            self.flag.write(&mut buf, packet_type).unwrap();
             buf.write_u8(self.id).unwrap();
             buf.write_u16::<LittleEndian>(self.subid).unwrap();
         }
@@ -549,6 +662,7 @@ pub enum EntityType {
     Map = 5,
     Object = 6,
     Unk1 = 7,
+    Party = 13,
     Unk2 = 22,
 
     #[Read_default]
@@ -680,60 +794,6 @@ pub enum MessageType {
 
     #[Read_default]
     Undefined = 0xFFFF_FFFF,
-}
-
-// 0x4A, 0x01
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x4A, 0x01)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-pub struct MissionListPacket {
-    pub unk1: u32,
-    #[Magic(0xC691, 0x47)]
-    pub missions: Vec<Mission>,
-    pub daily_update: u32,
-    pub weekly_update: u32,
-    pub tier_update: u32,
-}
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
-pub struct Mission {
-    /*5 - main
-    1 - daily
-    2 - weekly
-    7 - tier */
-    pub mission_type: u32,
-    pub start_date: u32,
-    pub end_date: u32,
-    pub unk4: u32,
-    pub unk5: u32,
-    pub completion_date: u32,
-    pub unk7: u32,
-    pub unk8: u32,
-    pub unk9: u32,
-    pub unk10: u32,
-    pub unk11: u32,
-    pub unk12: u32,
-    pub unk13: u32,
-    pub unk14: u32,
-    pub unk15: u32,
-}
-
-// 0x4A, 0x03
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x4A, 0x03)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-pub struct Unk4A03Packet {
-    pub unk1: u32,
-    #[Magic(0xD20D, 0xDD)]
-    pub unk2: Vec<Mission>,
-    #[Magic(0xD20D, 0xDD)]
-    pub unk3: Vec<u32>,
-    #[Magic(0xD20D, 0xDD)]
-    pub unk4: Vec<Unk2Struct>,
-    pub unk5: u32,
-}
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
-pub struct Unk2Struct {
-    pub unk1: [u32; 0x40],
 }
 
 // 0x4D, 0x01
@@ -868,68 +928,98 @@ fn duration_to_psotime(time: Duration) -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, io::Write, path::PathBuf};
-
+    use crate::ppac::PPACReader;
     use crate::protocol::{Packet, ProtocolRW};
+    use std::{fs, io::BufRead, io::BufReader, io::Write, path::PathBuf};
     #[test]
     fn file_check() {
         // this is hard to test, because original server doesn't clear output buffers
-        let mut failed_paths = vec![];
-        traverse_dir("test_data/ngs", true, &mut failed_paths);
-        traverse_dir("test_data/base", false, &mut failed_paths);
-        if !failed_paths.is_empty() {
-            println!("Fails:");
-            for item in failed_paths {
-                println!("{:?}", item);
-            }
+        let mut is_failed = false;
+        traverse_dir2("test_data", &mut is_failed);
+        if is_failed {
             panic!();
         }
     }
 
-    fn traverse_dir<T: AsRef<std::path::Path>>(
-        path: T,
-        is_ngs: bool,
-        failed_paths: &mut Vec<PathBuf>,
-    ) {
+    fn traverse_dir2<T: AsRef<std::path::Path>>(path: T, is_failed: &mut bool) {
         for entry in fs::read_dir(path).unwrap() {
             let entry = entry.unwrap().path();
             if entry.is_dir() {
-                traverse_dir(entry, is_ngs, failed_paths);
+                traverse_dir2(entry, is_failed);
             } else if entry.is_file() {
-                print!("Testing: {:?} - ", entry);
-                let in_data = fs::read(&entry).unwrap();
-                let packet = Packet::read(&in_data, is_ngs).unwrap();
-                let out_data = packet[0].write(is_ngs);
-                if in_data.len() != out_data.len() {
-                    println!(
-                        "FAIL (different length - in: 0x{:X}, out: 0x{:X})",
-                        in_data.len(),
-                        out_data.len()
-                    );
-                    fs::File::create(format!(
-                        "failed_tests/len_{}",
-                        entry.file_name().unwrap().to_string_lossy()
-                    ))
-                    .unwrap()
-                    .write_all(&out_data)
-                    .unwrap();
+                match entry.extension() {
+                    Some(ext) => {
+                        if ext != "pak" {
+                            continue;
+                        }
+                    }
+                    None => continue,
+                }
+                println!("Testing: {:?}", entry);
+                let reader = BufReader::new(fs::File::open(&entry).unwrap());
+                let mut reader = PPACReader::open(reader).unwrap();
+                reader.set_out_type(crate::ppac::OutputType::Both);
 
-                    failed_paths.push(entry.to_path_buf());
-                } else if in_data != out_data {
-                    println!("FAIL (different data)");
-                    let _ = fs::create_dir("failed_tests");
-                    fs::File::create(format!(
-                        "failed_tests/data_{}",
-                        entry.file_name().unwrap().to_string_lossy()
-                    ))
-                    .unwrap()
-                    .write_all(&out_data)
-                    .unwrap();
-                    failed_paths.push(entry.to_path_buf());
-                } else {
-                    println!("PASS")
+                while let Some(packet) = reader.read().unwrap() {
+                    let in_data = match packet.data {
+                        Some(data) => data,
+                        None => continue,
+                    };
+                    let id = format!(
+                        "{}_{:X}",
+                        packet.time.as_nanos(),
+                        u32::from_be_bytes(in_data[4..8].try_into().unwrap())
+                    );
+                    let out_type = packet.protocol_type;
+                    let packet = packet.packet.unwrap();
+                    let out_data = packet.write(out_type);
+                    if in_data.len() != out_data.len() {
+                        println!(
+                            "{id} - FAIL (different length - in: 0x{:X}, out: 0x{:X})",
+                            in_data.len(),
+                            out_data.len()
+                        );
+                        *is_failed = true;
+                        let path = format!(
+                            "failed_tests/{}/{id}_len",
+                            entry.file_name().unwrap().to_string_lossy()
+                        );
+                        create_dir(&path).unwrap();
+                        fs::File::create(format!("{path}/in.bin"))
+                            .unwrap()
+                            .write_all(&in_data)
+                            .unwrap();
+                        fs::File::create(format!("{path}/out.bin"))
+                            .unwrap()
+                            .write_all(&out_data)
+                            .unwrap();
+                    } else if in_data != out_data {
+                        println!("{id} - FAIL (different data)");
+                        *is_failed = true;
+                        let path = format!(
+                            "failed_tests/{}/{id}_data",
+                            entry.file_name().unwrap().to_string_lossy()
+                        );
+                        create_dir(&path).unwrap();
+                        fs::File::create(format!("{path}/in.bin"))
+                            .unwrap()
+                            .write_all(&in_data)
+                            .unwrap();
+                        fs::File::create(format!("{path}/out.bin"))
+                            .unwrap()
+                            .write_all(&out_data)
+                            .unwrap();
+                    }
                 }
             }
+        }
+    }
+
+    fn create_dir<P: AsRef<std::path::Path>>(filename: P) -> std::io::Result<()> {
+        match fs::create_dir_all(filename) {
+            Ok(()) => Ok(()),
+            Err(x) if x.kind() == std::io::ErrorKind::AlreadyExists => Ok(()),
+            Err(x) => Err(x),
         }
     }
 }

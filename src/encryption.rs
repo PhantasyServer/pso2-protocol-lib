@@ -84,13 +84,17 @@ impl Encryption {
         }
         #[cfg(feature = "vita_enc")]
         if dec_data.len() <= 0x30 {
-            use rc4::KeyInit;
+            use rc4::{KeyInit, StreamCipher};
             let mut rc4_key = [0u8; 0x10];
+            let mut secret = [0u8; 0x10];
             rc4_key.clone_from_slice(&dec_data[0x10..0x20]);
+            secret.clone_from_slice(&dec_data[0x00..0x10]);
+            let mut tmp_dec = Rc4::new(&rc4_key.into());
+            tmp_dec.apply_keystream(&mut secret);
             return Ok(Self::Rc4(Rc4Enc {
                 decryptor: Box::new(Rc4::new(&rc4_key.into())),
                 encryptor: Box::new(Rc4::new(&rc4_key.into())),
-                key: rc4_key,
+                secret,
             }));
         }
         Ok(Self::None)
@@ -103,7 +107,7 @@ impl Encryption {
             #[cfg(feature = "ngs_enc")]
             Self::AesNgs(x) => x.secret.clone(),
             #[cfg(feature = "vita_enc")]
-            Self::Rc4(x) => x.key.to_vec(),
+            Self::Rc4(x) => x.secret.to_vec(),
         }
     }
     pub fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
@@ -270,7 +274,7 @@ impl AesNgs {
 pub struct Rc4Enc {
     decryptor: Box<Rc4<U16>>,
     encryptor: Box<Rc4<U16>>,
-    key: [u8; 0x10],
+    secret: [u8; 0x10],
 }
 #[cfg(feature = "vita_enc")]
 impl Rc4Enc {

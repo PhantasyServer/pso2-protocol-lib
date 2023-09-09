@@ -1,9 +1,9 @@
-use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
+use super::{HelperReadWrite, ObjectHeader, PacketReadWrite, PacketType};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::time::Duration;
 
 // ----------------------------------------------------------------
-// Loading packets
+// Items packets
 // ----------------------------------------------------------------
 
 // 0x0F, 0x00
@@ -178,6 +178,7 @@ pub struct Unk0fefPacket {
 pub struct Unk0ffcPacket {
     #[Magic(0x3145, 0x21)]
     pub ids: Vec<Unk0ffc>,
+    pub unk: u32,
 }
 
 // ----------------------------------------------------------------
@@ -357,8 +358,9 @@ impl PacketReadWrite for LoadItemPacket {
     fn read(
         reader: &mut (impl std::io::Read + std::io::Seek),
         flags: super::Flags,
+        packet_type: PacketType,
     ) -> std::io::Result<Self> {
-        let packet = LoadItemInternal::read(reader, flags)?;
+        let packet = LoadItemInternal::read(reader, flags, packet_type)?;
         let mut names = packet.names.chars();
         let mut items = vec![];
         for (id, name_length) in packet.ids.into_iter().zip(packet.name_length.into_iter()) {
@@ -368,7 +370,7 @@ impl PacketReadWrite for LoadItemPacket {
         Ok(Self { items })
     }
 
-    fn write(&self, is_ngs: bool) -> Vec<u8> {
+    fn write(&self, packet_type: PacketType) -> Vec<u8> {
         let mut names = String::new();
         let mut name_length = vec![];
         let mut ids = vec![];
@@ -382,30 +384,40 @@ impl PacketReadWrite for LoadItemPacket {
             names,
             name_length,
         }
-        .write(is_ngs)
+        .write(packet_type)
     }
 }
 
 impl HelperReadWrite for Item {
-    fn read(reader: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Result<Self> {
+    fn read(
+        reader: &mut (impl std::io::Read + std::io::Seek),
+        packet_type: PacketType,
+    ) -> std::io::Result<Self> {
         let uuid = reader.read_u64::<LittleEndian>()?;
-        let unk5 = ItemId::read(reader)?;
-        let unk6 = ItemType::read(reader, &unk5)?;
+        let unk5 = ItemId::read(reader, packet_type)?;
+        let unk6 = ItemType::read(reader, &unk5, packet_type)?;
         Ok(Self { uuid, unk5, unk6 })
     }
-    fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+    fn write(
+        &self,
+        writer: &mut impl std::io::Write,
+        packet_type: PacketType,
+    ) -> std::io::Result<()> {
         writer.write_u64::<LittleEndian>(self.uuid)?;
-        self.unk5.write(writer)?;
-        self.unk6.write(writer)?;
+        self.unk5.write(writer, packet_type)?;
+        self.unk6.write(writer, packet_type)?;
         Ok(())
     }
 }
 
 impl HelperReadWrite for ItemNGS {
-    fn read(reader: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Result<Self> {
+    fn read(
+        reader: &mut (impl std::io::Read + std::io::Seek),
+        packet_type: PacketType,
+    ) -> std::io::Result<Self> {
         let uuid = reader.read_u64::<LittleEndian>()?;
-        let unk5 = ItemId::read(reader)?;
-        let unk6 = ItemTypeNGS::read(reader, &unk5)?;
+        let unk5 = ItemId::read(reader, packet_type)?;
+        let unk6 = ItemTypeNGS::read(reader, &unk5, packet_type)?;
         let mut unk29 = [0u16; 12];
         reader.read_u16_into::<LittleEndian>(&mut unk29)?;
         Ok(Self {
@@ -415,10 +427,14 @@ impl HelperReadWrite for ItemNGS {
             unk29,
         })
     }
-    fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+    fn write(
+        &self,
+        writer: &mut impl std::io::Write,
+        packet_type: PacketType,
+    ) -> std::io::Result<()> {
         writer.write_u64::<LittleEndian>(self.uuid)?;
-        self.unk5.write(writer)?;
-        self.unk6.write(writer)?;
+        self.unk5.write(writer, packet_type)?;
+        self.unk6.write(writer, packet_type)?;
         for n in self.unk29 {
             writer.write_u16::<LittleEndian>(n)?;
         }
@@ -430,9 +446,10 @@ impl ItemType {
     pub(crate) fn read(
         reader: &mut (impl std::io::Read + std::io::Seek),
         item: &ItemId,
+        packet_type: PacketType,
     ) -> std::io::Result<Self> {
         Ok(match item.item_type {
-            1 => Self::Weapon(WeaponItem::read(reader)?),
+            1 => Self::Weapon(WeaponItem::read(reader, packet_type)?),
             _ => Self::Unknown({
                 let mut tmp = [0u8; 0x28];
                 reader.read_exact(&mut tmp)?;
@@ -440,9 +457,13 @@ impl ItemType {
             }),
         })
     }
-    pub(crate) fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+    pub(crate) fn write(
+        &self,
+        writer: &mut impl std::io::Write,
+        packet_type: PacketType,
+    ) -> std::io::Result<()> {
         match self {
-            Self::Weapon(x) => x.write(writer)?,
+            Self::Weapon(x) => x.write(writer, packet_type)?,
             Self::Unknown(x) => writer.write_all(x)?,
         }
         Ok(())
@@ -453,9 +474,10 @@ impl ItemTypeNGS {
     pub(crate) fn read(
         reader: &mut (impl std::io::Read + std::io::Seek),
         item: &ItemId,
+        packet_type: PacketType,
     ) -> std::io::Result<Self> {
         Ok(match item.item_type {
-            1 => Self::Weapon(WeaponItemNGS::read(reader)?),
+            1 => Self::Weapon(WeaponItemNGS::read(reader, packet_type)?),
             _ => Self::Unknown({
                 let mut tmp = [0u8; 0x38];
                 reader.read_exact(&mut tmp)?;
@@ -463,9 +485,13 @@ impl ItemTypeNGS {
             }),
         })
     }
-    pub(crate) fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+    pub(crate) fn write(
+        &self,
+        writer: &mut impl std::io::Write,
+        packet_type: PacketType,
+    ) -> std::io::Result<()> {
         match self {
-            Self::Weapon(x) => x.write(writer)?,
+            Self::Weapon(x) => x.write(writer, packet_type)?,
             Self::Unknown(x) => writer.write_all(x)?,
         }
         Ok(())

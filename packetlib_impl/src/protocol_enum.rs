@@ -20,13 +20,14 @@ pub fn protocol_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
     let gen = quote! {
         #[automatically_derived]
         impl ProtocolRW for #name {
-            fn write(&self, is_ngs: bool) -> Vec<u8> {
+            fn write(&self, packet_type: PacketType) -> Vec<u8> {
                 let mut buf = vec![];
                 buf.write_u32::<LittleEndian>(0).unwrap();
                 buf.extend(match self {
                     #write
+                    Self::Raw(data) => data[4..].to_vec(),
                     Self::Unknown(data) => {
-                        let mut out_data = data.0.write(is_ngs);
+                        let mut out_data = data.0.write(packet_type);
                         out_data.extend_from_slice(&data.1);
                         out_data
                     }
@@ -37,7 +38,7 @@ pub fn protocol_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
                 buf[..4].copy_from_slice(&len);
                 buf
             }
-            fn read(input: &[u8], is_ngs: bool) -> std::io::Result<Vec<Self>> {
+            fn read(input: &[u8], packet_type: PacketType) -> std::io::Result<Vec<Self>> {
                 let mut packets: Vec<Self> = vec![];
                 let buffer_length = input.len();
                 let mut pointer = 0;
@@ -53,14 +54,20 @@ pub fn protocol_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
                     if input[pointer..].len() < len {
                         return Err(std::io::ErrorKind::UnexpectedEof.into());
                     }
+                    if matches!(packet_type, PacketType::Raw) {
+                        let data = &input[pointer - 4..pointer + len];
+                        packets.push(Self::Raw(data.to_vec()));
+                        pointer += len;
+                        continue;
+                    }
                     let mut buf_tmp = Cursor::new(&input[pointer..pointer + len]);
-                    let header = PacketHeader::read(&mut buf_tmp, is_ngs)?;
+                    let header = PacketHeader::read(&mut buf_tmp, packet_type)?;
                     let flags = header.flag.clone();
 
                     let tmp_header = header.clone();
 
                     pointer += len;
-                    match (header.id, header.subid, is_ngs) {
+                    match (header.id, header.subid, packet_type) {
                         #read
                         (_, _, _) => {
                             packets.push(Self::Unknown({
@@ -141,9 +148,9 @@ fn parse_enum_field(
             Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
                 if let Type::Path(TypePath { path, .. }) = &unnamed.first().unwrap().ty {
                     let struct_field = path.get_ident().unwrap();
-                    push_string = quote! {packets.push(Self::#name(#struct_field::read(&mut buf_tmp, flags)?))};
+                    push_string = quote! {packets.push(Self::#name(#struct_field::read(&mut buf_tmp, flags, packet_type)?))};
                     write.extend(quote! {
-                        Self::#name(packet) => packet.write(is_ngs),
+                        Self::#name(packet) => packet.write(packet_type),
                     });
                     category.extend(quote! {
                         Self::#name(_) => {#category_stream},
@@ -153,7 +160,7 @@ fn parse_enum_field(
             Fields::Unit => {
                 push_string = quote! {packets.push(Self::#name)};
                 write.extend(quote! {
-                    Self::#name => PacketHeader::new(#id, #subid, Flags::default()).write(is_ngs),
+                    Self::#name => PacketHeader::new(#id, #subid, Flags::default()).write(packet_type),
                 });
                 category.extend(quote! {
                     Self::#name => {#category_stream},
@@ -165,11 +172,20 @@ fn parse_enum_field(
             PacketType::Both => read.extend(quote! {
                 (#id, #subid, _) => {#push_string},
             }),
-            PacketType::Base => read.extend(quote! {
-                (#id, #subid, false) => {#push_string},
+            PacketType::Classic => read.extend(quote! {
+                (#id, #subid, PacketType::Classic | PacketType::NA | PacketType::JP | PacketType::Vita) => {#push_string},
+            }),
+            PacketType::NA => read.extend(quote! {
+                (#id, #subid, PacketType::NA) => {#push_string},
+            }),
+            PacketType::JP => read.extend(quote! {
+                (#id, #subid, PacketType::JP) => {#push_string},
+            }),
+            PacketType::Vita => read.extend(quote! {
+                (#id, #subid, PacketType::Vita) => {#push_string},
             }),
             PacketType::NGS => read.extend(quote! {
-                (#id, #subid, true) => {#push_string},
+                (#id, #subid, PacketType::NGS) => {#push_string},
             }),
             PacketType::Empty => {}
         }
@@ -188,8 +204,11 @@ fn get_attrs(
         "Unknown" => {
             set.skip = true;
         }
-        "Base" => set.packet_type = PacketType::Base,
         "NGS" => set.packet_type = PacketType::NGS,
+        "Classic" => set.packet_type = PacketType::Classic,
+        "NA" => set.packet_type = PacketType::NA,
+        "JP" => set.packet_type = PacketType::JP,
+        "Vita" => set.packet_type = PacketType::Vita,
         "Id" => {
             let attrs: AttributeList = match list {
                 Some(x) => x.parse_args()?,
@@ -212,7 +231,7 @@ fn get_attrs(
                 None => {
                     return Err(syn::Error::new(
                         span,
-                        "Invalid syntax \nPerhaps you ment Id(..)?",
+                        "Invalid syntax \nPerhaps you ment Category(..)?",
                     ))
                 }
             };
@@ -236,8 +255,11 @@ struct Settings {
 enum PacketType {
     #[default]
     Both,
-    Base,
+    Classic,
     NGS,
+    NA,
+    JP,
+    Vita,
     Empty,
 }
 
