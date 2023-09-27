@@ -6,6 +6,19 @@ use crate::AsciiString;
 // ----------------------------------------------------------------
 
 // 0x03, 0x08
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x00)]
+pub struct MapTransferPacket {
+    pub map: ObjectHeader,
+    pub target: ObjectHeader,
+    pub settings: ZoneSettings,
+}
+
+// 0x03, 0x08
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x03, 0x08)]
 pub struct ServerHelloPacket {
@@ -14,6 +27,10 @@ pub struct ServerHelloPacket {
     pub blockid: u16,
 }
 
+#[cfg(feature = "ngs_packets")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x03, 0x08)]
 pub struct ServerHelloNGSPacket {
@@ -24,6 +41,8 @@ pub struct ServerHelloNGSPacket {
 }
 
 // 0x03, 0x10
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x03, 0x10)]
 pub struct MapLoadedPacket {
@@ -37,7 +56,6 @@ pub struct MapLoadedPacket {
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x03, 0x24)]
 #[Flags(Flags {packed: true, ..Default::default()})]
-// This was somewhat checked against NGS's implementation, however PSO2 seems to have extra fields?(they are commented out)
 pub struct LoadLevelPacket {
     pub map_object: ObjectHeader,
     #[cfg_attr(feature = "serde", serde(skip))]
@@ -71,15 +89,15 @@ pub struct LoadLevelPacket {
     pub unk18: u32,
     pub unk19: u32,
     pub unk20: u32,
-    pub unk21_1: [u8; 0x20],
-    pub unk21_2: [u8; 0x1C],
+    #[FixedLen(0x3C)]
+    pub unk21: Vec<u8>,
     pub unk22: u32,
     pub unk23: [u8; 0x10],
     pub unk24: [u8; 0x10],
     #[Magic(0x7542, 0x5E)]
     pub unk25: Vec<u32>,
-    pub unk26_1: [u64; 0x20],
-    pub unk26_2: [u64; 0x20],
+    #[FixedLen(0x200)]
+    pub unk26: Vec<u8>,
     #[Magic(0x7542, 0x5E)]
     pub unk27: Vec<UnkThing2>,
     #[VariableStr(0x7542, 0x5E)]

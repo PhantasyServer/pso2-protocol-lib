@@ -50,6 +50,15 @@ impl Connection {
             direction: Direction::ToServer,
         }
     }
+    /// Get the ip address of the client 
+    pub fn get_ip(&self) -> std::io::Result<std::net::Ipv4Addr> {
+        let ip = self.stream.peer_addr()?.ip();
+        let ip = match ip {
+            std::net::IpAddr::V4(x) => x,
+            std::net::IpAddr::V6(_) => std::net::Ipv4Addr::UNSPECIFIED,
+        };
+        Ok(ip)
+    }
     /// Change connection type.
     pub fn change_packet_type(&mut self, packet_type: PacketType) {
         #[cfg(feature = "ppac")]

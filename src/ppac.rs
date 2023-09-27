@@ -143,14 +143,15 @@ impl<R: Read + Seek> PPACReader<R> {
                 (None, self.data_buffer.drain(0..1).next())
             }
             OutputType::Both => {
-                self.read_packet(len)?;
-                self.reader
-                    .seek(std::io::SeekFrom::Current((len as i64).overflowing_neg().0))?;
+                let data_begin = self.reader.stream_position()?;
+                let output = self.read_packet(len);
+                let packet_data = match output {
+                    Ok(_) => self.packet_buffer.drain(0..1).next(),
+                    Err(_) => None,
+                };
+                self.reader.seek(std::io::SeekFrom::Start(data_begin))?;
                 self.read_data(len)?;
-                (
-                    self.packet_buffer.drain(0..1).next(),
-                    self.data_buffer.drain(0..1).next(),
-                )
+                (packet_data, self.data_buffer.drain(0..1).next())
             }
         };
         Ok(Some(PacketData {
@@ -160,6 +161,11 @@ impl<R: Read + Seek> PPACReader<R> {
             packet,
             data,
         }))
+    }
+
+    // Return the underlying reader
+    pub fn into_inner(self) -> R {
+        self.reader
     }
 
     fn read_packet(&mut self, len: u64) -> std::io::Result<()> {
@@ -273,6 +279,11 @@ impl<W: Write> PPACWriter<W> {
         self.write_header(time, direction, data.len() as u64)?;
         self.write_data_unchecked(time, direction, &data)?;
         Ok(())
+    }
+
+    // Return the underlying writer
+    pub fn into_inner(self) -> W {
+        self.writer
     }
 }
 

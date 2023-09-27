@@ -6,9 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+default = ["ngs_packets", "item_attrs"]
 connection = ["dep:rsa"]
 proxy = []
 ppac = []
+ngs_packets = []
+item_attrs = []
 vita_enc = ["dep:rc4", "dep:rand"]
 base_enc = ["dep:rand", "dep:aes", "dep:cbc", "dep:sha2", "dep:hmac"]
 ngs_enc = ["dep:rand", "dep:aes", "dep:cbc", "dep:sha2", "dep:zstd"]

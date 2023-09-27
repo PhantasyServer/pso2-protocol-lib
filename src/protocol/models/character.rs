@@ -22,6 +22,7 @@ pub struct Character {
     pub name: String,
     pub look: Look,
     pub classes: ClassInfo,
+    pub unk3: String,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -265,18 +266,18 @@ impl HelperReadWrite for Character {
         let voice_type = reader.read_u32::<LittleEndian>()?;
         let unk2 = reader.read_u16::<LittleEndian>()?;
         let voice_pitch = reader.read_u16::<LittleEndian>()?;
-        let name = String::read(reader, 16);
+        let name = String::read(reader, 16)?;
 
-        let is_global = matches!(packet_type, PacketType::NA);
-        if !is_global {
+        if matches!(packet_type, PacketType::Vita) {
             reader.seek(std::io::SeekFrom::Current(4))?;
         }
 
         let look = Look::read(reader, packet_type)?;
         let classes = ClassInfo::read(reader, packet_type)?;
+        let unk3 = String::read(reader, 32)?;
 
-        reader.seek(std::io::SeekFrom::Current(0x96))?;
-        if is_global {
+        reader.seek(std::io::SeekFrom::Current(0x56))?;
+        if matches!(packet_type, PacketType::NA) {
             reader.seek(std::io::SeekFrom::Current(4))?;
         }
 
@@ -290,6 +291,7 @@ impl HelperReadWrite for Character {
             name,
             look,
             classes,
+            unk3,
         })
     }
     fn write(&self, writer: &mut impl Write, packet_type: PacketType) -> std::io::Result<()> {
@@ -301,16 +303,15 @@ impl HelperReadWrite for Character {
         writer.write_u16::<LittleEndian>(self.voice_pitch)?;
         writer.write_all(&self.name.write(16))?;
 
-        let is_global = matches!(packet_type, PacketType::NA);
-
-        if !is_global {
+        if matches!(packet_type, PacketType::Vita) {
             writer.write_u32::<LittleEndian>(0)?;
         }
         self.look.write(writer, packet_type)?;
         self.classes.write(writer, packet_type)?;
+        writer.write_all(&self.unk3.write(32))?;
 
-        writer.write_all(&[0u8; 0x96])?;
-        if is_global {
+        writer.write_all(&[0u8; 0x56])?;
+        if matches!(packet_type, PacketType::NA) {
             writer.write_u32::<LittleEndian>(0)?;
         }
 

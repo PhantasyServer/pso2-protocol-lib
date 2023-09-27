@@ -1,4 +1,7 @@
 pub mod character;
+#[cfg(feature = "item_attrs")]
+#[cfg_attr(docsrs, doc(cfg(feature = "item_attrs")))]
+pub mod item_attrs;
 
 use super::PacketType;
 use crate::protocol::HelperReadWrite;

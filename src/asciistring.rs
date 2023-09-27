@@ -3,19 +3,19 @@ use byteorder::{LittleEndian, WriteBytesExt};
 use std::io::{Read, Seek, SeekFrom, Write};
 
 pub(crate) trait StringRW: Sized + Default + std::ops::Deref<Target = str> {
-    fn read(reader: &mut impl Read, len: u64) -> Self;
+    fn read(reader: &mut impl Read, len: u64) -> std::io::Result<Self>;
     fn write(&self, len: usize) -> Vec<u8>;
     fn get_padding(len: u64) -> u64;
-    fn read_variable(reader: &mut (impl Read + Seek), sub: u32, xor: u32) -> Self {
-        let magic_len = read_magic(reader, sub, xor).unwrap() as u64;
+    fn read_variable(reader: &mut (impl Read + Seek), sub: u32, xor: u32) -> std::io::Result<Self> {
+        let magic_len = read_magic(reader, sub, xor)? as u64;
         if magic_len == 0 {
-            return Default::default();
+            return Ok(Default::default());
         }
         let len = magic_len;
         let padding = Self::get_padding(len);
-        let string = Self::read(reader, len);
-        reader.seek(SeekFrom::Current(padding as i64)).unwrap();
-        return string;
+        let string = Self::read(reader, len)?;
+        reader.seek(SeekFrom::Current(padding as i64))?;
+        Ok(string)
     }
     fn write_variable(&self, sub: u32, xor: u32) -> Vec<u8> {
         let mut buf = vec![];
@@ -38,10 +38,10 @@ pub(crate) trait StringRW: Sized + Default + std::ops::Deref<Target = str> {
 }
 
 impl StringRW for String {
-    fn read(reader: &mut impl Read, len: u64) -> Self {
+    fn read(reader: &mut impl Read, len: u64) -> std::io::Result<Self> {
         let len = len * 2;
         let mut buf = vec![];
-        reader.take(len).read_to_end(&mut buf).unwrap();
+        reader.take(len).read_to_end(&mut buf)?;
         let buf = &buf;
         let mut words = vec![];
         for word in buf.chunks(2) {
@@ -52,7 +52,7 @@ impl StringRW for String {
         if let Some(x) = string.find('\0') {
             string.replace_range(x.., "");
         }
-        string
+        Ok(string)
     }
 
     fn write(&self, len: usize) -> Vec<u8> {
@@ -175,9 +175,9 @@ impl<'de> serde::Deserialize<'de> for AsciiString {
 }
 
 impl StringRW for AsciiString {
-    fn read(reader: &mut impl Read, len: u64) -> Self {
+    fn read(reader: &mut impl Read, len: u64) -> std::io::Result<Self> {
         let mut buf = vec![];
-        reader.take(len).read_to_end(&mut buf).unwrap();
+        reader.take(len).read_to_end(&mut buf)?;
         let mut string = String::from_utf8_lossy(&buf).to_string();
         #[cfg(not(test))]
         if let Some(x) = string.find('\0') {
@@ -185,7 +185,7 @@ impl StringRW for AsciiString {
         }
         #[cfg(not(test))]
         let string = string.chars().filter(char::is_ascii).collect();
-        Self(string)
+        Ok(Self(string))
     }
 
     #[cfg(not(test))]

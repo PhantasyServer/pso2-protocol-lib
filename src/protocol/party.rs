@@ -10,6 +10,8 @@ use crate::{
 // ----------------------------------------------------------------
 
 // 0x0E, 0x00
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x00)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -42,6 +44,10 @@ pub struct AddMemberPacket {
     pub unk16: AsciiString,
 }
 
+#[cfg(feature = "ngs_packets")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x00)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -60,7 +66,8 @@ pub struct AddMemberNGSPacket {
     pub char_name: String,
     pub unk5: [u8; 0xC],
     pub unk6: u16,
-    pub unk7: [u8; 2],
+    pub unk7: u8,
+    pub language: ShortLanguage,
     pub hp: [u32; 3],
     pub map_id: u16,
     pub unk10: [u8; 4],
@@ -77,6 +84,8 @@ pub struct AddMemberNGSPacket {
 }
 
 // 0x0E, 0x01
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x01)]
 pub struct RemoveMemberPacket {
@@ -99,6 +108,8 @@ pub struct PartyInitPacket {
     pub unk2: AsciiString,
 }
 
+#[cfg(feature = "ngs_packets")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -114,6 +125,8 @@ pub struct PartyInitNGSPacket {
 }
 
 // 0x0E, 0x04
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x04)]
 pub struct PartyInviteResultPacket {
@@ -122,6 +135,8 @@ pub struct PartyInviteResultPacket {
 }
 
 // 0x0E, 0x05
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x05)]
 pub struct PartyInviteRequestPacket {
@@ -129,6 +144,8 @@ pub struct PartyInviteRequestPacket {
 }
 
 // 0x0E, 0x06
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x06)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -144,6 +161,8 @@ pub struct NewInvitePacket {
 }
 
 // 0x0E, 0x07
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x07)]
 pub struct AcceptInvitePacket {
@@ -152,6 +171,8 @@ pub struct AcceptInvitePacket {
 }
 
 // 0x0E, 0x0C
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x0C)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -172,6 +193,8 @@ pub struct NewPartySettingsPacket {
 }
 
 // 0x0E, 0x0D
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x0D)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -190,6 +213,8 @@ pub struct PartySettingsPacket {
 }
 
 // 0x0E, 0x0E
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x0E)]
 pub struct TransferLeaderPacket {
@@ -197,6 +222,8 @@ pub struct TransferLeaderPacket {
 }
 
 // 0x0E, 0x0F
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x0F)]
 pub struct NewLeaderPacket {
@@ -204,6 +231,8 @@ pub struct NewLeaderPacket {
 }
 
 // 0x0E, 0x10
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x10)]
 pub struct KickMemberPacket {
@@ -211,6 +240,8 @@ pub struct KickMemberPacket {
 }
 
 // 0x0E, 0x11
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x11)]
 pub struct KickedMemberPacket {
@@ -218,6 +249,8 @@ pub struct KickedMemberPacket {
 }
 
 // 0x0E, 0x17
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x17)]
 pub struct DisbandPartyPacket {
@@ -225,15 +258,19 @@ pub struct DisbandPartyPacket {
 }
 
 // 0x0E, 0x19
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x19)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
-pub struct Unk0E19Packet {
+pub struct ChatStatusPacket {
     pub object: ObjectHeader,
-    pub unk: u32,
+    pub status: u32,
 }
 
 // 0x0E, 0x1B
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x1B)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -243,6 +280,8 @@ pub struct PartyInfoPacket {
 }
 
 // 0x0E, 0x1C
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x1C)]
 pub struct PartyInfoStopperPacker {
@@ -250,6 +289,8 @@ pub struct PartyInfoStopperPacker {
 }
 
 // 0x0E, 0x1D
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x1D)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -259,6 +300,8 @@ pub struct GetPartyDetailsPacket {
 }
 
 // 0x0E, 0x1E
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x1E)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -268,14 +311,18 @@ pub struct PartyDetailsPacket {
 }
 
 // 0x0E, 0x2B
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x2B)]
 pub struct NewBusyStatePacket {
     pub object: ObjectHeader,
-    pub state: u32,
+    pub state: BusyState,
 }
 
 // 0x0E, 0x2C
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x2C)]
 pub struct InviteDeclinePacket {
@@ -283,6 +330,8 @@ pub struct InviteDeclinePacket {
 }
 
 // 0x0E, 0x2E
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x2E)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -292,6 +341,8 @@ pub struct GetPartyInfoPacket {
 }
 
 // 0x0E, 0x4F
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x4F)]
 pub struct SetPartyColorPacket {
@@ -301,6 +352,8 @@ pub struct SetPartyColorPacket {
 }
 
 // 0x0E, 0x67
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x67)]
 pub struct PartySetupFinishPacket {
@@ -324,7 +377,8 @@ pub struct PartyEntry {
     pub sublevel: u8,
     pub class: Class,
     pub subclass: Class,
-    pub unk1: [u8; 8],
+    pub color: Color,
+    pub unk1: [u8; 7],
     pub unk2: u32,
     pub hp: [u32; 3],
     pub map_id: u16,
@@ -338,10 +392,12 @@ pub struct PartyEntry {
     pub unk10: String,
     #[VariableStr(0xD863, 0xA9)]
     pub unk7: AsciiString,
-    pub unk8: u8,
+    pub lang: ShortLanguage,
     pub unk9: [u8; 3],
 }
 
+#[cfg(feature = "ngs_packets")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, HelperReadWrite)]
@@ -355,7 +411,8 @@ pub struct PartyEntryNGS {
     pub sublevel: u8,
     pub class: Class,
     pub subclass: Class,
-    pub unk1: [u8; 8],
+    pub color: Color,
+    pub unk1: [u8; 7],
     pub unk2: u32,
     pub hp: [u32; 3],
     pub map_id: u16,
@@ -366,10 +423,34 @@ pub struct PartyEntryNGS {
     pub unk6: String,
     #[VariableStr(0xD863, 0xA9)]
     pub unk7: AsciiString,
-    pub unk8: u8,
+    pub lang: ShortLanguage,
     pub unk9: [u8; 3],
     #[VariableStr(0xD863, 0xA9)]
     pub unk10: String,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Copy, Default, PartialEq, HelperReadWrite)]
+#[repr(u8)]
+pub enum Color {
+    #[default]
+    #[Read_default]
+    Red,
+    Green,
+    Yellow,
+    Blue,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Copy, Default, PartialEq, HelperReadWrite)]
+#[repr(u8)]
+pub enum ShortLanguage {
+    #[default]
+    Japanese,
+    English,
+
+    #[Read_default]
+    Unknown,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -387,12 +468,14 @@ pub struct PartyFlags {
     pub unk8: bool,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, HelperReadWrite)]
 pub struct PartyInfo {
     pub unk1: [u8; 0xC],
     pub party_object: ObjectHeader,
     #[VariableStr(0xE7E8, 0xFF)]
-    pub questname: String,
+    pub name: String,
     pub unk2: [u8; 9],
     pub unk3: [u8; 3],
     pub unk4: u32,
@@ -442,4 +525,14 @@ pub struct PartyMember {
     pub sublevel: u8,
     pub unk4: [u8; 5],
     pub unk5: [u8; 3],
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Copy, Default, PartialEq, HelperReadWrite)]
+#[repr(u32)]
+pub enum BusyState {
+    #[default]
+    #[Read_default]
+    NotBusy,
+    Busy,
 }

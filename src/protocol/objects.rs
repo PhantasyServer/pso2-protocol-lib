@@ -12,6 +12,8 @@ use std::{
 // ----------------------------------------------------------------
 
 // 0x04, 0x02
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x02)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -23,6 +25,8 @@ pub struct TeleportTransferPacket {
 }
 
 // 0x04, 0x07
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct MovementPacket {
     pub unk: [u8; 0x6],
@@ -50,6 +54,8 @@ pub struct MovementPacket {
 }
 
 // 0x04, 0x08
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x08)]
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
@@ -70,6 +76,8 @@ pub struct MovementActionPacket {
 }
 
 // 0x04, 0x13
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x13)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -81,6 +89,8 @@ pub struct Unk0413Packet {
 }
 
 // 0x04, 0x14
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x14)]
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
@@ -95,6 +105,8 @@ pub struct InteractPacket {
 }
 
 // 0x04, 0x15
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x15)]
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
@@ -113,6 +125,8 @@ pub struct SetTagPacket {
 }
 
 // 0x04, 0x22
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x22)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -125,6 +139,8 @@ pub struct Unk0422Packet {
 }
 
 // 0x04, 0x23
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x23)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -136,6 +152,8 @@ pub struct Unk0423Packet {
 }
 
 // 0x04, 0x24
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x24)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -150,6 +168,8 @@ pub struct Unk0424Packet {
 }
 
 // 0x04, 0x2B
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x2B)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -159,6 +179,8 @@ pub struct Unk042BPacket {
 }
 
 // 0x04, 0x3B
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x3B)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -168,6 +190,8 @@ pub struct RemoveObjectPacket {
 }
 
 // 0x04, 0x3C
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x3C)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -178,6 +202,8 @@ pub struct ActionUpdatePacket {
 }
 
 // 0x04, 0x52
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x52)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -188,7 +214,7 @@ pub struct DamageReceivePacket {
     pub unk1: u32,
     pub dmg_amount: i32,
     pub new_hp: u32,
-    pub is_crit: u32,
+    pub hitbox_id: u32,
     pub x_pos: f16,
     pub y_pos: f16,
     pub z_pos: f16,
@@ -197,6 +223,8 @@ pub struct DamageReceivePacket {
 }
 
 // 0x04, 0x71
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x71)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -214,6 +242,8 @@ pub struct MovementEndPacket {
 }
 
 // 0x04, 0x75
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x75)]
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
@@ -229,6 +259,8 @@ pub struct ActionEndPacket {
 }
 
 // 0x04, 0x80
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x80)]
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
@@ -249,6 +281,8 @@ pub struct MovementActionServerPacket {
 }
 
 // 0x04, 0x81
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x81)]
 #[Flags(Flags {object_related: true, ..Default::default()})]

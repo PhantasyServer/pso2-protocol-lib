@@ -22,7 +22,9 @@ use syn::{parse_macro_input, DeriveInput};
         PSOTime,
         Magic,
         Len_u32,
+        Len_u16,
         OnlyOn,
+        FixedLen,
     )
 )]
 pub fn packet_read_write_derive(input: TokenStream) -> TokenStream {
@@ -43,10 +45,13 @@ pub fn packet_read_write_derive(input: TokenStream) -> TokenStream {
         PSOTime,
         Magic,
         Len_u32,
+        Len_u16,
         Read_default,
         Skip,
         Flags,
         OnlyOn,
+        FixedLen,
+        NoPadding,
     )
 )]
 pub fn helper_read_write_derive(input: TokenStream) -> TokenStream {

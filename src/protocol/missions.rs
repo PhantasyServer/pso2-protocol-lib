@@ -5,6 +5,8 @@ use super::{HelperReadWrite, PacketReadWrite};
 // ----------------------------------------------------------------
 
 // 0x4A, 0x01
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x4A, 0x01)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -18,6 +20,8 @@ pub struct MissionListPacket {
 }
 
 // 0x4A, 0x03
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x4A, 0x03)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -32,7 +36,27 @@ pub struct Unk4A03Packet {
     pub unk5: u32,
 }
 
+#[cfg(feature = "ngs_packets")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x4A, 0x03)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct Unk4A03NGSPacket {
+    pub unk1: u32,
+    #[Magic(0xD20D, 0xDD)]
+    pub unk2: Vec<Mission>,
+    #[Magic(0xD20D, 0xDD)]
+    pub unk3: Vec<u32>,
+    #[Magic(0xD20D, 0xDD)]
+    pub unk4: Vec<Unk2NGSStruct>,
+    pub unk5: u32,
+}
+
 // 0x4A, 0x0C
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x4A, 0x0C)]
 pub struct SetTrackedMissionPacket {
@@ -43,7 +67,9 @@ pub struct SetTrackedMissionPacket {
 // Additional structs
 // ----------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Mission {
     /*5 - main
     1 - daily
@@ -66,7 +92,20 @@ pub struct Mission {
     pub unk15: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Unk2Struct {
-    pub unk1: [u32; 0x40],
+    #[FixedLen(0x40)]
+    pub unk: Vec<u32>,
+}
+
+#[cfg(feature = "ngs_packets")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+pub struct Unk2NGSStruct {
+    #[FixedLen(0x68)]
+    pub unk: Vec<u32>,
 }

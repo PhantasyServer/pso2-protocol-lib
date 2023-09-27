@@ -6,6 +6,8 @@ use std::time::Duration;
 // ----------------------------------------------------------------
 
 // 0x18, 0x14
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x18, 0x14)]
 pub struct FriendListRequestPacket {
@@ -29,6 +31,8 @@ pub struct FriendListPacket {
 }
 
 // 0x18, 0x18
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x18, 0x18)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -40,6 +44,8 @@ pub struct SendFriendRequestPacket {
 }
 
 // 0x18, 0x1A
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x18, 0x1A)]
 pub struct AddedRequestPacket {
@@ -124,7 +130,7 @@ pub enum FriendLocation {
     #[default]
     Lobby,
     Quest,
-    PQ,
+    PersonalQ,
     AllianceQ,
     Casino,
     ChallengerLobby,
