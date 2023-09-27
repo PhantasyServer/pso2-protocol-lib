@@ -1,4 +1,7 @@
-use crate::{asciistring::StringRW, protocol::HelperReadWrite};
+use crate::{
+    asciistring::StringRW,
+    protocol::{HelperReadWrite, PacketType},
+};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Read, Seek, Write};
 
@@ -19,6 +22,7 @@ pub struct Character {
     pub name: String,
     pub look: Look,
     pub classes: ClassInfo,
+    pub unk3: String,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -254,27 +258,26 @@ pub struct ClassInfo {
 // Read/Write implementations
 // ----------------------------------------------------------------
 
-impl Character {
-    pub(crate) fn read(reader: &mut (impl Read + Seek)) -> std::io::Result<Self> {
+impl HelperReadWrite for Character {
+    fn read(reader: &mut (impl Read + Seek), packet_type: PacketType) -> std::io::Result<Self> {
         let character_id = reader.read_u32::<LittleEndian>()?;
         let player_id = reader.read_u32::<LittleEndian>()?;
         let unk1 = reader.read_u32::<LittleEndian>()?;
         let voice_type = reader.read_u32::<LittleEndian>()?;
         let unk2 = reader.read_u16::<LittleEndian>()?;
         let voice_pitch = reader.read_u16::<LittleEndian>()?;
-        let name = String::read(reader, 16);
+        let name = String::read(reader, 16)?;
 
-        let is_global = reader.read_u8()? != 0;
-        reader.seek(std::io::SeekFrom::Current(-1))?;
-        if !is_global {
+        if matches!(packet_type, PacketType::Vita) {
             reader.seek(std::io::SeekFrom::Current(4))?;
         }
 
-        let look = Look::read(reader)?;
-        let classes = ClassInfo::read(reader)?;
+        let look = Look::read(reader, packet_type)?;
+        let classes = ClassInfo::read(reader, packet_type)?;
+        let unk3 = String::read(reader, 32)?;
 
-        reader.seek(std::io::SeekFrom::Current(0x96))?;
-        if is_global {
+        reader.seek(std::io::SeekFrom::Current(0x56))?;
+        if matches!(packet_type, PacketType::NA) {
             reader.seek(std::io::SeekFrom::Current(4))?;
         }
 
@@ -288,9 +291,10 @@ impl Character {
             name,
             look,
             classes,
+            unk3,
         })
     }
-    pub(crate) fn write(&self, writer: &mut impl Write, is_global: bool) -> std::io::Result<()> {
+    fn write(&self, writer: &mut impl Write, packet_type: PacketType) -> std::io::Result<()> {
         writer.write_u32::<LittleEndian>(self.character_id)?;
         writer.write_u32::<LittleEndian>(self.player_id)?;
         writer.write_u32::<LittleEndian>(self.unk1)?;
@@ -299,14 +303,15 @@ impl Character {
         writer.write_u16::<LittleEndian>(self.voice_pitch)?;
         writer.write_all(&self.name.write(16))?;
 
-        if !is_global {
+        if matches!(packet_type, PacketType::Vita) {
             writer.write_u32::<LittleEndian>(0)?;
         }
-        self.look.write(writer)?;
-        self.classes.write(writer)?;
+        self.look.write(writer, packet_type)?;
+        self.classes.write(writer, packet_type)?;
+        writer.write_all(&self.unk3.write(32))?;
 
-        writer.write_all(&[0u8; 0x96])?;
-        if is_global {
+        writer.write_all(&[0u8; 0x56])?;
+        if matches!(packet_type, PacketType::NA) {
             writer.write_u32::<LittleEndian>(0)?;
         }
 
@@ -319,24 +324,84 @@ impl Character {
 // ----------------------------------------------------------------
 
 impl Character {
-    pub fn get_level(&self) -> ClassLevel {
+    pub fn get_level(&self) -> &ClassLevel {
         match self.classes.main_class {
-            Class::Hunter => self.classes.hunter_info,
-            Class::Ranger => self.classes.ranger_info,
-            Class::Force => self.classes.force_info,
-            Class::Fighter => self.classes.fighter_info,
-            Class::Gunner => self.classes.gunner_info,
-            Class::Techer => self.classes.techer_info,
-            Class::Braver => self.classes.braver_info,
-            Class::Bouncer => self.classes.bouncer_info,
-            Class::Challenger => self.classes.challenger_info,
-            Class::Summoner => self.classes.summoner_info,
-            Class::BattleWarrior => self.classes.battle_warrior_info,
-            Class::Hero => self.classes.hero_info,
-            Class::Phantom => self.classes.phantom_info,
-            Class::Etole => self.classes.etole_info,
-            Class::Luster => self.classes.luster_info,
-            Class::Unknown => Default::default(),
+            Class::Hunter => &self.classes.hunter_info,
+            Class::Ranger => &self.classes.ranger_info,
+            Class::Force => &self.classes.force_info,
+            Class::Fighter => &self.classes.fighter_info,
+            Class::Gunner => &self.classes.gunner_info,
+            Class::Techer => &self.classes.techer_info,
+            Class::Braver => &self.classes.braver_info,
+            Class::Bouncer => &self.classes.bouncer_info,
+            Class::Challenger => &self.classes.challenger_info,
+            Class::Summoner => &self.classes.summoner_info,
+            Class::BattleWarrior => &self.classes.battle_warrior_info,
+            Class::Hero => &self.classes.hero_info,
+            Class::Phantom => &self.classes.phantom_info,
+            Class::Etole => &self.classes.etole_info,
+            Class::Luster => &self.classes.luster_info,
+            Class::Unknown => &self.classes.unk16_info,
+        }
+    }
+    pub fn get_level_mut(&mut self) -> &mut ClassLevel {
+        match self.classes.main_class {
+            Class::Hunter => &mut self.classes.hunter_info,
+            Class::Ranger => &mut self.classes.ranger_info,
+            Class::Force => &mut self.classes.force_info,
+            Class::Fighter => &mut self.classes.fighter_info,
+            Class::Gunner => &mut self.classes.gunner_info,
+            Class::Techer => &mut self.classes.techer_info,
+            Class::Braver => &mut self.classes.braver_info,
+            Class::Bouncer => &mut self.classes.bouncer_info,
+            Class::Challenger => &mut self.classes.challenger_info,
+            Class::Summoner => &mut self.classes.summoner_info,
+            Class::BattleWarrior => &mut self.classes.battle_warrior_info,
+            Class::Hero => &mut self.classes.hero_info,
+            Class::Phantom => &mut self.classes.phantom_info,
+            Class::Etole => &mut self.classes.etole_info,
+            Class::Luster => &mut self.classes.luster_info,
+            Class::Unknown => &mut self.classes.unk16_info,
+        }
+    }
+    pub fn get_sublevel(&self) -> &ClassLevel {
+        match self.classes.sub_class {
+            Class::Hunter => &self.classes.hunter_info,
+            Class::Ranger => &self.classes.ranger_info,
+            Class::Force => &self.classes.force_info,
+            Class::Fighter => &self.classes.fighter_info,
+            Class::Gunner => &self.classes.gunner_info,
+            Class::Techer => &self.classes.techer_info,
+            Class::Braver => &self.classes.braver_info,
+            Class::Bouncer => &self.classes.bouncer_info,
+            Class::Challenger => &self.classes.challenger_info,
+            Class::Summoner => &self.classes.summoner_info,
+            Class::BattleWarrior => &self.classes.battle_warrior_info,
+            Class::Hero => &self.classes.hero_info,
+            Class::Phantom => &self.classes.phantom_info,
+            Class::Etole => &self.classes.etole_info,
+            Class::Luster => &self.classes.luster_info,
+            Class::Unknown => &self.classes.unk16_info,
+        }
+    }
+    pub fn get_sublevel_mut(&mut self) -> &mut ClassLevel {
+        match self.classes.sub_class {
+            Class::Hunter => &mut self.classes.hunter_info,
+            Class::Ranger => &mut self.classes.ranger_info,
+            Class::Force => &mut self.classes.force_info,
+            Class::Fighter => &mut self.classes.fighter_info,
+            Class::Gunner => &mut self.classes.gunner_info,
+            Class::Techer => &mut self.classes.techer_info,
+            Class::Braver => &mut self.classes.braver_info,
+            Class::Bouncer => &mut self.classes.bouncer_info,
+            Class::Challenger => &mut self.classes.challenger_info,
+            Class::Summoner => &mut self.classes.summoner_info,
+            Class::BattleWarrior => &mut self.classes.battle_warrior_info,
+            Class::Hero => &mut self.classes.hero_info,
+            Class::Phantom => &mut self.classes.phantom_info,
+            Class::Etole => &mut self.classes.etole_info,
+            Class::Luster => &mut self.classes.luster_info,
+            Class::Unknown => &mut self.classes.unk16_info,
         }
     }
 }

@@ -138,7 +138,7 @@ Data:
 | ?             | U32                |                                |
 | Version Id?   | Byte[0x20]         |                                |
 | Length        | Magic(0x5E6, 0x6B) | Length of the following array  |
-| Interfaces    | NetInterface[_]    | See [below](#netinterface)                      |
+| Interfaces    | NetInterface[_]    | See [below](#netinterface)     |
 | ?             | Byte[0xD4]         |                                |
 | Flag?         | U32                |                                |
 | Flag?         | U32                |                                |
@@ -524,7 +524,7 @@ Response to: [Nickname Request](#0x11-0x1e-nickname-request)
 
 ### (0x11, 0xEE) Email Code Request
 
-(Server -> Client) Server requests for a code sent by email.
+(Server -> Client) Server requests a code sent by email.
 
 Flags: packed
 

@@ -6,6 +6,8 @@ use std::time::Duration;
 // ----------------------------------------------------------------
 
 // 0x1A, 0x00
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1A, 0x00)]
 pub struct MailListRequestPacket {
@@ -15,6 +17,8 @@ pub struct MailListRequestPacket {
 }
 
 // 0x1A, 0x01
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1A, 0x01)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -34,6 +38,8 @@ pub struct MailListPacket {
 }
 
 // 0x1A, 0x02
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1A, 0x02)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -43,6 +49,8 @@ pub struct DeleteMailRequestPacket {
 }
 
 // 0x1A, 0x03
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1A, 0x03)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -53,6 +61,8 @@ pub struct DeletedMailPacket {
 }
 
 // 0x1A, 0x06
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1A, 0x06)]
 pub struct MailBodyRequestPacket {
@@ -60,6 +70,8 @@ pub struct MailBodyRequestPacket {
 }
 
 // 0x1A, 0x07
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1A, 0x07)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -74,6 +86,8 @@ pub struct MailBodyPacket {
 // Additional structs
 // ----------------------------------------------------------------
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct MailId {
     pub mail_id: u32,
@@ -81,6 +95,8 @@ pub struct MailId {
     pub unk2: u32,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct MailHeader {
     pub mail_id: u32,

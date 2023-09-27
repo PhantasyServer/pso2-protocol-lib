@@ -1,5 +1,5 @@
 /target
 /Cargo.lock
-/test_data/*/*
 /failed_tests
 /packetlib_impl/target
+test*

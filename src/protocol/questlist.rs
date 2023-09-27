@@ -1,7 +1,13 @@
 use super::{HelperReadWrite, PacketReadWrite};
 use crate::AsciiString;
 
+// ----------------------------------------------------------------
+// Quests packets
+// ----------------------------------------------------------------
+
 // 0x0B, 0x09
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x09)]
 pub struct Unk0B09Packet {
@@ -12,6 +18,8 @@ pub struct Unk0B09Packet {
 }
 
 // 0x0B, 0x15
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x15)]
 pub struct AvailableQuestsRequestPacket {
@@ -19,6 +27,8 @@ pub struct AvailableQuestsRequestPacket {
 }
 
 // 0x0B, 0x16
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x16)]
 pub struct AvailableQuestsPacket {
@@ -63,6 +73,8 @@ pub struct AvailableQuestsPacket {
 }
 
 // 0x0B, 0x17
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x17)]
 pub struct QuestCategoryRequestPacket {
@@ -71,6 +83,8 @@ pub struct QuestCategoryRequestPacket {
 }
 
 // 0x0B, 0x18
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x18)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -80,6 +94,8 @@ pub struct QuestCategoryPacket {
 }
 
 // 0x0B, 0xAF
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0xAF)]
 pub struct Unk0BAFPacket {
@@ -87,8 +103,14 @@ pub struct Unk0BAFPacket {
     pub unk2: u32,
 }
 
+// ----------------------------------------------------------------
+// Additional structs
+// ----------------------------------------------------------------
+
 // copied from polaris server
-#[derive(Debug, /* Default, */ Clone, PartialEq, HelperReadWrite)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Quest {
     #[FixedStr(0x18)]
     pub date: AsciiString,
@@ -115,7 +137,8 @@ pub struct Quest {
     pub unk13: u16,
     pub unk14: [u8; 2],
     // pub unk15: [QuestThing; 16],
-    pub unk15: [u8; 0x320],
+    #[FixedLen(0x320)]
+    pub unk15: Vec<u8>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]

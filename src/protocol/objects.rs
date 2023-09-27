@@ -1,4 +1,4 @@
-use super::{models::Position, Flags, ObjectHeader, PacketHeader, PacketReadWrite};
+use super::{models::Position, Flags, ObjectHeader, PacketHeader, PacketReadWrite, PacketType};
 use crate::AsciiString;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use half::f16;
@@ -12,6 +12,8 @@ use std::{
 // ----------------------------------------------------------------
 
 // 0x04, 0x02
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x02)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -23,6 +25,8 @@ pub struct TeleportTransferPacket {
 }
 
 // 0x04, 0x07
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct MovementPacket {
     pub unk: [u8; 0x6],
@@ -50,6 +54,8 @@ pub struct MovementPacket {
 }
 
 // 0x04, 0x08
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x08)]
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
@@ -70,6 +76,8 @@ pub struct MovementActionPacket {
 }
 
 // 0x04, 0x13
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x13)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -81,6 +89,8 @@ pub struct Unk0413Packet {
 }
 
 // 0x04, 0x14
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x14)]
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
@@ -95,6 +105,8 @@ pub struct InteractPacket {
 }
 
 // 0x04, 0x15
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x15)]
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
@@ -113,6 +125,8 @@ pub struct SetTagPacket {
 }
 
 // 0x04, 0x22
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x22)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -125,6 +139,8 @@ pub struct Unk0422Packet {
 }
 
 // 0x04, 0x23
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x23)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -136,6 +152,8 @@ pub struct Unk0423Packet {
 }
 
 // 0x04, 0x24
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x24)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -150,6 +168,8 @@ pub struct Unk0424Packet {
 }
 
 // 0x04, 0x2B
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x2B)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -159,6 +179,8 @@ pub struct Unk042BPacket {
 }
 
 // 0x04, 0x3B
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x3B)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -167,7 +189,42 @@ pub struct RemoveObjectPacket {
     pub removed_object: ObjectHeader,
 }
 
+// 0x04, 0x3C
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x3C)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct ActionUpdatePacket {
+    pub unk1: ObjectHeader,
+    pub performer: ObjectHeader,
+    pub unk2: [u8; 0x20],
+}
+
+// 0x04, 0x52
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x52)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct DamageReceivePacket {
+    pub receiver: ObjectHeader,
+    pub dmg_target: ObjectHeader,
+    pub dmg_inflicter: ObjectHeader,
+    pub unk1: u32,
+    pub dmg_amount: i32,
+    pub new_hp: u32,
+    pub hitbox_id: u32,
+    pub x_pos: f16,
+    pub y_pos: f16,
+    pub z_pos: f16,
+    pub unk4: [u8; 0xE],
+    pub unk5: u32,
+}
+
 // 0x04, 0x71
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x71)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
@@ -184,7 +241,26 @@ pub struct MovementEndPacket {
     pub unk8: u32,
 }
 
+// 0x04, 0x75
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x75)]
+#[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
+pub struct ActionEndPacket {
+    pub unk1: [u8; 0xC],
+    pub performer: ObjectHeader,
+    pub unk2: u32,
+    pub unk3: ObjectHeader,
+    pub unk4: ObjectHeader,
+    pub unk5: [u8; 4],
+    #[VariableStr(0x83EF, 0x40)]
+    pub unk6: AsciiString,
+}
+
 // 0x04, 0x80
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x80)]
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
@@ -204,12 +280,24 @@ pub struct MovementActionServerPacket {
     pub unk10: u32,
 }
 
+// 0x04, 0x81
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x81)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct ActionUpdateServerPacket {
+    pub receiver: ObjectHeader,
+    pub performer: ObjectHeader,
+    pub unk2: [u8; 0x20],
+}
+
 // ----------------------------------------------------------------
 // Read/Write implementations
 // ----------------------------------------------------------------
 
 impl PacketReadWrite for MovementPacket {
-    fn read(reader: &mut (impl Read + Seek), flags: Flags) -> std::io::Result<Self> {
+    fn read(reader: &mut (impl Read + Seek), flags: Flags, _: PacketType) -> std::io::Result<Self> {
         let mut packet = Self::default();
         reader.read_exact(&mut packet.unk)?;
         if flags.full_movement {
@@ -306,7 +394,7 @@ impl PacketReadWrite for MovementPacket {
         }
         Ok(packet)
     }
-    fn write(&self, is_ngs: bool) -> Vec<u8> {
+    fn write(&self, packet_type: PacketType) -> Vec<u8> {
         let mut tmp_buf = vec![];
         let mut flags = 0u32;
         if let Some(n) = self.ent1_id {
@@ -405,7 +493,7 @@ impl PacketReadWrite for MovementPacket {
                     ..Default::default()
                 },
             )
-            .write(is_ngs)
+            .write(packet_type)
         } else {
             PacketHeader::new(
                 0x04,
@@ -416,7 +504,7 @@ impl PacketReadWrite for MovementPacket {
                     ..Default::default()
                 },
             )
-            .write(is_ngs)
+            .write(packet_type)
         };
         buf.write_all(&self.unk).unwrap();
         if flags != 0xFFFFF {

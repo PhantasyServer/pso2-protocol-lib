@@ -1,5 +1,9 @@
 pub mod character;
+#[cfg(feature = "item_attrs")]
+#[cfg_attr(docsrs, doc(cfg(feature = "item_attrs")))]
+pub mod item_attrs;
 
+use super::PacketType;
 use crate::protocol::HelperReadWrite;
 use half::f16;
 
@@ -45,19 +49,29 @@ pub struct FunValue(pub u32);
 // ----------------------------------------------------------------
 
 impl HelperReadWrite for EulerPosition {
-    fn read(reader: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Result<Self> {
-        let pos = Position::read(reader)?;
+    fn read(
+        reader: &mut (impl std::io::Read + std::io::Seek),
+        packet_type: PacketType,
+    ) -> std::io::Result<Self> {
+        let pos = Position::read(reader, packet_type)?;
         Ok(pos.into())
     }
 
-    fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+    fn write(
+        &self,
+        writer: &mut impl std::io::Write,
+        packet_type: PacketType,
+    ) -> std::io::Result<()> {
         let pos: Position = (*self).into();
-        pos.write(writer)
+        pos.write(writer, packet_type)
     }
 }
 
 impl HelperReadWrite for SGValue {
-    fn read(reader: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Result<Self> {
+    fn read(
+        reader: &mut (impl std::io::Read + std::io::Seek),
+        _: PacketType,
+    ) -> std::io::Result<Self> {
         let mut buf = [0u8; 4];
         reader.read_exact(&mut buf[2..4])?;
         reader.read_exact(&mut buf[0..2])?;
@@ -66,7 +80,7 @@ impl HelperReadWrite for SGValue {
         Ok(Self(value))
     }
 
-    fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+    fn write(&self, writer: &mut impl std::io::Write, _: PacketType) -> std::io::Result<()> {
         let value = (self.0 * 5.0) as u32;
         let buf = value.to_le_bytes();
         writer.write_all(&buf[2..4])?;
@@ -76,7 +90,10 @@ impl HelperReadWrite for SGValue {
 }
 
 impl HelperReadWrite for FunValue {
-    fn read(reader: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Result<Self> {
+    fn read(
+        reader: &mut (impl std::io::Read + std::io::Seek),
+        _: PacketType,
+    ) -> std::io::Result<Self> {
         let mut buf = [0u8; 4];
         reader.read_exact(&mut buf[2..4])?;
         reader.read_exact(&mut buf[0..2])?;
@@ -84,7 +101,7 @@ impl HelperReadWrite for FunValue {
         Ok(Self(value))
     }
 
-    fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+    fn write(&self, writer: &mut impl std::io::Write, _: PacketType) -> std::io::Result<()> {
         let buf = self.0.to_le_bytes();
         writer.write_all(&buf[2..4])?;
         writer.write_all(&buf[0..2])?;

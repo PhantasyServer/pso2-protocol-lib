@@ -5,6 +5,8 @@ use super::{ChatArea, HelperReadWrite, ObjectHeader, PacketReadWrite};
 // ----------------------------------------------------------------
 
 // 0x2F, 0x00
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2F, 0x00)]
 pub struct SymbolArtClientDataRequestPacket {
@@ -12,6 +14,8 @@ pub struct SymbolArtClientDataRequestPacket {
 }
 
 // 0x2F, 0x01
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2F, 0x01)]
 pub struct SymbolArtDataRequestPacket {
@@ -19,6 +23,8 @@ pub struct SymbolArtDataRequestPacket {
 }
 
 // 0x2F, 0x02
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2F, 0x02)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -31,6 +37,8 @@ pub struct SymbolArtDataPacket {
 }
 
 // 0x2F, 0x03
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2F, 0x03)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -41,6 +49,8 @@ pub struct SymbolArtClientDataPacket {
 }
 
 // 0x2F, 0x04
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2F, 0x04)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -50,6 +60,8 @@ pub struct ChangeSymbolArtPacket {
 }
 
 // 0x2F, 0x05
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2F, 0x05)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -60,6 +72,8 @@ pub struct SymbolArtResultPacket {
 }
 
 // 0x2F, 0x07
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2F, 0x07)]
 #[Flags(Flags {packed: true, ..Default::default()})]
@@ -71,8 +85,11 @@ pub struct SymbolArtListPacket {
 }
 
 // 0x2F, 0x08
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2F, 0x08)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
 pub struct SendSymbolArtPacket {
     pub object: ObjectHeader,
     pub uuid: u128,
@@ -83,6 +100,8 @@ pub struct SendSymbolArtPacket {
 }
 
 // 0x2F, 0x09
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2F, 0x09)]
 pub struct ReceiveSymbolArtPacket {
@@ -98,6 +117,8 @@ pub struct ReceiveSymbolArtPacket {
 // Additional structs
 // ----------------------------------------------------------------
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Copy, Default, PartialEq, HelperReadWrite)]
 pub struct SlottedSymbolArt {
     pub uuid: u128,
