@@ -60,7 +60,7 @@ struct PacketWorker *new_worker(enum PacketType packet_type, enum SerializedForm
 /**
  * Destroys a packet worker.
  */
-void free_worker(struct PacketWorker*);
+void free_worker(struct PacketWorker *_worker);
 
 /**
  * Sets a new packet type.

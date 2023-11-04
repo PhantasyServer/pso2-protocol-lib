@@ -20,3 +20,4 @@ serde_json = { version = "1.0.108", optional = true }
 
 [build-dependencies]
 cbindgen = "0.25.0"
+csbindgen = "1.8.3"

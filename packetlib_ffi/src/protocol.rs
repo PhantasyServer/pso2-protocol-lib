@@ -59,7 +59,7 @@ pub extern "C" fn new_worker(
 
 /// Destroys a packet worker.
 #[no_mangle]
-pub extern "C" fn free_worker(_: Option<Box<PacketWorker>>) {}
+pub extern "C" fn free_worker(_worker: Option<Box<PacketWorker>>) {}
 
 /// Sets a new packet type.
 #[no_mangle]
