@@ -3,3 +3,4 @@
 /failed_tests
 /packetlib_impl/target
 test*
+/packetlib_ffi/target

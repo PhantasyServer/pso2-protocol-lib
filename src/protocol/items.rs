@@ -320,6 +320,27 @@ pub struct LoadItemDescriptionPacket {
     pub desc: String,
 }
 
+// 0x0F, 0x21
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x21)]
+pub struct EquipedWeaponPacket {
+    pub player: ObjectHeader,
+    pub item: Item,
+}
+
+#[cfg(feature = "ngs_packets")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x21)]
+pub struct EquipedWeaponNGSPacket {
+    pub player: ObjectHeader,
+    pub item: ItemNGS,
+}
+
 // 0x0F, 0x22
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -447,6 +468,19 @@ pub struct ReceiveCampaignRequestPacket {
 pub struct Unk0f9cPacket {
     #[Magic(0xA25, 0xF6)]
     pub ids: Vec<Unk0f9c>,
+}
+
+// 0x0F, 0xBC
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0xBC)]
+pub struct ChangeWeaponPalettePacket {
+    pub player: ObjectHeader,
+    #[FixedLen(0x12)]
+    pub unk: Vec<u16>,
+    #[SeekAfter(0x4)]
+    pub cur_palette: u32,
 }
 
 // 0x0F, 0xDF

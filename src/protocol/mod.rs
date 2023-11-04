@@ -15,6 +15,7 @@ pub mod missions;
 pub mod models;
 pub mod objects;
 pub mod orders;
+pub mod palette;
 pub mod party;
 pub mod questlist;
 pub mod server;
@@ -27,6 +28,7 @@ use mail::*;
 use missions::*;
 use objects::*;
 use orders::*;
+use palette::*;
 use party::*;
 use questlist::*;
 use server::*;
@@ -143,6 +145,8 @@ pub enum Packet {
     Unk0424(Unk0424Packet),
     #[Id(0x04, 0x2B)]
     Unk042B(Unk042BPacket),
+    #[Id(0x04, 0x2E)]
+    LoadPAs(LoadPAsPacket),
     #[Id(0x04, 0x3B)]
     RemoveObject(RemoveObjectPacket),
     #[Id(0x04, 0x3C)]
@@ -353,6 +357,14 @@ pub enum Packet {
     GetItemDescription(GetItemDescriptionPacket),
     #[Id(0x0F, 0x1D)]
     LoadItemDescription(LoadItemDescriptionPacket),
+    #[Id(0x0F, 0x21)]
+    #[Classic]
+    EquipedWeapon(EquipedWeaponPacket),
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[Id(0x0F, 0x21)]
+    #[NGS]
+    EquipedWeaponNGS(EquipedWeaponNGSPacket),
     #[Id(0x0F, 0x22)]
     #[Classic]
     UpdateStorage(UpdateStoragePacket),
@@ -381,8 +393,12 @@ pub enum Packet {
     CampaignItemList(CampaignItemListPacket),
     #[Id(0x0F, 0x73)]
     ReceiveCampaignRequest(ReceiveCampaignRequestPacket),
+    #[Id(0x0F, 0x8A)]
+    CharacterCapaignsRequest,
     #[Id(0x0F, 0x9C)]
     Unk0f9c(Unk0f9cPacket),
+    #[Id(0x0F, 0xBC)]
+    ChangeWeaponPalette(ChangeWeaponPalettePacket),
     #[Id(0x0F, 0xDF)]
     LoadMaterialStorage(LoadMaterialStoragePacket),
     #[Id(0x0F, 0xE0)]
@@ -514,10 +530,14 @@ pub enum Packet {
     CharacterNewNameRequest(CharacterNewNameRequestPacket),
     #[Id(0x11, 0x9C)]
     CharacterNewName(CharacterNewNamePacket),
+    #[Id(0x11, 0x9D)]
+    NicknameChangeRequest,
     #[Id(0x11, 0xB8)]
     CharacterMoveRequest(CharacterMoveRequestPacket),
     #[Id(0x11, 0xB9)]
     CharacterMove(CharacterMovePacket),
+    #[Id(0x11, 0xDE)]
+    PlayerReported(PlayerReportedPacket),
     #[Id(0x11, 0xEA)]
     NicknameError(NicknameErrorPacket),
     #[Id(0x11, 0xED)]
@@ -578,6 +598,27 @@ pub enum Packet {
     OrderList(OrderListPacket),
     #[Id(0x1F, 0x08)]
     TakenOrders(TakenOrdersPacket),
+
+    // Palette packets [0x21]
+    #[Category(PacketCategory::Palette)]
+    #[Id(0x21, 0x01)]
+    LoadPalette(LoadPalettePacket),
+    #[Id(0x21, 0x02)]
+    FullPaletteInfoRequest,
+    #[Id(0x21, 0x03)]
+    FullPaletteInfo(FullPaletteInfoPacket),
+    #[Id(0x21, 0x04)]
+    SetPalette(SetPalettePacket),
+    #[Id(0x21, 0x05)]
+    UpdateSubPalette(UpdateSubPalettePacket),
+    #[Id(0x21, 0x06)]
+    UpdatePalette(UpdatePalettePacket),
+    #[Id(0x21, 0x08)]
+    SetSubPalette(SetSubPalettePacket),
+    #[Id(0x21, 0x0A)]
+    SetDefaultPAs(SetDefaultPAsPacket),
+    #[Id(0x21, 0x0F)]
+    NewDefaultPAs(NewDefaultPAsPacket),
 
     // Settings packets [0x2B]
     #[Category(PacketCategory::Settings)]
@@ -695,6 +736,8 @@ pub enum PacketCategory {
     Characters,
     /// Daily orders related packets.
     DailyOrders,
+    /// Palette related packets. See [`palette`]
+    Palette,
     /// Settings related packets.
     Settings,
     /// Symbol Art related packets. See [`symbolart`]
