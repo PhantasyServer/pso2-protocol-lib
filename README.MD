@@ -7,6 +7,10 @@ Library that aims to provide easy(er) interaction with the PSO2 protocol.
  * Pre-NGS (Global: 6.1253.3, JP: 6.1201.0, Vita: 6.1001.2)
  * NGS
 
+## Compatability with other languages
+
+This library has an [FFI](packetlib_ffi). It allows for working with packets using JSON or MessagePack.
+
 ## Notes
 
  - For more information about the protocol, see [this file](packet_docs/README.MD) (currently unmaintained, contributions are welcome).

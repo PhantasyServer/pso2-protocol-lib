@@ -1,5 +1,7 @@
 use crate::protocol::{HelperReadWrite, PacketType};
 
+use super::character::ClassFlags;
+
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub enum ItemAttributes {
@@ -122,23 +124,24 @@ pub struct WeaponAttrs {
     pub unk3: u8,
     pub icon_list: u16,
     pub icon_index: u16,
-    pub damage2: u16,
+    pub range_dmg: u16,
     pub unk4: u8,
-    pub damage1: u16,
+    pub melee_dmg: u16,
     pub unk5: u8,
     pub unk6: u32,
-    pub damage3: u16,
-    pub unk7: [u8; 5],
+    pub gender_force_dmg: u16,
+    pub unk8: [u8; 4],
+    pub race: u8,
     pub flags2: u8,
-    pub class: u16,
+    pub class: ClassFlags,
     pub req_stat: u16,
     pub req_stat_type: u8,
-    pub unk8: u8,
+    pub unk9: u8,
     pub model: u16,
-    pub unk9: u32,
-    pub unk10: u16,
-    pub affix_flag: u16,
+    pub unk10: u32,
     pub unk11: u16,
+    pub affix_flag: u16,
+    pub unk12: u16,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

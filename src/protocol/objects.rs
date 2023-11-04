@@ -178,6 +178,21 @@ pub struct Unk042BPacket {
     pub unk2: ObjectHeader,
 }
 
+// 0x04, 0x2E
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x2E)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct LoadPAsPacket {
+    pub receiver: ObjectHeader,
+    pub target: ObjectHeader,
+    #[FixedLen(0xEE)]
+    pub levels: Vec<u8>,
+    #[FixedLen(0x40)]
+    pub unk: Vec<u8>,
+}
+
 // 0x04, 0x3B
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]

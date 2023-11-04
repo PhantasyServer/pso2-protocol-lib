@@ -1,0 +1,22 @@
+[package]
+name = "packetlib_ffi"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["json", "messagepack"]
+json = ["dep:serde_json"]
+messagepack = ["dep:rmp-serde"]
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+pso2packetlib = { path = "../", features = ["serde"] }
+rmp-serde = { version = "1.1.2", optional = true }
+serde_json = { version = "1.0.108", optional = true }
+
+[build-dependencies]
+cbindgen = "0.25.0"

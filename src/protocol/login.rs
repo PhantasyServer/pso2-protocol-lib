@@ -78,22 +78,37 @@ pub struct LoginResponsePacket {
     pub blockname: String,
     pub unk1: f32,
     pub unk2: u32,
-    pub unk3: u32,
-    pub unk4: u32,
-    pub unk5: f32,
+    pub level_cap: u32,
+    pub level_cap2: u32,
+    pub unk5: u32,
     pub unk6: f32,
-    pub unk7: u32,
-    pub unk8: f32,
+    pub unk7: f32,
+    pub unk8: u32,
     pub unk9: f32,
-    pub unk10: u32,
-    pub unk11: f32,
-    pub unk12: u32,
-    pub unk13: f32,
+    pub unk10: f32,
+    pub unk11: u32,
+    pub unk12: f32,
+    pub unk13: u32,
     pub unk14: [f32; 0xA],
     pub unk15: [f32; 0x15],
-    pub unk16: u32,
-    #[SeekAfter(0x0C)]
-    pub unk17: u32,
+    pub unk16: f32,
+    pub unk17: f32,
+    pub unk18: [f32; 0x9],
+    pub unk19: [u32; 0x2],
+    pub unk20: u32,
+    pub unk21: u32,
+    pub unk22: [f32; 0x3],
+    pub unk23: u32,
+    pub unk24: f32,
+    pub unk25: f32,
+    pub unk26: u32,
+    pub unk27: [u8; 0xC],
+    #[FixedStr(0x20)]
+    pub unk28: String,
+    pub unk29: u32,
+    #[VariableStr(0x8BA4, 0xB6)]
+    pub unk30: String,
+    pub unk31: u32,
 }
 
 // 0x11, 0x03
@@ -576,6 +591,20 @@ pub struct CharacterMovePacket {
     pub unk5: u32,
 }
 
+// 0x11, 0xDE
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0xDE)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct PlayerReportedPacket {
+    pub targed_id: u32,
+    pub reason: u8,
+    #[Seek(3)]
+    #[VariableStr(0x60, 0x8F)]
+    pub msg: String,
+}
+
 // 0x11, 0xEA
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -731,7 +760,8 @@ pub struct BlockInfo {
     pub port: u16,
     pub unk10: u16,
     pub unk11: u16,
-    pub unk12: [u8; 10],
+    pub unk12: [u16; 3],
+    pub cur_capacity: f32,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -1031,23 +1061,37 @@ impl Default for LoginResponsePacket {
                 entity_type: EntityType::Player,
             },
             blockname: String::new(),
-            unk1: 60.0,
-            unk2: 7,
-            unk3: 0xA,
-            unk4: 1,
-            unk5: 10.0,
-            unk6: 5.0,
-            unk7: 11,
-            unk8: 1.0,
-            unk9: 75.0,
-            unk10: 40,
-            unk11: 10.0,
-            unk12: 1,
-            unk13: 100.0,
-            unk14: [1.0; 0xA],
+            unk1: 70.0,
+            unk2: 32767,
+            level_cap: 100,
+            level_cap2: 100,
+            unk5: 1,
+            unk6: 10.0,
+            unk7: 5.0,
+            unk8: 0,
+            unk9: 2.0,
+            unk10: 75.0,
+            unk11: 70,
+            unk12: 25.0,
+            unk13: 1,
+            unk14: [100.0; 0xA],
             unk15: [100.0; 0x15],
-            unk16: 0x91A2B,
-            unk17: 0x91A2B,
+            unk16: 450.0,
+            unk17: 100.0,
+            unk18: [100.0; 0x9],
+            unk19: [0; 0x2],
+            unk20: 15,
+            unk21: 5,
+            unk22: [15.0; 0x3],
+            unk23: 0,
+            unk24: 3000.0,
+            unk25: 1000.0,
+            unk26: 0,
+            unk27: [0; 0xC],
+            unk28: String::new(),
+            unk29: 0,
+            unk30: String::new(),
+            unk31: 0,
         }
     }
 }
@@ -1192,7 +1236,9 @@ impl Default for BlockInfo {
             port: 0,
             unk10: 0,
             unk11: 0,
-            unk12: [0; 10],
+            // unk12: [0; 6],
+            unk12: [0; 3],
+            cur_capacity: 0.0,
         }
     }
 }
