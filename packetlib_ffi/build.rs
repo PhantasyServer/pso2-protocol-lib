@@ -9,6 +9,7 @@ fn main() {
     csbindgen::Builder::default()
         .input_extern_file("src/lib.rs")
         .input_extern_file("src/protocol.rs")
+        .input_extern_file("src/connection.rs")
         .csharp_namespace("packetlib")
         .csharp_dll_name("packetlib_ffi")
         .generate_csharp_file("packetlib.cs")

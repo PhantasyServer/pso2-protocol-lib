@@ -29,7 +29,7 @@ pub struct DataBuffer {
     pub ptr: *const u8,
     pub size: usize,
 }
-const NULL_BUF: DataBuffer = DataBuffer {
+pub(crate) const NULL_BUF: DataBuffer = DataBuffer {
     ptr: std::ptr::null(),
     size: 0,
 };
@@ -159,19 +159,15 @@ pub extern "C" fn create_packet(
 /// # Safety
 /// The returned pointer is only valid until the next failable function call.
 #[no_mangle]
-pub extern "C" fn get_error(worker: Option<&mut PacketWorker>) -> *const u8 {
-    let null = std::ptr::null();
-    let Some(worker) = worker else {
-        return null;
-    };
-    match worker.err_str {
-        Some(ref str) => str.as_ptr() as *const u8,
-        None => null,
+pub extern "C" fn get_pw_error(worker: Option<&PacketWorker>) -> *const u8 {
+    match worker.and_then(|w| w.err_str.as_ref()) {
+        Some(e) => e.as_ptr() as *const u8,
+        None => std::ptr::null(),
     }
 }
 
 impl SerializedFormat {
-    fn serialize(self, packet: &Packet) -> Result<Vec<u8>, Box<dyn Error>> {
+    pub(crate) fn serialize(self, packet: &Packet) -> Result<Vec<u8>, Box<dyn Error>> {
         match self {
             #[cfg(feature = "json")]
             SerializedFormat::JSON => {
@@ -191,7 +187,7 @@ impl SerializedFormat {
             SerializedFormat::MessagePackNamed => Err("Unsupported serde format".into()),
         }
     }
-    fn deserialize(self, data: &[u8]) -> Result<Packet, Box<dyn Error>> {
+    pub(crate) fn deserialize(self, data: &[u8]) -> Result<Packet, Box<dyn Error>> {
         match self {
             #[cfg(feature = "json")]
             SerializedFormat::JSON => {
@@ -238,6 +234,19 @@ impl From<PacketType> for PacketTypeEX {
             PacketType::JP => Self::JP,
             PacketType::Vita => Self::Vita,
             PacketType::Raw => Self::Raw,
+        }
+    }
+}
+
+impl From<PacketTypeEX> for PacketType {
+    fn from(value: PacketTypeEX) -> Self {
+        match value {
+            PacketTypeEX::NGS => Self::NGS,
+            PacketTypeEX::Classic => Self::Classic,
+            PacketTypeEX::NA => Self::NA,
+            PacketTypeEX::JP => Self::JP,
+            PacketTypeEX::Vita => Self::Vita,
+            PacketTypeEX::Raw => Self::Raw,
         }
     }
 }

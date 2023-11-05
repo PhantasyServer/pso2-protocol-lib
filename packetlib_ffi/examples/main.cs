@@ -47,7 +47,7 @@ class PacketWorker
             fixed (byte* ptr = b)
             {
                 var buf = packetlib.NativeMethods.parse_packet(worker, ptr, (nuint) b.Length);
-                var err = packetlib.NativeMethods.get_error(worker);
+                var err = packetlib.NativeMethods.get_pw_error(worker);
                 if (err != null)
                 {
                     int i = 0;
@@ -79,7 +79,7 @@ class PacketWorker
             fixed (byte* ptr = str_data2)
             {
                 var buf = packetlib.NativeMethods.create_packet(worker, ptr, (nuint)str_data2.Length);
-                var err = packetlib.NativeMethods.get_error(worker);
+                var err = packetlib.NativeMethods.get_pw_error(worker);
                 if (err != null)
                 {
                     int i = 0;

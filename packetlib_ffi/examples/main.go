@@ -12,7 +12,7 @@ func parse_packet(worker *C.PacketWorker, b []byte) (string, error) {
 	cb := C.CBytes(b)
 	defer C.free(unsafe.Pointer(cb))
 	buf := C.parse_packet(worker, (*C.uchar)(cb), (C.ulong)(len(b)))
-	err := C.get_error(worker)
+	err := C.get_pw_error(worker)
 	if err != nil {
 		err_str := C.GoString((*C.char)(unsafe.Pointer(err)))
 		return "", errors.New(err_str)
@@ -28,7 +28,7 @@ func create_packet(worker *C.PacketWorker, s string) ([]byte, error) {
 	cs := C.CString(s)
 	defer C.free(unsafe.Pointer(cs))
 	buf := C.create_packet(worker, (*C.uchar)(unsafe.Pointer(cs)), (C.ulong)(len(s)+1))
-	err := C.get_error(worker)
+	err := C.get_pw_error(worker)
 	if err != nil {
 		err_str := C.GoString((*C.char)(unsafe.Pointer(err)))
 		return []byte{}, errors.New(err_str)

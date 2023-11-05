@@ -96,7 +96,7 @@ impl<R: Read + Seek> PPACReader<R> {
         })
     }
 
-    /// Manually set client type
+    /// Sets the output type
     pub fn set_out_type(&mut self, out_type: OutputType) {
         self.out_type = out_type;
     }
