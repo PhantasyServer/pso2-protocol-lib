@@ -5,7 +5,7 @@ pub mod connection;
 #[cfg(feature = "ppac")]
 pub mod ppac;
 
-pub const API_VERSION: u32 = 2;
+pub const API_VERSION: u32 = 3;
 pub const PROTOCOL_VERSION: u32 = 1;
 
 #[no_mangle]

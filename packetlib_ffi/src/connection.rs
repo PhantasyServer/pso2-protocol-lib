@@ -4,7 +4,7 @@ use std::{
     net::{TcpListener, TcpStream},
 };
 
-use crate::protocol::{DataBuffer, SerializedFormat};
+use crate::protocol::{DataBuffer, Packet};
 
 #[repr(C)]
 pub enum SocketResult {
@@ -135,7 +135,6 @@ pub extern "C" fn get_connection(
     packet_type: crate::protocol::PacketType,
     in_key: *const i8,
     out_key: *const i8,
-    serde_format: SerializedFormat,
 ) -> Option<Box<Connection>> {
     let Some(factory) = factory else {
         return None;
@@ -171,8 +170,7 @@ pub extern "C" fn get_connection(
             in_key,
             out_key,
         )),
-        serde_format,
-        data: vec![],
+        data: None,
         key: vec![],
     }))
 }
@@ -200,21 +198,37 @@ pub extern "C" fn stream_into_fd(factory: Option<&mut SocketFactory>) -> i64 {
     }
 }
 
-/// Closes the stream. This function takes ownership of the descriptor.
+/// Clones the descriptor. Returns the cloned descriptor or -1 if an error occurred.
 #[no_mangle]
-pub extern "C" fn close_stream(fd: i64) {
+pub extern "C" fn clone_fd(factory: Option<&mut SocketFactory>, fd: i64) -> i64 {
+    let Some(factory) = factory else {
+        return i64::MAX;
+    };
+    factory.err_str = None;
+    match copy_fd_failable(fd) {
+        Ok(fd) => fd,
+        Err(e) => {
+            factory.err_str = Some(CString::new(e.to_string()).unwrap_or_default());
+            i64::MAX
+        }
+    }
+}
+
+/// Closes the file descriptor.
+#[no_mangle]
+pub extern "C" fn close_fd(fd: i64) {
     if fd == i64::MAX {
         return;
     }
     #[cfg(windows)]
     {
-        use std::os::windows::io::{FromRawSocket, RawSocket};
-        unsafe { TcpStream::from_raw_socket(fd as RawSocket) };
+        use std::os::windows::io::{FromRawSocket, OwnedSocket, RawSocket};
+        unsafe { OwnedSocket::from_raw_socket(fd as RawSocket) };
     }
     #[cfg(not(windows))]
     {
-        use std::os::fd::{FromRawFd, RawFd};
-        unsafe { TcpStream::from_raw_fd(fd as RawFd) };
+        use std::os::fd::{FromRawFd, OwnedFd, RawFd};
+        unsafe { OwnedFd::from_raw_fd(fd as RawFd) };
     }
 }
 
@@ -238,24 +252,6 @@ pub extern "C" fn listener_into_fd(factory: Option<&mut SocketFactory>) -> i64 {
             }
         }
         None => i64::MAX,
-    }
-}
-
-/// Closes the listener. This function takes ownership of the descriptor.
-#[no_mangle]
-pub extern "C" fn close_listener(fd: i64) {
-    if fd == i64::MAX {
-        return;
-    }
-    #[cfg(windows)]
-    {
-        use std::os::windows::io::{FromRawSocket, RawSocket};
-        unsafe { TcpListener::from_raw_socket(fd as RawSocket) };
-    }
-    #[cfg(not(windows))]
-    {
-        use std::os::fd::{FromRawFd, RawFd};
-        unsafe { TcpListener::from_raw_fd(fd as RawFd) };
     }
 }
 
@@ -285,23 +281,6 @@ pub extern "C" fn listener_from_fd(factory: Option<&mut SocketFactory>, fd: i64)
     }
 }
 
-/// Installs the provided listener. This function copies the descriptor.
-///
-/// # Safety
-/// `fd` must be a valid descriptor.
-#[no_mangle]
-pub extern "C" fn listener_from_borrowed_fd(factory: Option<&mut SocketFactory>, fd: i64) -> bool {
-    let Some(factory) = factory else { return false };
-    factory.err_str = None;
-    match listener_from_borrowed_fd_failable(factory, fd) {
-        Ok(_) => true,
-        Err(e) => {
-            factory.err_str = Some(CString::new(e.to_string()).unwrap_or_default());
-            false
-        }
-    }
-}
-
 /// Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error
 /// occurred.
 ///
@@ -327,36 +306,30 @@ fn create_stream_failable(str: *const i8) -> Result<TcpStream, Box<dyn Error>> {
     Ok(listener)
 }
 
-fn listener_from_borrowed_fd_failable(
-    factory: &mut SocketFactory,
-    fd: i64,
-) -> Result<(), Box<dyn Error>> {
+fn copy_fd_failable(fd: i64) -> Result<i64, Box<dyn Error>> {
     if fd == i64::MAX {
-        return Ok(());
+        return Ok(i64::MAX);
     }
     #[cfg(windows)]
     {
-        use std::os::windows::io::{BorrowedSocket, RawSocket};
+        use std::os::windows::io::{BorrowedSocket, IntoRawSocket, RawSocket};
         let socket = unsafe { BorrowedSocket::borrow_raw(fd as RawSocket) };
         let socket = socket.try_clone_to_owned()?;
-        factory.listener = Some(socket.into());
-        return Ok(());
+        return Ok(socket.into_raw_socket() as i64);
     }
     #[cfg(not(windows))]
     {
-        use std::os::fd::{BorrowedFd, RawFd};
+        use std::os::fd::{BorrowedFd, IntoRawFd, RawFd};
         let fd = unsafe { BorrowedFd::borrow_raw(fd as RawFd) };
         let fd = fd.try_clone_to_owned()?;
-        factory.listener = Some(fd.into());
-        return Ok(());
+        return Ok(fd.into_raw_fd() as i64);
     }
 }
 
 pub struct Connection {
     err_str: Option<CString>,
     con: Option<pso2packetlib::Connection>,
-    serde_format: SerializedFormat,
-    data: Vec<u8>,
+    data: Option<Packet>,
     key: Vec<u8>,
 }
 
@@ -370,7 +343,6 @@ pub extern "C" fn new_connection(
     packet_type: crate::protocol::PacketType,
     in_key: *const i8,
     out_key: *const i8,
-    serde_format: SerializedFormat,
 ) -> Box<Connection> {
     let con = {
         #[cfg(windows)]
@@ -412,8 +384,7 @@ pub extern "C" fn new_connection(
             in_key,
             out_key,
         )),
-        serde_format,
-        data: vec![],
+        data: None,
         key: vec![],
     })
 }
@@ -442,20 +413,17 @@ pub extern "C" fn conn_set_packet_type(
         .and_then(|c| Some(c.change_packet_type(packet_type.into())));
 }
 
-/// Returns a fat pointer to parsed packet data or a null pointer if no connection was provided.
+/// Returns a [`Packet`] or a null pointer if no connection was provided.
 ///
 /// # Safety
 /// The returned pointer is only valid until the next data-returning function call.
 /// If the returned array is empty, the pointer might be non-null but still invalid. This is not
 /// considered an error.
 #[no_mangle]
-pub extern "C" fn conn_get_data(conn: Option<&Connection>) -> DataBuffer {
+pub extern "C" fn conn_get_data(conn: Option<&mut Connection>) -> Option<Box<Packet>> {
     match conn {
-        Some(c) => DataBuffer {
-            ptr: c.data.as_ptr(),
-            size: c.data.len(),
-        },
-        None => crate::protocol::NULL_BUF,
+        Some(c) => c.data.take().and_then(|d| Some(Box::new(d.into()))),
+        None => None,
     }
 }
 
@@ -486,8 +454,7 @@ pub extern "C" fn conn_read_packet(conn: Option<&mut Connection>) -> SocketResul
 #[no_mangle]
 pub extern "C" fn conn_write_packet(
     conn: Option<&mut Connection>,
-    ptr: *const u8,
-    size: usize,
+    packet: Option<&Packet>,
 ) -> SocketResult {
     let Some(conn) = conn else {
         return SocketResult::NoSocket;
@@ -495,7 +462,7 @@ pub extern "C" fn conn_write_packet(
     if conn.con.is_none() {
         return SocketResult::NoSocket;
     }
-    match conn_write_packet_failable(conn, ptr, size) {
+    match conn_write_packet_failable(conn, packet) {
         Ok(r) => r,
         Err(e) => {
             conn.err_str = Some(CString::new(format!("{}", e)).unwrap_or_default());
@@ -527,6 +494,7 @@ pub extern "C" fn conn_get_key(conn: Option<&mut Connection>) -> DataBuffer {
 ///
 /// # Safety
 /// The returned pointer is only valid until the next failable function call.
+#[no_mangle]
 pub extern "C" fn get_conn_error(conn: Option<&Connection>) -> *const u8 {
     match conn.and_then(|c| c.err_str.as_ref()) {
         Some(e) => e.as_ptr() as *const u8,
@@ -540,28 +508,19 @@ fn conn_read_packet_failable(conn: &mut Connection) -> Result<SocketResult, Box<
         Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => return Ok(SocketResult::Blocked),
         Err(e) => return Err(e.into()),
     };
-    let data = conn.serde_format.serialize(&packet)?;
-    conn.data = data;
+    conn.data = Some(packet.into());
     Ok(SocketResult::Ready)
 }
 
 fn conn_write_packet_failable(
     conn: &mut Connection,
-    ptr: *const u8,
-    size: usize,
+    packet: Option<&Packet>,
 ) -> Result<SocketResult, Box<dyn Error>> {
-    let data = if ptr.is_null() {
-        &[]
-    } else {
-        unsafe { std::slice::from_raw_parts(ptr, size) }
+    let data = match packet {
+        Some(p) => p,
+        None => &pso2packetlib::protocol::Packet::None,
     };
-
-    match conn
-        .con
-        .as_mut()
-        .unwrap()
-        .write_packet(&conn.serde_format.deserialize(data)?)
-    {
+    match conn.con.as_mut().unwrap().write_packet(data) {
         Ok(_) => {}
         Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => return Ok(SocketResult::Blocked),
         Err(e) => return Err(e.into()),

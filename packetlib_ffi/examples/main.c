@@ -1,19 +1,29 @@
-#include "../packetlib.h"
+#include "../include/packetlib.h"
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+
+//------------------------
+// Packet example
+//------------------------
 
 void packet_demo() {
   PacketWorker *worker = new_worker(Classic, JSON);
 
   // example of parsing packets
   uint8_t data[] = {8, 0, 0, 0, 3, 4, 0, 0};
-  DataBuffer buf = parse_packet(worker, data, 8);
+  Packet *packet = raw_to_packet(worker, data, 8);
   const unsigned char *err = get_pw_error(worker);
+  if (err != NULL)
+    printf("%s\n", err);
+  DataBuffer buf = packet_to_ser(worker, packet);
+  err = get_pw_error(worker);
   if (err != NULL)
     printf("%s\n", err);
   if (buf.ptr != NULL && buf.size != 0)
     printf("%s\n", buf.ptr);
+  free_packet(packet);
 
   // example of creating packets
   char str[] = "{\"LoadLevel\":{}}";
@@ -40,7 +50,12 @@ void packet_demo() {
   free_worker(worker);
 }
 
+//------------------------
+// Socket example
+//------------------------
+
 void socket_demo() {
+  PacketWorker *worker = new_worker(Classic, JSON);
   SocketFactory *sf = new_factory();
 
   // create a new listener
@@ -49,6 +64,7 @@ void socket_demo() {
     if (err != NULL)
       printf("%s\n", err);
     free_factory(sf);
+    free_worker(worker);
     return;
   }
 
@@ -57,14 +73,17 @@ void socket_demo() {
 
   // copy handle
   int64_t handle = listener_into_fd(sf);
-  if (!listener_from_borrowed_fd(sf, handle)) {
+  int64_t handle2;
+  if ((handle2 = clone_fd(sf, handle)) == -1) {
     const unsigned char *err = get_sf_error(sf);
     if (err != NULL)
       printf("%s\n", err);
     free_factory(sf);
+    free_worker(worker);
     return;
   }
-  close_listener(handle);
+  listener_from_fd(sf, handle2);
+  close_fd(handle);
 
   // wait for connection
   enum SocketResult sr = Blocked;
@@ -77,12 +96,13 @@ void socket_demo() {
       if (err != NULL)
         printf("%s\n", err);
       free_factory(sf);
+      free_worker(worker);
       return;
     }
   }
 
   // get received connection
-  Connection *conn = get_connection(sf, Classic, NULL, NULL, JSON);
+  Connection *conn = get_connection(sf, Classic, NULL, NULL);
 
   int ip = get_conn_ip(conn);
   printf("Ip: ");
@@ -92,13 +112,21 @@ void socket_demo() {
 
   // write data to client
   char str[] = "{\"LoadLevel\":{}}";
-  sr = conn_write_packet(conn, (const uint8_t *)str, strlen(str) + 1);
+  Packet *packet = ser_to_packet(worker, (const uint8_t *)str, strlen(str) + 1);
+  {
+    const unsigned char *err = get_pw_error(worker);
+    if (err != NULL)
+      printf("%s\n", err);
+  }
+  sr = conn_write_packet(conn, packet);
+  free_packet(packet);
   if (sr == SocketError) {
-    const unsigned char *err = get_sf_error(sf);
+    const unsigned char *err = get_conn_error(conn);
     if (err != NULL)
       printf("%s\n", err);
     free_connection(conn);
     free_factory(sf);
+    free_worker(worker);
     return;
   }
   free_connection(conn);
@@ -109,9 +137,10 @@ void socket_demo() {
     if (err != NULL)
       printf("%s\n", err);
     free_factory(sf);
+    free_worker(worker);
     return;
   }
-  conn = get_connection(sf, NGS, NULL, NULL, JSON);
+  conn = get_connection(sf, NGS, NULL, NULL);
 
   ip = get_conn_ip(conn);
   printf("Ip: ");
@@ -122,23 +151,32 @@ void socket_demo() {
   // read packet from server
   sr = conn_read_packet(conn);
   if (sr == Ready) {
-    DataBuffer data = conn_get_data(conn);
+    Packet *packet = conn_get_data(conn);
+    DataBuffer data = packet_to_ser(worker, packet);
     printf("%s\n", data.ptr);
+    free_packet(packet);
   } else if (sr == SocketError) {
-    const unsigned char *err = get_sf_error(sf);
+    const unsigned char *err = get_conn_error(conn);
     if (err != NULL)
       printf("%s\n", err);
     free_connection(conn);
     free_factory(sf);
+    free_worker(worker);
     return;
   }
   free_connection(conn);
 
   free_factory(sf);
+  free_worker(worker);
 }
 
+//------------------------
+// PPAC reader example
+//------------------------
+
 void ppac_demo() {
-  PPACReader *pr = new_reader((const signed char *)"test.pak", JSON);
+  PacketWorker *worker = new_worker(Classic, JSON);
+  PPACReader *pr = new_reader((const signed char *)"test.pak");
   const unsigned char *err = get_reader_error(pr);
   if (err) {
     printf("%s\n", err);
@@ -147,7 +185,7 @@ void ppac_demo() {
   }
   set_out_type(pr, OutputBoth);
   ReaderResult rr = Ok;
-  while (rr == Ok) {
+  while (rr == Ok || rr == RawOnly) {
     rr = read_packet(pr);
     err = get_reader_error(pr);
     if (err) {
@@ -159,14 +197,19 @@ void ppac_demo() {
     PacketData pd = get_reader_data(pr);
     printf("----------\n");
     printf("Time: %lu\n", pd.time);
-    if (pd.data_ptr && pd.data_size) {
-      printf("Packet: %s\n", pd.data_ptr);
+    printf("Direction: %u\n", pd.direction);
+    printf("Protocol Type: %u\n", pd.protocol_type);
+    if (pd.data) {
+      DataBuffer data = packet_to_ser(worker, pd.data);
+      printf("Packet: %s\n", data.ptr);
+      free_packet(pd.data);
     } else if (pd.raw_ptr && pd.raw_size) {
-      printf("RAW");
+      printf("RAW\n");
     }
   }
 
   free_reader(pr);
+  free_worker(worker);
 }
 
 int main(int argc, char **argv) {

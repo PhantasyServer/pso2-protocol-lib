@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define API_VERSION 2
+#define API_VERSION 3
 
 #define PROTOCOL_VERSION 1
 
@@ -72,6 +72,8 @@ typedef struct Connection Connection;
 
 typedef struct PPACReader PPACReader;
 
+typedef struct Packet Packet;
+
 typedef struct PacketWorker PacketWorker;
 
 typedef struct SocketFactory SocketFactory;
@@ -100,8 +102,7 @@ typedef struct PacketData {
   /**
    * Parsed packet (if requested)
    */
-  const uint8_t *data_ptr;
-  size_t data_size;
+  struct Packet *data;
   /**
    * Raw packet (if requested)
    */
@@ -138,6 +139,21 @@ struct PacketWorker *new_worker(enum PacketType packet_type, enum SerializedForm
 void free_worker(struct PacketWorker *_worker);
 
 /**
+ * Destroys a packet.
+ */
+void free_packet(struct Packet *_packet);
+
+/**
+ * Clones the packet.
+ */
+struct Packet *clone_packet(const struct Packet *packet);
+
+/**
+ * Checks if the packet is empty.
+ */
+bool packet_is_empty(const struct Packet *packet);
+
+/**
  * Sets a new packet type.
  */
 void set_packet_type(struct PacketWorker *worker, enum PacketType packet_type);
@@ -151,6 +167,37 @@ void set_serde_format(struct PacketWorker *worker, enum SerializedFormat format)
  * Checks if the specified serde format is supported.
  */
 bool serde_supported(enum SerializedFormat serde_format);
+
+/**
+ * Parses raw packet data and returns a [`Packet`] type or a null pointer if an error occured.
+ */
+struct Packet *raw_to_packet(struct PacketWorker *worker, const uint8_t *data_ptr, size_t size);
+
+/**
+ * Parses serialized packet data and returns a [`Packet`] type or a null pointer if an error
+ * occurred.
+ */
+struct Packet *ser_to_packet(struct PacketWorker *worker, const uint8_t *data_ptr, size_t size);
+
+/**
+ * Parses [`Packet`] and returns raw packet data.
+ *
+ * # Safety
+ * The returned pointer is only valid until the next data-returning function call.
+ * If the returned array is empty, the pointer might be non-null but still invalid. This is not
+ * considered an error.
+ */
+struct DataBuffer packet_to_raw(struct PacketWorker *worker, const struct Packet *packet);
+
+/**
+ * Parses [`Packet`] and returns serialized packet data or a null pointer if an error occured.
+ *
+ * # Safety
+ * The returned pointer is only valid until the next data-returning function call.
+ * If the returned array is empty, the pointer might be non-null but still invalid. This is not
+ * considered an error.
+ */
+struct DataBuffer packet_to_ser(struct PacketWorker *worker, const struct Packet *packet);
 
 /**
  * Parses packet data and returns a fat pointer to the serialized packet or a null pointer if
@@ -231,8 +278,7 @@ uint32_t get_stream_ip(const struct SocketFactory *factory);
 struct Connection *get_connection(struct SocketFactory *factory,
                                   enum PacketType packet_type,
                                   const int8_t *in_key,
-                                  const int8_t *out_key,
-                                  enum SerializedFormat serde_format);
+                                  const int8_t *out_key);
 
 /**
  * Returns an incoming connection descriptor. Caller is responsible for closing the returned descriptor.
@@ -240,19 +286,19 @@ struct Connection *get_connection(struct SocketFactory *factory,
 int64_t stream_into_fd(struct SocketFactory *factory);
 
 /**
- * Closes the stream. This function takes ownership of the descriptor.
+ * Clones the descriptor. Returns the cloned descriptor or -1 if an error occurred.
  */
-void close_stream(int64_t fd);
+int64_t clone_fd(struct SocketFactory *factory, int64_t fd);
+
+/**
+ * Closes the file descriptor.
+ */
+void close_fd(int64_t fd);
 
 /**
  * Returns an owned socket descriptor. Caller is responsible for closing the returned descriptor.
  */
 int64_t listener_into_fd(struct SocketFactory *factory);
-
-/**
- * Closes the listener. This function takes ownership of the descriptor.
- */
-void close_listener(int64_t fd);
 
 /**
  * Installs the provided listener. This function takes ownership of the descriptor.
@@ -261,14 +307,6 @@ void close_listener(int64_t fd);
  * `fd` must be a valid descriptor.
  */
 bool listener_from_fd(struct SocketFactory *factory, int64_t fd);
-
-/**
- * Installs the provided listener. This function copies the descriptor.
- *
- * # Safety
- * `fd` must be a valid descriptor.
- */
-bool listener_from_borrowed_fd(struct SocketFactory *factory, int64_t fd);
 
 /**
  * Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error
@@ -288,8 +326,7 @@ const uint8_t *get_sf_error(const struct SocketFactory *factory);
 struct Connection *new_connection(int64_t fd,
                                   enum PacketType packet_type,
                                   const int8_t *in_key,
-                                  const int8_t *out_key,
-                                  enum SerializedFormat serde_format);
+                                  const int8_t *out_key);
 
 /**
  * Destroys a connection.
@@ -307,14 +344,14 @@ uint32_t get_conn_ip(const struct Connection *conn);
 void conn_set_packet_type(struct Connection *conn, enum PacketType packet_type);
 
 /**
- * Returns a fat pointer to parsed packet data or a null pointer if no connection was provided.
+ * Returns a [`Packet`] or a null pointer if no connection was provided.
  *
  * # Safety
  * The returned pointer is only valid until the next data-returning function call.
  * If the returned array is empty, the pointer might be non-null but still invalid. This is not
  * considered an error.
  */
-struct DataBuffer conn_get_data(const struct Connection *conn);
+struct Packet *conn_get_data(struct Connection *conn);
 
 /**
  * Reads a packet from the connection and stores it in the internal buffer. Call `conn_get_data`
@@ -329,7 +366,7 @@ enum SocketResult conn_read_packet(struct Connection *conn);
  * If this function returns [`SocketResult::Blocked`], then the data has been written to the
  * buffer.
  */
-enum SocketResult conn_write_packet(struct Connection *conn, const uint8_t *ptr, size_t size);
+enum SocketResult conn_write_packet(struct Connection *conn, const struct Packet *packet);
 
 /**
  * Returns the encryption key (for [`Packet::EncryptionResponse`]).
@@ -337,9 +374,18 @@ enum SocketResult conn_write_packet(struct Connection *conn, const uint8_t *ptr,
 struct DataBuffer conn_get_key(struct Connection *conn);
 
 /**
+ * Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error
+ * occurred.
+ *
+ * # Safety
+ * The returned pointer is only valid until the next failable function call.
+ */
+const uint8_t *get_conn_error(const struct Connection *conn);
+
+/**
  * Creates a new PPAC reader. After creation don't forget to check for errors.
  */
-struct PPACReader *new_reader(const int8_t *path, enum SerializedFormat serde_format);
+struct PPACReader *new_reader(const int8_t *path);
 
 /**
  * Destroys the reader.
@@ -359,12 +405,15 @@ enum ReaderResult read_packet(struct PPACReader *reader);
 /**
  * Returns a pointer to the packet data or a null pointer if no data exists.
  *
+ * # Note
+ * [`data`] field is only returned once and must be freed by the caller.
+ *
  * # Safety
  * The returned pointer is only valid until the next data-returning function call.
  * If the returned array is empty, the pointer might be non-null but still invalid. This is not
  * considered an error.
  */
-struct PacketData get_reader_data(const struct PPACReader *reader);
+struct PacketData get_reader_data(struct PPACReader *reader);
 
 /**
  * Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error

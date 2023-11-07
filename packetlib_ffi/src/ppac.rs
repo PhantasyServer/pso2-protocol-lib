@@ -6,7 +6,7 @@ use std::{
     fs::File,
 };
 
-use crate::protocol::{PacketType, SerializedFormat};
+use crate::protocol::{Packet, PacketType};
 
 #[repr(C)]
 pub enum ReaderResult {
@@ -37,7 +37,6 @@ pub struct PPACReader {
     err_str: Option<CString>,
     data: Option<ppac::PacketData>,
     data_parsed: Vec<u8>,
-    serde_format: SerializedFormat,
 }
 
 #[repr(C)]
@@ -49,8 +48,7 @@ pub struct PacketData {
     /// Which client version produced this packet.
     pub protocol_type: PacketType,
     /// Parsed packet (if requested)
-    pub data_ptr: *const u8,
-    pub data_size: usize,
+    pub data: Option<Box<Packet>>,
     /// Raw packet (if requested)
     pub raw_ptr: *const u8,
     pub raw_size: usize,
@@ -58,13 +56,12 @@ pub struct PacketData {
 
 /// Creates a new PPAC reader. After creation don't forget to check for errors.
 #[no_mangle]
-pub extern "C" fn new_reader(path: *const i8, serde_format: SerializedFormat) -> Box<PPACReader> {
+pub extern "C" fn new_reader(path: *const i8) -> Box<PPACReader> {
     let mut reader = PPACReader {
         reader: None,
         err_str: None,
         data: None,
         data_parsed: vec![],
-        serde_format,
     };
     if path.is_null() {
         reader.err_str = Some(CString::new("No path provided").unwrap_or_default());
@@ -106,28 +103,30 @@ pub extern "C" fn read_packet(reader: Option<&mut PPACReader>) -> ReaderResult {
 
 /// Returns a pointer to the packet data or a null pointer if no data exists.
 ///
+/// # Note
+/// [`data`] field is only returned once and must be freed by the caller.
+///
 /// # Safety
 /// The returned pointer is only valid until the next data-returning function call.
 /// If the returned array is empty, the pointer might be non-null but still invalid. This is not
 /// considered an error.
 #[no_mangle]
-pub extern "C" fn get_reader_data(reader: Option<&PPACReader>) -> PacketData {
+pub extern "C" fn get_reader_data(reader: Option<&mut PPACReader>) -> PacketData {
     let mut data = PacketData {
         time: 0,
         direction: Direction::ToServer,
         protocol_type: PacketType::Classic,
-        data_ptr: std::ptr::null(),
-        data_size: 0,
+        data: None,
         raw_ptr: std::ptr::null(),
         raw_size: 0,
     };
-    match reader.and_then(|r| r.data.as_ref()) {
+    let Some(reader) = reader else { return data };
+    match reader.data.as_mut() {
         Some(c) => {
             data.time = c.time.as_secs();
             data.direction = c.direction.into();
             data.protocol_type = c.protocol_type.into();
-            data.data_ptr = reader.unwrap().data_parsed.as_ptr();
-            data.data_size = reader.unwrap().data_parsed.len();
+            data.data = c.packet.take().and_then(|p| Some(Box::new(p.into())));
             data.raw_ptr = c
                 .data
                 .as_ref()
@@ -163,16 +162,11 @@ fn read_packet_failable(reader: &mut PPACReader) -> Result<ReaderResult, Box<dyn
     let Some(pac_reader) = reader.reader.as_mut() else {
         return Err("Invalid reader state".into());
     };
-    let mut packet_data = match pac_reader.read()? {
+    let packet_data = match pac_reader.read()? {
         Some(p) => p,
         None => return Ok(ReaderResult::ReaderEOF),
     };
     let is_raw = !packet_data.data.is_none() && packet_data.packet.is_none();
-    let parsed = match packet_data.packet.take() {
-        Some(p) => reader.serde_format.serialize(&p)?,
-        None => vec![],
-    };
-    reader.data_parsed = parsed;
     reader.data = Some(packet_data);
     if is_raw {
         Ok(ReaderResult::RawOnly)
