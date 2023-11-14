@@ -6,9 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["json", "messagepack"]
+default = ["json", "messagepack", "connection", "ngs", "ppac"]
 json = ["dep:serde_json"]
 messagepack = ["dep:rmp-serde"]
+connection = ["pso2packetlib/connection", "pso2packetlib/vita_enc", "pso2packetlib/base_enc"]
+ngs = ["pso2packetlib/ngs_packets", "pso2packetlib/ngs_enc"]
+ppac = ["pso2packetlib/ppac"]
 
 [lib]
 crate-type = ["cdylib", "staticlib"]
@@ -20,3 +23,4 @@ serde_json = { version = "1.0.108", optional = true }
 
 [build-dependencies]
 cbindgen = "0.25.0"
+csbindgen = "1.8.3"

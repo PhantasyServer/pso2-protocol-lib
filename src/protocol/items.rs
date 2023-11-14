@@ -395,6 +395,18 @@ pub struct LoadItemPacket {
     pub items: Vec<NamedId>,
 }
 
+// 0x0F, 0x33
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x33)]
+pub struct LearnedPAPacket {
+    pub player: ObjectHeader,
+    pub new_level: u32,
+    pub pa_id: u32,
+    pub item_id: ItemId,
+}
+
 // 0x0F, 0x65
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]

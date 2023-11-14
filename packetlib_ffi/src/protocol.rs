@@ -1,4 +1,4 @@
-use pso2packetlib::protocol::{Packet, PacketType as PacketTypeEX, ProtocolRW};
+use pso2packetlib::protocol::{Packet as PacketEX, PacketType as PacketTypeEX, ProtocolRW};
 use std::{error::Error, ffi::CString};
 
 /// Packet types.
@@ -24,12 +24,11 @@ pub enum SerializedFormat {
 
 /// Fat pointer to data.
 #[repr(C)]
-#[derive(Clone, Copy)]
 pub struct DataBuffer {
     pub ptr: *const u8,
     pub size: usize,
 }
-const NULL_BUF: DataBuffer = DataBuffer {
+pub(crate) const NULL_BUF: DataBuffer = DataBuffer {
     ptr: std::ptr::null(),
     size: 0,
 };
@@ -37,10 +36,13 @@ const NULL_BUF: DataBuffer = DataBuffer {
 pub struct PacketWorker {
     err_str: Option<CString>,
     data: Vec<u8>,
-    packets: Vec<Packet>,
+    packets: Vec<PacketEX>,
     packet_type: PacketTypeEX,
     serde_format: SerializedFormat,
 }
+
+#[derive(Clone)]
+pub struct Packet(PacketEX);
 
 /// Creates a new packet worker.
 #[no_mangle]
@@ -59,7 +61,25 @@ pub extern "C" fn new_worker(
 
 /// Destroys a packet worker.
 #[no_mangle]
-pub extern "C" fn free_worker(_: Option<Box<PacketWorker>>) {}
+pub extern "C" fn free_worker(_worker: Option<Box<PacketWorker>>) {}
+
+/// Destroys a packet.
+#[no_mangle]
+pub extern "C" fn free_packet(_packet: Option<Box<Packet>>) {}
+
+/// Clones the packet.
+#[no_mangle]
+pub extern "C" fn clone_packet(packet: Option<&Packet>) -> Option<Box<Packet>> {
+    packet.cloned().and_then(|p| Some(Box::new(p)))
+}
+
+/// Checks if the packet is empty.
+#[no_mangle]
+pub extern "C" fn packet_is_empty(packet: Option<&Packet>) -> bool {
+    let Some(packet) = packet else { return false };
+    let packet: &PacketEX = packet;
+    matches!(packet, PacketEX::None)
+}
 
 /// Sets a new packet type.
 #[no_mangle]
@@ -83,6 +103,118 @@ pub extern "C" fn serde_supported(serde_format: SerializedFormat) -> bool {
     serde_format.is_supported()
 }
 
+/// Parses raw packet data and returns a [`Packet`] type or a null pointer if an error occured.
+#[no_mangle]
+pub extern "C" fn raw_to_packet(
+    worker: Option<&mut PacketWorker>,
+    data_ptr: *const u8,
+    size: usize,
+) -> Option<Box<Packet>> {
+    let Some(worker) = worker else {
+        return None;
+    };
+    worker.err_str = None;
+    if let Some(packet) = worker.packets.pop() {
+        return Some(Box::new(packet.into()));
+    }
+    if data_ptr.is_null() {
+        return None;
+    }
+    let data = unsafe { std::slice::from_raw_parts(data_ptr, size) };
+    match worker.parse_packet_failable(data) {
+        Ok(p) => Some(Box::new(p.into())),
+        Err(e) => {
+            worker.err_str = Some(CString::new(format!("{}", e)).unwrap_or_default());
+            None
+        }
+    }
+}
+
+/// Parses serialized packet data and returns a [`Packet`] type or a null pointer if an error
+/// occurred.
+#[no_mangle]
+pub extern "C" fn ser_to_packet(
+    worker: Option<&mut PacketWorker>,
+    data_ptr: *const u8,
+    size: usize,
+) -> Option<Box<Packet>> {
+    let Some(worker) = worker else {
+        return None;
+    };
+    worker.err_str = None;
+    if data_ptr.is_null() {
+        return None;
+    }
+    let data = unsafe { std::slice::from_raw_parts(data_ptr, size) };
+    match worker.serde_format.deserialize(data) {
+        Ok(p) => Some(Box::new(p.into())),
+        Err(e) => {
+            worker.err_str = Some(CString::new(format!("{}", e)).unwrap_or_default());
+            None
+        }
+    }
+}
+
+/// Parses [`Packet`] and returns raw packet data.
+///
+/// # Safety
+/// The returned pointer is only valid until the next data-returning function call.
+/// If the returned array is empty, the pointer might be non-null but still invalid. This is not
+/// considered an error.
+#[no_mangle]
+pub extern "C" fn packet_to_raw(
+    worker: Option<&mut PacketWorker>,
+    packet: Option<&Packet>,
+) -> DataBuffer {
+    let null = NULL_BUF;
+    let Some(worker) = worker else {
+        return null;
+    };
+    worker.err_str = None;
+    let Some(packet) = packet else {
+        return null;
+    };
+    worker.data = packet.write(worker.packet_type);
+    DataBuffer {
+        ptr: worker.data.as_ptr(),
+        size: worker.data.len(),
+    }
+}
+
+/// Parses [`Packet`] and returns serialized packet data or a null pointer if an error occured.
+///
+/// # Safety
+/// The returned pointer is only valid until the next data-returning function call.
+/// If the returned array is empty, the pointer might be non-null but still invalid. This is not
+/// considered an error.
+#[no_mangle]
+pub extern "C" fn packet_to_ser(
+    worker: Option<&mut PacketWorker>,
+    packet: Option<&Packet>,
+) -> DataBuffer {
+    let null = NULL_BUF;
+    let Some(worker) = worker else {
+        return null;
+    };
+    worker.err_str = None;
+    let Some(packet) = packet else {
+        return null;
+    };
+    match worker.serde_format.serialize(packet) {
+        Ok(d) => {
+            worker.data = d;
+            DataBuffer {
+                ptr: worker.data.as_ptr(),
+                size: worker.data.len(),
+            }
+        }
+        Err(e) => {
+            worker.err_str = Some(CString::new(format!("{}", e)).unwrap_or_default());
+            null
+        }
+    }
+}
+
 /// Parses packet data and returns a fat pointer to the serialized packet or a null pointer if
 /// an error occurred.
 ///
@@ -100,26 +232,12 @@ pub extern "C" fn parse_packet(
     let Some(worker) = worker else {
         return null;
     };
-    worker.err_str = None;
-    if worker.get_last_packet() && !worker.data.is_empty() {
-        return DataBuffer {
-            ptr: worker.data.as_ptr(),
-            size: worker.data.len(),
-        };
-    } else if worker.err_str.is_some() {
+    let packet = raw_to_packet(Some(worker), data_ptr, size);
+    if packet.is_none() {
         return null;
     }
-    if data_ptr.is_null() {
-        return null;
-    }
-    let data = unsafe { std::slice::from_raw_parts(data_ptr, size) };
-    if worker.parse_packet(data) {
-        return DataBuffer {
-            ptr: worker.data.as_ptr(),
-            size: worker.data.len(),
-        };
-    }
-    null
+    let packet = packet.as_ref().unwrap().as_ref();
+    packet_to_ser(Some(worker), Some(packet))
 }
 
 /// Deserializes packet and returns a fat pointer to the packet data or a null pointer if an error
@@ -139,18 +257,12 @@ pub extern "C" fn create_packet(
     let Some(worker) = worker else {
         return null;
     };
-    worker.err_str = None;
-    if data_ptr.is_null() {
+    let packet = ser_to_packet(Some(worker), data_ptr, size);
+    if packet.is_none() {
         return null;
     }
-    let data = unsafe { std::slice::from_raw_parts(data_ptr, size) };
-    if worker.create_packet(data) {
-        return DataBuffer {
-            ptr: worker.data.as_ptr(),
-            size: worker.data.len(),
-        };
-    }
-    null
+    let packet = packet.as_ref().unwrap().as_ref();
+    packet_to_raw(Some(worker), Some(packet))
 }
 
 /// Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error
@@ -159,19 +271,15 @@ pub extern "C" fn create_packet(
 /// # Safety
 /// The returned pointer is only valid until the next failable function call.
 #[no_mangle]
-pub extern "C" fn get_error(worker: Option<&mut PacketWorker>) -> *const u8 {
-    let null = std::ptr::null();
-    let Some(worker) = worker else {
-        return null;
-    };
-    match worker.err_str {
-        Some(ref str) => str.as_ptr() as *const u8,
-        None => null,
+pub extern "C" fn get_pw_error(worker: Option<&PacketWorker>) -> *const u8 {
+    match worker.and_then(|w| w.err_str.as_ref()) {
+        Some(e) => e.as_ptr() as *const u8,
+        None => std::ptr::null(),
     }
 }
 
 impl SerializedFormat {
-    fn serialize(self, packet: &Packet) -> Result<Vec<u8>, Box<dyn Error>> {
+    pub(crate) fn serialize(self, packet: &PacketEX) -> Result<Vec<u8>, Box<dyn Error>> {
         match self {
             #[cfg(feature = "json")]
             SerializedFormat::JSON => {
@@ -191,7 +299,7 @@ impl SerializedFormat {
             SerializedFormat::MessagePackNamed => Err("Unsupported serde format".into()),
         }
     }
-    fn deserialize(self, data: &[u8]) -> Result<Packet, Box<dyn Error>> {
+    pub(crate) fn deserialize(self, data: &[u8]) -> Result<PacketEX, Box<dyn Error>> {
         match self {
             #[cfg(feature = "json")]
             SerializedFormat::JSON => {
@@ -242,61 +350,36 @@ impl From<PacketType> for PacketTypeEX {
     }
 }
 
+impl From<PacketTypeEX> for PacketType {
+    fn from(value: PacketTypeEX) -> Self {
+        match value {
+            PacketTypeEX::NGS => Self::NGS,
+            PacketTypeEX::Classic => Self::Classic,
+            PacketTypeEX::NA => Self::NA,
+            PacketTypeEX::JP => Self::JP,
+            PacketTypeEX::Vita => Self::Vita,
+            PacketTypeEX::Raw => Self::Raw,
+        }
+    }
+}
+
+impl From<PacketEX> for Packet {
+    fn from(value: PacketEX) -> Self {
+        Self(value)
+    }
+}
+impl std::ops::Deref for Packet {
+    type Target = PacketEX;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl PacketWorker {
-    fn parse_packet(&mut self, data: &[u8]) -> bool {
-        match self.parse_packet_failable(data) {
-            Ok(_) => {
-                self.err_str = None;
-                true
-            }
-
-            Err(e) => {
-                self.err_str = Some(CString::new(format!("{}", e)).unwrap_or_default());
-                false
-            }
-        }
-    }
-    fn parse_packet_failable(&mut self, data: &[u8]) -> Result<(), Box<dyn Error>> {
+    fn parse_packet_failable(&mut self, data: &[u8]) -> Result<PacketEX, Box<dyn Error>> {
         self.packets
-            .append(&mut Packet::read(data, self.packet_type)?);
-        self.get_last_packet_failable()
-    }
-    fn get_last_packet(&mut self) -> bool {
-        match self.get_last_packet_failable() {
-            Ok(_) => {
-                self.err_str = None;
-                true
-            }
-
-            Err(e) => {
-                self.err_str = Some(CString::new(format!("{}", e)).unwrap_or_default());
-                false
-            }
-        }
-    }
-    fn get_last_packet_failable(&mut self) -> Result<(), Box<dyn Error>> {
-        self.data = vec![];
-        if let Some(packet) = self.packets.pop() {
-            self.data = self.serde_format.serialize(&packet)?;
-        }
-        Ok(())
-    }
-    fn create_packet(&mut self, data: &[u8]) -> bool {
-        match self.create_packet_failable(data) {
-            Ok(_) => {
-                self.err_str = None;
-                true
-            }
-
-            Err(e) => {
-                self.err_str = Some(CString::new(format!("{}", e)).unwrap_or_default());
-                false
-            }
-        }
-    }
-    fn create_packet_failable(&mut self, data: &[u8]) -> Result<(), Box<dyn Error>> {
-        self.data = self.serde_format.deserialize(data)?.write(self.packet_type);
-
-        Ok(())
+            .append(&mut PacketEX::read(data, self.packet_type)?);
+        Ok(self.packets.pop().unwrap_or(PacketEX::None))
     }
 }

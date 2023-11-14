@@ -381,6 +381,8 @@ pub enum Packet {
     #[cfg(test)]
     #[Id(0x0F, 0x30)]
     LoadItem(LoadItemInternal),
+    #[Id(0x0F, 0x33)]
+    LearnedPA(LearnedPAPacket),
     #[Id(0x0F, 0x65)]
     PotentialList(PotentialListPacket),
     #[Id(0x0F, 0x6F)]
