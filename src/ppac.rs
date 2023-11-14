@@ -1,9 +1,10 @@
 use crate::protocol::{Packet, PacketType, ProtocolRW};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::{
-    io::{ErrorKind, Read, Seek, SeekFrom, Write},
+    io::{BufReader, ErrorKind, Read, Seek, SeekFrom, Write},
     time::Duration,
 };
+use zstd::stream::{Decoder, Encoder};
 
 /// Possible types of packet data output
 pub enum OutputType {
@@ -28,9 +29,32 @@ struct Header {
     direction: Direction,
 }
 
+enum ReaderWrapper<R: Read> {
+    NoEnc(R),
+    Zstd(Decoder<'static, BufReader<R>>),
+}
+
+impl<R: Read> ReaderWrapper<R> {
+    fn into_inner(self) -> R {
+        match self {
+            ReaderWrapper::NoEnc(r) => r,
+            ReaderWrapper::Zstd(e) => e.finish().into_inner(),
+        }
+    }
+}
+
+impl<R: Read> Read for ReaderWrapper<R> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        match self {
+            ReaderWrapper::NoEnc(r) => r.read(buf),
+            ReaderWrapper::Zstd(d) => d.read(buf),
+        }
+    }
+}
+
 /// Reader for the `ppac` packet files
-pub struct PPACReader<R: Read + Seek> {
-    reader: R,
+pub struct PPACReader<R: Read> {
+    reader: ReaderWrapper<R>,
     version: u8,
     packet_buffer: Vec<Packet>,
     data_buffer: Vec<Vec<u8>>,
@@ -39,10 +63,55 @@ pub struct PPACReader<R: Read + Seek> {
     out_type: OutputType,
 }
 
+enum WriterWrapper<W: Write> {
+    NoEnc(W),
+    Zstd(Encoder<'static, W>),
+}
+
+impl<W: Write> WriterWrapper<W> {
+    fn into_inner(self) -> std::io::Result<W> {
+        match self {
+            WriterWrapper::NoEnc(w) => Ok(w),
+            WriterWrapper::Zstd(e) => e.finish(),
+        }
+    }
+}
+
+impl<W: Write> Write for WriterWrapper<W> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        match self {
+            WriterWrapper::NoEnc(w) => w.write(buf),
+            WriterWrapper::Zstd(e) => e.write(buf),
+        }
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        match self {
+            WriterWrapper::NoEnc(w) => w.flush(),
+            WriterWrapper::Zstd(e) => e.flush(),
+        }
+    }
+}
+
+impl<W: Write + Seek> Seek for WriterWrapper<W> {
+    fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
+        match self {
+            WriterWrapper::NoEnc(w) => w.seek(pos),
+            WriterWrapper::Zstd(e) => e.get_mut().seek(pos),
+        }
+    }
+}
+
+impl<W: Write> std::fmt::Debug for WriterWrapper<W> {
+    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Ok(())
+    }
+}
+
 /// Writer of the `ppac` packet files
 #[derive(Debug)]
 pub struct PPACWriter<W: Write> {
-    writer: W,
+    writer: Option<WriterWrapper<W>>,
     packet_type: PacketType,
 }
 
@@ -60,7 +129,7 @@ pub struct PacketData {
     pub data: Option<Vec<u8>>,
 }
 
-impl<R: Read + Seek> PPACReader<R> {
+impl<R: Read> PPACReader<R> {
     /// Open a log file
     pub fn open(mut reader: R) -> std::io::Result<Self> {
         let mut header = [0u8; 4];
@@ -82,6 +151,15 @@ impl<R: Read + Seek> PPACReader<R> {
         } else {
             PacketType::NGS
         };
+        let reader = if version >= 4 {
+            let enc_flag = reader.read_u8()?;
+            match enc_flag {
+                0 => ReaderWrapper::NoEnc(reader),
+                _ => ReaderWrapper::Zstd(Decoder::new(reader)?),
+            }
+        } else {
+            ReaderWrapper::NoEnc(reader)
+        };
         Ok(Self {
             reader,
             version,
@@ -99,6 +177,11 @@ impl<R: Read + Seek> PPACReader<R> {
     /// Sets the output type
     pub fn set_out_type(&mut self, out_type: OutputType) {
         self.out_type = out_type;
+    }
+
+    /// Returns the readers protocol type.
+    pub fn get_protocol_type(&self) -> PacketType {
+        self.protocol_type
     }
 
     /// Read a packet from logs
@@ -133,24 +216,24 @@ impl<R: Read + Seek> PPACReader<R> {
         };
         self.last_header = Header { time, direction };
         let len = self.reader.read_u64::<LittleEndian>()?;
+        let mut data = vec![];
+        self.reader.by_ref().take(len).read_to_end(&mut data)?;
         let (packet, data) = match self.out_type {
             OutputType::Packet => {
-                self.read_packet(len)?;
+                self.read_packet(&data)?;
                 (self.packet_buffer.drain(0..1).next(), None)
             }
             OutputType::Raw => {
-                self.read_data(len)?;
+                self.read_data(&data)?;
                 (None, self.data_buffer.drain(0..1).next())
             }
             OutputType::Both => {
-                let data_begin = self.reader.stream_position()?;
-                let output = self.read_packet(len);
+                let output = self.read_packet(&data);
                 let packet_data = match output {
                     Ok(_) => self.packet_buffer.drain(0..1).next(),
                     Err(_) => None,
                 };
-                self.reader.seek(std::io::SeekFrom::Start(data_begin))?;
-                self.read_data(len)?;
+                self.read_data(&data)?;
                 (packet_data, self.data_buffer.drain(0..1).next())
             }
         };
@@ -165,21 +248,17 @@ impl<R: Read + Seek> PPACReader<R> {
 
     // Return the underlying reader
     pub fn into_inner(self) -> R {
-        self.reader
+        self.reader.into_inner()
     }
 
-    fn read_packet(&mut self, len: u64) -> std::io::Result<()> {
-        let mut data = vec![];
-        self.reader.by_ref().take(len).read_to_end(&mut data)?;
+    fn read_packet(&mut self, buf: &[u8]) -> std::io::Result<()> {
         self.packet_buffer
-            .append(&mut Packet::read(&data, self.protocol_type)?);
+            .append(&mut Packet::read(buf, self.protocol_type)?);
         Ok(())
     }
 
-    fn read_data(&mut self, len: u64) -> std::io::Result<()> {
-        let mut data = vec![];
-        self.reader.by_ref().take(len).read_to_end(&mut data)?;
-        let packets = Packet::read(&data, PacketType::Raw)?;
+    fn read_data(&mut self, buf: &[u8]) -> std::io::Result<()> {
+        let packets = Packet::read(buf, PacketType::Raw)?;
         for packet in packets {
             let Packet::Raw(raw_data) = packet else {
                 unreachable!()
@@ -202,9 +281,13 @@ impl<R: Read + Seek> PPACReader<R> {
 
 impl<W: Write> PPACWriter<W> {
     /// Create a new log file
-    pub fn new(mut writer: W, packet_type: PacketType) -> std::io::Result<PPACWriter<W>> {
+    pub fn new(
+        mut writer: W,
+        packet_type: PacketType,
+        is_enc: bool,
+    ) -> std::io::Result<PPACWriter<W>> {
         writer.write_all(b"PPAC")?;
-        writer.write_u8(3)?;
+        writer.write_u8(4)?;
         writer.write_u8(match packet_type {
             PacketType::Classic => 0,
             PacketType::NGS => 1,
@@ -213,6 +296,11 @@ impl<W: Write> PPACWriter<W> {
             PacketType::Vita => 4,
             PacketType::Raw => return Err(ErrorKind::InvalidInput.into()),
         })?;
+        writer.write_u8(is_enc as u8)?;
+        let writer = Some(match is_enc {
+            true => WriterWrapper::Zstd(Encoder::new(writer, 3)?),
+            false => WriterWrapper::NoEnc(writer),
+        });
         Ok(Self {
             writer,
             packet_type,
@@ -224,12 +312,13 @@ impl<W: Write> PPACWriter<W> {
         direction: Direction,
         len: u64,
     ) -> std::io::Result<()> {
-        self.writer.write_u128::<LittleEndian>(time.as_nanos())?;
-        self.writer.write_u8(match direction {
+        let writer = self.writer.as_mut().unwrap();
+        writer.write_u128::<LittleEndian>(time.as_nanos())?;
+        writer.write_u8(match direction {
             Direction::ToServer => 0,
             Direction::ToClient => 1,
         })?;
-        self.writer.write_u64::<LittleEndian>(len)?;
+        writer.write_u64::<LittleEndian>(len)?;
         Ok(())
     }
     /// Write data without checking its length
@@ -240,7 +329,7 @@ impl<W: Write> PPACWriter<W> {
         input: &[u8],
     ) -> std::io::Result<()> {
         self.write_header(time, direction, input.len() as u64)?;
-        self.writer.write_all(input)
+        self.writer.as_mut().unwrap().write_all(input)
     }
     /// Write data (must be valid packet data)
     pub fn write_data(
@@ -276,14 +365,13 @@ impl<W: Write> PPACWriter<W> {
         input: &Packet,
     ) -> std::io::Result<()> {
         let data = input.write(self.packet_type);
-        self.write_header(time, direction, data.len() as u64)?;
         self.write_data_unchecked(time, direction, &data)?;
         Ok(())
     }
 
     // Return the underlying writer
-    pub fn into_inner(self) -> W {
-        self.writer
+    pub fn into_inner(mut self) -> std::io::Result<W> {
+        self.writer.take().unwrap().into_inner()
     }
 }
 
@@ -293,9 +381,10 @@ impl<W: Write + Seek> PPACWriter<W> {
         if matches!(packet_type, PacketType::Raw) {
             return Err(ErrorKind::InvalidInput.into());
         }
-        let curr_pos = self.writer.stream_position()?;
-        self.writer.seek(SeekFrom::Start(5))?;
-        self.writer.write_u8(match packet_type {
+        let writer = self.writer.as_mut().unwrap();
+        let curr_pos = writer.stream_position()?;
+        writer.seek(SeekFrom::Start(5))?;
+        writer.write_u8(match packet_type {
             PacketType::Classic => 0,
             PacketType::NGS => 1,
             PacketType::NA => 2,
@@ -303,9 +392,20 @@ impl<W: Write + Seek> PPACWriter<W> {
             PacketType::Vita => 4,
             PacketType::Raw => unreachable!(),
         })?;
-        self.writer.seek(SeekFrom::Start(curr_pos))?;
+        writer.seek(SeekFrom::Start(curr_pos))?;
         self.packet_type = packet_type;
         Ok(())
+    }
+}
+
+impl<W: Write> Drop for PPACWriter<W> {
+    fn drop(&mut self) {
+        match self.writer.take() {
+            Some(w) => {
+                let _ = w.into_inner();
+            }
+            None => {}
+        }
     }
 }
 

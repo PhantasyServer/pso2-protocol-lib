@@ -9,7 +9,7 @@ edition = "2021"
 default = ["ngs_packets", "item_attrs"]
 connection = ["dep:rsa"]
 proxy = []
-ppac = []
+ppac = ["dep:zstd"]
 ngs_packets = []
 item_attrs = []
 vita_enc = ["dep:rc4", "dep:rand"]
@@ -18,16 +18,16 @@ ngs_enc = ["dep:rand", "dep:aes", "dep:cbc", "dep:sha2", "dep:zstd"]
 serde = ["dep:serde", "half/serde"]
 
 [dependencies]
-aes = { version = "0.8.2", optional = true }
-byteorder = "1.4.3"
+aes = { version = "0.8.3", optional = true }
+byteorder = "1.5.0"
 cbc = { version = "0.1.2", optional = true }
 hmac = { version = "0.12.1", optional = true }
 rand = { version = "0.8.5", optional = true }
 rc4 = { version = "0.1.0", optional = true }
-rsa = { version = "0.9.2", optional = true }
-serde = { version = "1.0.164", optional = true, features = ["derive"] }
-sha2 = { version = "0.10.7", optional = true }
-zstd = { version = "0.12.3", optional = true }
+rsa = { version = "0.9.3", optional = true }
+serde = { version = "1.0.192", optional = true, features = ["derive"] }
+sha2 = { version = "0.10.8", optional = true }
+zstd = { version = "0.13.0", optional = true }
 packetlib_impl = { path = "packetlib_impl" }
 half = "2.3.1"
 

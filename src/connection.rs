@@ -50,7 +50,7 @@ impl Connection {
             direction: Direction::ToServer,
         }
     }
-    /// Get the ip address of the client 
+    /// Get the ip address of the client
     pub fn get_ip(&self) -> std::io::Result<std::net::Ipv4Addr> {
         let ip = self.stream.peer_addr()?.ip();
         let ip = match ip {
@@ -104,6 +104,7 @@ impl Connection {
         self.ppac = Some(PPACWriter::new(
             std::fs::File::create(path)?,
             self.packet_type,
+            true,
         )?);
         self.direction = direction;
         Ok(())
