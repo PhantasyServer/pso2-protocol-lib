@@ -6,17 +6,17 @@ use std::{
 };
 use zstd::stream::{Decoder, Encoder};
 
-/// Possible types of packet data output
+/// Possible types of packet data output.
 pub enum OutputType {
-    /// Output only parsed packet data
+    /// Output only parsed packet data.
     Packet,
-    /// Output only raw packet data
+    /// Output only raw packet data.
     Raw,
-    /// Output both types
+    /// Output both types.
     Both,
 }
 
-/// Direction of the packet
+/// Direction of the packet.
 #[repr(u8)]
 #[derive(Copy, Clone, Debug)]
 pub enum Direction {
@@ -33,6 +33,47 @@ enum ReaderWrapper<R: Read> {
     NoEnc(R),
     Zstd(Decoder<'static, BufReader<R>>),
 }
+
+enum WriterWrapper<W: Write> {
+    NoEnc(W),
+    Zstd(Encoder<'static, W>),
+}
+
+/// Reader for the `ppac` packet files.
+pub struct PPACReader<R: Read> {
+    reader: ReaderWrapper<R>,
+    version: u8,
+    packet_buffer: Vec<Packet>,
+    data_buffer: Vec<Vec<u8>>,
+    protocol_type: PacketType,
+    last_header: Header,
+    out_type: OutputType,
+}
+
+/// Writer of the `ppac` packet files.
+#[derive(Debug)]
+pub struct PPACWriter<W: Write> {
+    writer: Option<WriterWrapper<W>>,
+    packet_type: PacketType,
+}
+
+/// Packet data.
+pub struct PacketData {
+    /// When was the packet stored.
+    pub time: Duration,
+    /// Where the packet was heading.
+    pub direction: Direction,
+    /// Which client version produced this packet.
+    pub protocol_type: PacketType,
+    /// Parsed packet (if requested).
+    pub packet: Option<Packet>,
+    /// Unparsed packet (if requested).
+    pub data: Option<Vec<u8>>,
+}
+
+//--------------------------------------
+// Reader/Writer wrapper implementation
+//--------------------------------------
 
 impl<R: Read> ReaderWrapper<R> {
     fn into_inner(self) -> R {
@@ -52,27 +93,17 @@ impl<R: Read> Read for ReaderWrapper<R> {
     }
 }
 
-/// Reader for the `ppac` packet files
-pub struct PPACReader<R: Read> {
-    reader: ReaderWrapper<R>,
-    version: u8,
-    packet_buffer: Vec<Packet>,
-    data_buffer: Vec<Vec<u8>>,
-    protocol_type: PacketType,
-    last_header: Header,
-    out_type: OutputType,
-}
-
-enum WriterWrapper<W: Write> {
-    NoEnc(W),
-    Zstd(Encoder<'static, W>),
-}
-
 impl<W: Write> WriterWrapper<W> {
     fn into_inner(self) -> std::io::Result<W> {
         match self {
             WriterWrapper::NoEnc(w) => Ok(w),
             WriterWrapper::Zstd(e) => e.finish(),
+        }
+    }
+    fn write_u8_raw(&mut self, byte: u8) -> std::io::Result<()> {
+        match self {
+            WriterWrapper::NoEnc(w) => w.write_u8(byte),
+            WriterWrapper::Zstd(e) => e.get_mut().write_u8(byte),
         }
     }
 }
@@ -108,29 +139,12 @@ impl<W: Write> std::fmt::Debug for WriterWrapper<W> {
     }
 }
 
-/// Writer of the `ppac` packet files
-#[derive(Debug)]
-pub struct PPACWriter<W: Write> {
-    writer: Option<WriterWrapper<W>>,
-    packet_type: PacketType,
-}
-
-/// Packet data
-pub struct PacketData {
-    /// When was the packet stored
-    pub time: Duration,
-    /// Where the packet was heading
-    pub direction: Direction,
-    /// Which client version produced this packet
-    pub protocol_type: PacketType,
-    /// Parsed packet (if requested)
-    pub packet: Option<Packet>,
-    /// Unparsed packet (if requested)
-    pub data: Option<Vec<u8>>,
-}
+//--------------------------------------
+// PPAC reader wrapper implementation
+//--------------------------------------
 
 impl<R: Read> PPACReader<R> {
-    /// Open a log file
+    /// Opens a PPAC file.
     pub fn open(mut reader: R) -> std::io::Result<Self> {
         let mut header = [0u8; 4];
         reader.read_exact(&mut header)?;
@@ -174,17 +188,17 @@ impl<R: Read> PPACReader<R> {
         })
     }
 
-    /// Sets the output type
+    /// Sets the client type.
     pub fn set_out_type(&mut self, out_type: OutputType) {
         self.out_type = out_type;
     }
 
-    /// Returns the readers protocol type.
+    /// Returns the readers protocol type..
     pub fn get_protocol_type(&self) -> PacketType {
         self.protocol_type
     }
 
-    /// Read a packet from logs
+    /// Reads a packet from the PPAC.
     pub fn read(&mut self) -> std::io::Result<Option<PacketData>> {
         let packet = if !self.packet_buffer.is_empty() {
             self.packet_buffer.drain(0..1).next()
@@ -246,7 +260,7 @@ impl<R: Read> PPACReader<R> {
         }))
     }
 
-    // Return the underlying reader
+    // Returns the underlying reader.
     pub fn into_inner(self) -> R {
         self.reader.into_inner()
     }
@@ -279,8 +293,12 @@ impl<R: Read> PPACReader<R> {
     }
 }
 
+//--------------------------------------
+// PPAC writer wrapper implementation
+//--------------------------------------
+
 impl<W: Write> PPACWriter<W> {
-    /// Create a new log file
+    /// Creates a new PPAC file.
     pub fn new(
         mut writer: W,
         packet_type: PacketType,
@@ -321,7 +339,7 @@ impl<W: Write> PPACWriter<W> {
         writer.write_u64::<LittleEndian>(len)?;
         Ok(())
     }
-    /// Write data without checking its length
+    /// Writes data without checking its length.
     pub fn write_data_unchecked(
         &mut self,
         time: Duration,
@@ -331,7 +349,7 @@ impl<W: Write> PPACWriter<W> {
         self.write_header(time, direction, input.len() as u64)?;
         self.writer.as_mut().unwrap().write_all(input)
     }
-    /// Write data (must be valid packet data)
+    /// Writes data (must be valid packet data).
     pub fn write_data(
         &mut self,
         time: Duration,
@@ -357,7 +375,7 @@ impl<W: Write> PPACWriter<W> {
         }
         Ok(())
     }
-    /// Write a parsed packet
+    /// Writes a parsed packet.
     pub fn write_packet(
         &mut self,
         time: Duration,
@@ -369,14 +387,14 @@ impl<W: Write> PPACWriter<W> {
         Ok(())
     }
 
-    // Return the underlying writer
+    // Returns the underlying writer.
     pub fn into_inner(mut self) -> std::io::Result<W> {
         self.writer.take().unwrap().into_inner()
     }
 }
 
 impl<W: Write + Seek> PPACWriter<W> {
-    /// Change stored client type
+    /// Changes stored client type.
     pub fn change_packet_type(&mut self, packet_type: PacketType) -> std::io::Result<()> {
         if matches!(packet_type, PacketType::Raw) {
             return Err(ErrorKind::InvalidInput.into());
@@ -384,7 +402,7 @@ impl<W: Write + Seek> PPACWriter<W> {
         let writer = self.writer.as_mut().unwrap();
         let curr_pos = writer.stream_position()?;
         writer.seek(SeekFrom::Start(5))?;
-        writer.write_u8(match packet_type {
+        writer.write_u8_raw(match packet_type {
             PacketType::Classic => 0,
             PacketType::NGS => 1,
             PacketType::NA => 2,
