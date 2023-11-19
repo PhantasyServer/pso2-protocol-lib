@@ -753,7 +753,7 @@ pub struct BlockInfo {
     pub unk6: u32,
     pub unk7: u32,
     pub unk8: u16,
-    pub unk9: u16,
+    pub block_id: u16,
     #[FixedStr(0x20)]
     pub blockname: String,
     pub ip: Ipv4Addr,
@@ -1230,13 +1230,12 @@ impl Default for BlockInfo {
             unk6: 0,
             unk7: 0,
             unk8: 0,
-            unk9: 0,
+            block_id: 0,
             blockname: String::new(),
             ip: Ipv4Addr::UNSPECIFIED,
             port: 0,
             unk10: 0,
             unk11: 0,
-            // unk12: [0; 6],
             unk12: [0; 3],
             cur_capacity: 0.0,
         }

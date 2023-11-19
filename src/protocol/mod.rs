@@ -1,35 +1,41 @@
 use crate::AsciiString;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use half::f16;
 use packetlib_impl::{HelperReadWrite, PacketReadWrite, ProtocolReadWrite};
 use std::{
     io::{Cursor, Read, Seek, Write},
     time::Duration,
 };
 
+// Packet definitions modules
+pub mod emergency;
 pub mod friends;
 pub mod items;
 pub mod login;
 pub mod mail;
+pub mod missionpass;
 pub mod missions;
 pub mod models;
 pub mod objects;
 pub mod orders;
 pub mod palette;
 pub mod party;
+pub mod playerstatus;
 pub mod questlist;
 pub mod server;
 pub mod spawn;
 pub mod symbolart;
+use emergency::*;
 use friends::*;
 use items::*;
 use login::*;
 use mail::*;
+use missionpass::*;
 use missions::*;
 use objects::*;
 use orders::*;
 use palette::*;
 use party::*;
+use playerstatus::*;
 use questlist::*;
 use server::*;
 use spawn::*;
@@ -162,11 +168,13 @@ pub enum Packet {
     #[Id(0x04, 0x81)]
     ActionUpdateServer(ActionUpdateServerPacket),
 
-    #[Category(PacketCategory::Unknown)]
+    #[Category(PacketCategory::PlayerStatus)]
     #[Id(0x06, 0x00)]
     SetPlayerID(SetPlayerIDPacket),
     #[Id(0x06, 0x01)]
     DealDamage(DealDamagePacket),
+    #[Id(0x06, 0x05)]
+    GainedEXP(GainedEXPPacket),
 
     #[Id(0x07, 0x00)]
     #[Classic]
@@ -551,6 +559,15 @@ pub enum Packet {
     #[Classic]
     Unk11FF(Unk11FFPacket),
 
+    // Emergency packets [0x15]
+    #[Category(PacketCategory::Emergency)]
+    #[Id(0x15, 0x02)]
+    SpawnEmergency(SpawnEmergencyPacket),
+    #[Id(0x15, 0x03)]
+    EmergencyEnd(EmergencyEndPacket),
+    #[Id(0x15, 0x11)]
+    AvailableEmergencies(AvailableEmergenciesPacket),
+
     // Friends packets [0x18]
     #[Category(PacketCategory::Friends)]
     #[Id(0x18, 0x14)]
@@ -720,6 +737,8 @@ pub enum PacketCategory {
     Server,
     /// Object related packets. See [`objects`]
     Object,
+    /// Player status related packets. See [`playerstatus`]
+    PlayerStatus,
     /// Spawning related packets. See [`spawn`]
     Spawning,
     /// Quest list related packets. See [`questlist`]
@@ -730,6 +749,8 @@ pub enum PacketCategory {
     Item,
     /// Login related packets. See [`login`]
     Login,
+    /// Emergency related packets. See [`emergency`]
+    Emergency,
     /// Friends related packets. See [`friends`]
     Friends,
     /// Mail related packets. See [`mail`]
@@ -746,7 +767,7 @@ pub enum PacketCategory {
     SymbolArt,
     /// ARKS Missions related packets. See [`missions`]
     ARKSMissions,
-    /// Classic Mission pass related packets.
+    /// Classic Mission pass related packets. See [`missionpass`]
     MissionPass,
 }
 
@@ -843,37 +864,6 @@ pub struct ObjectHeader {
 // Packets
 // ----------------------------------------------------------------
 
-// 0x06, 0x00
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x06, 0x00)]
-pub struct SetPlayerIDPacket {
-    pub player_id: u32,
-    pub unk1: u32,
-    pub unk2: u32,
-}
-
-// 0x06, 0x01
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x06, 0x01)]
-pub struct DealDamagePacket {
-    pub inflicter: ObjectHeader,
-    pub target: ObjectHeader,
-    pub attack_id: u32,
-    pub unk2: u64,
-    pub hitbox_id: u32,
-    pub x_pos: f16,
-    pub y_pos: f16,
-    pub z_pos: f16,
-
-    pub unk4: u16,
-    pub unk5: u64,
-    pub unk6: [u8; 0x18],
-}
-
 // 0x07, 0x00
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -968,77 +958,6 @@ pub enum MessageType {
 
     #[Read_default]
     Undefined = 0xFFFF_FFFF,
-}
-
-// 0x4D, 0x01
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x4D, 0x01)]
-pub struct MissionPassInfoPacket {
-    #[FixedLen(0x2F)]
-    pub unk: Vec<u32>,
-}
-
-// 0x4D, 0x03
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x4D, 0x03)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-pub struct MissionPassPacket {
-    pub unk1: u32,
-    pub cur_season_id: u32,
-    #[VariableStr(0xB0C, 0x35)]
-    pub cur_season: String,
-    pub stars_per_tier: u32,
-    pub tiers: u32,
-    pub overrun_tiers: u32,
-    pub total_tiers: u32,
-    pub start_date: u32,
-    pub end_date: u32,
-    pub catchup_start: u32,
-    pub unk11: u32,
-    #[VariableStr(0xB0C, 0x35)]
-    pub cur_banner: String,
-    pub price_per_tier: u32,
-    pub gold_pass_price: u32,
-    #[Magic(0xB0C, 0x35)]
-    pub cur_items: Vec<MissionPassItem>,
-    pub last_season_id: u32,
-    #[VariableStr(0xB0C, 0x35)]
-    pub last_season: String,
-    pub last_stars_per_tier: u32,
-    pub last_tiers: u32,
-    pub last_overrun_tiers: u32,
-    pub last_total_tiers: u32,
-    pub last_start_date: u32,
-    pub last_end_date: u32,
-    pub last_catchup_start: u32,
-    pub last_catchup_end: u32,
-    #[VariableStr(0xB0C, 0x35)]
-    pub last_banner: String,
-    pub last_price_per_tier: u32,
-    pub last_gold_pass_price: u32,
-    #[Magic(0xB0C, 0x35)]
-    pub last_items: Vec<MissionPassItem>,
-    pub unk30: u32,
-    pub unk31: u32,
-}
-
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-pub struct MissionPassItem {
-    pub id: u32,
-    pub tier: u32,
-    pub is_gold: u32,
-    pub unk4: u32,
-    pub group: u32,
-    pub unk6: u32,
-    pub unk7: u32,
-    pub unk8: u32,
-    pub item: Item,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

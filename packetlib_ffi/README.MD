@@ -1,6 +1,6 @@
 # PSO2 Packet Library FFI
 
-A basic FFI for communicating with the packet library. Currently only basic packet serialization/deserialization is done.
+A basic FFI for communicating with the packet library.
 
 ## Usage
 
@@ -9,7 +9,7 @@ A basic FFI for communicating with the packet library. Currently only basic pack
  3) Optionally check the packet version with `get_protocol_version`.
  3) Create a new packet worker with `new_worker`.
  4) Parse packets with `parse_packet` or create packets with `create_packet`. Don't forget to check for errors with `get_error`!
- 5) Destroy the worker with 'free_worker'
+ 5) Destroy the worker with `free_worker`
 
 ## Examples
 

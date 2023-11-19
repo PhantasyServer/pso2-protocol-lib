@@ -5,8 +5,8 @@ pub(crate) mod asciistring;
 pub(crate) mod connection;
 #[cfg(feature = "connection")]
 pub(crate) mod encryption;
-#[cfg(test)]
-pub mod ppac;
+// #[cfg(test)]
+// pub mod ppac;
 #[cfg(feature = "ppac")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ppac")))]
 pub mod ppac;
