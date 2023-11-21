@@ -481,6 +481,32 @@ pub struct ChallengeResponsePacket {
     pub data: Vec<u8>,
 }
 
+// 0x11, 0x6F
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x6F)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct Unk116FPacket {
+    #[VariableStr(0x0323, 0xFD)]
+    pub unk1: String,
+    pub unk2: u32,
+}
+
+#[cfg(feature = "ngs_packets")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x6F)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct Unk116FNGSPacket {
+    #[VariableStr(0x0323, 0xFD)]
+    pub unk1: String,
+    pub unk2: u32,
+    pub unk3: u32,
+}
+
 // 0x11, 0x71
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -566,6 +592,28 @@ pub struct CharacterNewNamePacket {
     pub name: String,
 }
 
+// 0x11, 0xAF
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0xAF)]
+pub struct Unk11AFPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+    pub unk4: u32,
+}
+
+// 0x11, 0xB0
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0xB0)]
+pub struct Unk11B0Packet {
+    pub unk1: u32,
+    pub unk2: u32,
+}
+
 // 0x11, 0xB8
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -591,6 +639,17 @@ pub struct CharacterMovePacket {
     pub unk5: u32,
 }
 
+// 0x11, 0xD7
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0xD7)]
+pub struct Unk11D7Packet {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+    pub unk4: u32,
+}
 // 0x11, 0xDE
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -626,6 +685,20 @@ pub struct NicknameErrorPacket {
 pub struct BannerListPacket {
     #[VariableStr(0xD67D, 0xF5)]
     pub banners: AsciiString,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0xED)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct BannerListNGSPacket {
+    #[VariableStr(0xD67D, 0xF5)]
+    pub banners: AsciiString,
+    #[VariableStr(0xD67D, 0xF5)]
+    pub unk1: AsciiString,
+    #[VariableStr(0xD67D, 0xF5)]
+    pub unk2: AsciiString,
 }
 
 // 0x11, 0xEE
@@ -846,6 +919,7 @@ pub enum NewNameStatus {
     Success,
     Failure,
 }
+
 // ----------------------------------------------------------------
 // Read/Write implementations
 // ----------------------------------------------------------------

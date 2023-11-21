@@ -24,6 +24,17 @@ pub struct TeleportTransferPacket {
     pub unk2: u16,
 }
 
+// 0x04, 0x06
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x06)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct ItemPickedUpPacket {
+    pub player: ObjectHeader,
+    pub item: ObjectHeader,
+}
+
 // 0x04, 0x07
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -73,6 +84,33 @@ pub struct MovementActionPacket {
     #[Magic(0x922D, 0x45)]
     pub unk9: Vec<u32>,
     pub unk10: u32,
+}
+
+// 0x04, 0x0F
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x0F)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct Unk040FPacket {
+    pub unk1: ObjectHeader,
+    pub unk2: ObjectHeader,
+    pub unk3: ObjectHeader,
+    pub unk4: u16,
+    pub unk5: u16,
+    pub unk6: u32,
+    pub unk7: u32,
+    pub unk8: u32,
+    pub unk9: f16,
+    pub unk10: f16,
+    pub unk11: f16,
+    pub unk12: u16,
+    pub unk13: u16,
+    pub unk14: u16,
+    pub unk15: u16,
+    pub unk16: u16,
+    pub unk17: u32,
+    pub unk18: u32,
 }
 
 // 0x04, 0x13
@@ -165,6 +203,20 @@ pub struct Unk0424Packet {
     pub unk5: u32,
     pub unk6: [u8; 0xC],
     pub unk7: [u8; 0xC],
+}
+
+// 0x04, 0x25
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x25)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct Unk0425Packet {
+    pub unk1: ObjectHeader,
+    pub unk2: ObjectHeader,
+    pub unk3: u32,
+    pub unk4: u32,
+    pub unk5: u32,
 }
 
 // 0x04, 0x2B
@@ -273,6 +325,18 @@ pub struct ActionEndPacket {
     pub unk6: AsciiString,
 }
 
+// 0x04, 0x79
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x79)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct Unk0479Packet {
+    pub unk1: ObjectHeader,
+    pub unk2: ObjectHeader,
+    pub unk3: u32,
+}
+
 // 0x04, 0x80
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -305,6 +369,50 @@ pub struct ActionUpdateServerPacket {
     pub receiver: ObjectHeader,
     pub performer: ObjectHeader,
     pub unk2: [u8; 0x20],
+}
+
+// 0x04, 0x86
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x86)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct Unk0486Packet {
+    pub unk1: ObjectHeader,
+    pub unk2: ObjectHeader,
+}
+
+// 0x04, 0xB0
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0xB0)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct Unk04B0Packet {
+    pub unk1: ObjectHeader,
+    pub unk2: ObjectHeader,
+    pub unk3: [u8; 0xC],
+    pub unk4: u32,
+}
+
+// 0x04, 0xEA
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0xEA)]
+#[Flags(Flags {object_related: true, ..Default::default()})]
+pub struct Unk04EAPacket {
+    pub unk1: ObjectHeader,
+    pub unk2: ObjectHeader,
+    pub unk3: u32,
+    pub unk4: u32,
+    pub unk5: u32,
+    pub unk6: [u8; 0xC],
+    pub unk7: u32,
+    pub unk8: [u8; 0x14],
+    pub unk9: u16,
+    pub unk10: u16,
+    pub unk11: u32,
 }
 
 // ----------------------------------------------------------------

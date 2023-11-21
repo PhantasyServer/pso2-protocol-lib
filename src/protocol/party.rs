@@ -268,6 +268,17 @@ pub struct ChatStatusPacket {
     pub status: u32,
 }
 
+// 0x0E, 0x1A
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0E, 0x1A)]
+pub struct Unk0E1APacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+}
+
 // 0x0E, 0x1B
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -308,6 +319,29 @@ pub struct GetPartyDetailsPacket {
 pub struct PartyDetailsPacket {
     pub num_of_details: u32,
     pub details: [PartyDetails; 0xC],
+}
+
+// 0x0E, 0x21
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0E, 0x21)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct Unk0E21Packet {
+    pub people_amount: u32,
+    pub entries: [PartyEntry21; 4],
+}
+
+#[cfg(feature = "ngs_packets")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0E, 0x21)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+pub struct Unk0E21NGSPacket {
+    pub people_amount: u32,
+    pub entries: [PartyEntryNGS21; 4],
 }
 
 // 0x0E, 0x2B
@@ -535,4 +569,69 @@ pub enum BusyState {
     #[Read_default]
     NotBusy,
     Busy,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, HelperReadWrite)]
+pub struct PartyEntry21 {
+    pub id: ObjectHeader,
+    #[VariableStr(0x0A5A, 0xC1)]
+    pub nickname: String,
+    #[VariableStr(0x0A5A, 0xC1)]
+    pub char_name: String,
+    pub level: u8,
+    pub sublevel: u8,
+    pub class: Class,
+    pub subclass: Class,
+    pub color: Color,
+    pub unk1: [u8; 7],
+    pub unk2: u32,
+    pub hp: [u32; 3],
+    pub map_id: u16,
+    pub unk3: u16,
+    pub unk4: [u8; 0xC],
+    pub unk5: [u32; 3],
+    #[VariableStr(0x0A5A, 0xC1)]
+    pub unk6: String,
+    #[OnlyOn(PacketType::Vita)]
+    #[VariableStr(0x0A5A, 0xC1)]
+    pub unk10: String,
+    #[VariableStr(0x0A5A, 0xC1)]
+    pub unk7: AsciiString,
+    pub lang: ShortLanguage,
+    pub unk9: [u8; 3],
+}
+
+#[cfg(feature = "ngs_packets")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, HelperReadWrite)]
+pub struct PartyEntryNGS21 {
+    pub id: ObjectHeader,
+    #[VariableStr(0x0A5A, 0xC1)]
+    pub nickname: String,
+    #[VariableStr(0x0A5A, 0xC1)]
+    pub char_name: String,
+    pub level: u8,
+    pub sublevel: u8,
+    pub class: Class,
+    pub subclass: Class,
+    pub color: Color,
+    pub unk1: [u8; 7],
+    pub unk2: u32,
+    pub hp: [u32; 3],
+    pub map_id: u16,
+    pub unk3: u16,
+    pub unk4: [u8; 0xC],
+    pub unk5: [u32; 3],
+    #[VariableStr(0x0A5A, 0xC1)]
+    pub unk6: String,
+    #[VariableStr(0x0A5A, 0xC1)]
+    pub unk7: AsciiString,
+    pub lang: ShortLanguage,
+    pub unk9: [u8; 3],
+    #[VariableStr(0x0A5A, 0xC1)]
+    pub unk10: String,
 }

@@ -1,4 +1,6 @@
-use super::{HelperReadWrite, PacketReadWrite};
+use half::f16;
+
+use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
 use crate::AsciiString;
 
 // ----------------------------------------------------------------
@@ -15,6 +17,20 @@ pub struct Unk0B09Packet {
     pub unk2: u32,
     pub unk3: u32,
     pub unk4: u32,
+}
+
+// 0x0B, 0x13
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0B, 0x13)]
+pub struct Unk0B13Packet {
+    pub unk1: ObjectHeader,
+    pub party: ObjectHeader,
+    pub unk2: u32,
+    pub unk3: [u8; 8],
+    pub unk4: u32,
+    pub unk5: u32,
 }
 
 // 0x0B, 0x15
@@ -91,6 +107,31 @@ pub struct QuestCategoryRequestPacket {
 pub struct QuestCategoryPacket {
     #[Magic(0x1DB0, 0xC5)]
     pub quests: Vec<Quest>,
+}
+
+// 0x0B, 0x1F
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0B, 0x1F)]
+pub struct SetQuestPointsPacket {
+    pub unk1: ObjectHeader,
+    pub party: ObjectHeader,
+    pub total: u32,
+    pub gained: u32,
+}
+
+// 0x0B, 0x28
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0B, 0x28)]
+pub struct QuestPointsAddedPacket {
+    pub added: u32,
+    pub x: f16,
+    pub y: f16,
+    #[SeekAfter(2)]
+    pub z: f16,
 }
 
 // 0x0B, 0xAF

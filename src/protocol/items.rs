@@ -1,8 +1,9 @@
 use super::{
-    models::character::HSVColor, HelperReadWrite, ObjectHeader, PacketReadWrite, PacketType,
+    models::{character::HSVColor, Position},
+    HelperReadWrite, ObjectHeader, PacketReadWrite, PacketType,
 };
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use std::time::Duration;
+use std::{ops::Deref, time::Duration};
 
 // ----------------------------------------------------------------
 // Items packets
@@ -21,6 +22,59 @@ pub struct ItemAttributesPacket {
     // data contains an ice archive that includes a "item_parameter.bin".
     #[Magic(0x8A92, 0x30)]
     pub data: Vec<u8>,
+}
+
+// 0x0F, 0x01
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x01)]
+pub struct ItemPickupRequestPacket {
+    pub drop_id: u32,
+    pub unk: u32,
+}
+
+// 0x0F, 0x02
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x02)]
+pub struct ItemPickupResponsePacket {
+    pub target: ObjectHeader,
+    pub drop_id: u32,
+    pub was_pickedup: u32,
+    pub unk: u32,
+}
+
+// 0x0F, 0x04
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x04)]
+pub struct NewItemDropPacket {
+    pub item_obj: ObjectHeader,
+    pub item_id: ItemId,
+    pub unk1: u32,
+    pub unk2: u16,
+    pub pos: Position,
+    pub unk3: u16,
+    pub unk4: u32,
+    pub unk5: u16,
+    pub unk6: u32,
+    pub drop_id: u32,
+    pub unk7: u32,
+}
+
+// 0x0F, 0x05
+#[cfg(feature = "ngs_packets")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x05)]
+pub struct AddedItemNGSPacket {
+    pub item: ItemNGS,
+    pub unk: u32,
 }
 
 // 0x0F, 0x06
@@ -477,7 +531,7 @@ pub struct ReceiveCampaignRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x9C)]
 #[Flags(Flags {packed: true, ..Default::default()})]
-pub struct Unk0f9cPacket {
+pub struct Unk0F9CPacket {
     #[Magic(0xA25, 0xF6)]
     pub ids: Vec<Unk0f9c>,
 }
@@ -619,7 +673,7 @@ pub struct MoveMSToStorageNGSPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xEF)]
 #[Flags(Flags {packed: true, ..Default::default()})]
-pub struct Unk0fefPacket {
+pub struct Unk0FEFPacket {
     #[Magic(0x66A4, 0x51)]
     pub ids: Vec<ItemId>,
 }
@@ -630,7 +684,7 @@ pub struct Unk0fefPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xFC)]
 #[Flags(Flags {packed: true, ..Default::default()})]
-pub struct Unk0ffcPacket {
+pub struct Unk0FFCPacket {
     #[Magic(0x3145, 0x21)]
     pub ids: Vec<Unk0ffc>,
     pub unk: u32,

@@ -1,4 +1,3 @@
-use crate::AsciiString;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use packetlib_impl::{HelperReadWrite, PacketReadWrite, ProtocolReadWrite};
 use std::{
@@ -7,6 +6,7 @@ use std::{
 };
 
 // Packet definitions modules
+pub mod chat;
 pub mod emergency;
 pub mod friends;
 pub mod items;
@@ -22,8 +22,15 @@ pub mod party;
 pub mod playerstatus;
 pub mod questlist;
 pub mod server;
+pub mod settings;
 pub mod spawn;
 pub mod symbolart;
+pub mod unk10;
+pub mod unk19;
+pub mod unk23;
+pub mod unk2a;
+pub mod unk34;
+use chat::*;
 use emergency::*;
 use friends::*;
 use items::*;
@@ -38,8 +45,14 @@ use party::*;
 use playerstatus::*;
 use questlist::*;
 use server::*;
+use settings::*;
 use spawn::*;
 use symbolart::*;
+use unk10::*;
+use unk19::*;
+use unk23::*;
+use unk2a::*;
+use unk34::*;
 
 // Code is getting really messy.
 
@@ -106,14 +119,10 @@ pub enum Packet {
     InitialLoad,
     #[Id(0x03, 0x04)]
     LoadingScreenTransition,
+    #[Id(0x03, 0x06)]
+    Unk0306(Unk0306Packet),
     #[Id(0x03, 0x08)]
-    #[Classic]
     ServerHello(ServerHelloPacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x03, 0x08)]
-    #[NGS]
-    ServerHelloNGS(ServerHelloNGSPacket),
     #[Id(0x03, 0x0B)]
     ServerPing,
     #[Id(0x03, 0x0C)]
@@ -131,12 +140,16 @@ pub enum Packet {
     #[Category(PacketCategory::Object)]
     #[Id(0x04, 0x02)]
     TeleportTransfer(TeleportTransferPacket),
+    #[Id(0x04, 0x06)]
+    ItemPickedUp(ItemPickedUpPacket),
     // this fails the tests
     #[cfg(not(test))]
     #[Id(0x04, 0x07)]
     Movement(MovementPacket),
     #[Id(0x04, 0x08)]
     MovementAction(MovementActionPacket),
+    #[Id(0x04, 0x0F)]
+    Unk040F(Unk040FPacket),
     #[Id(0x04, 0x13)]
     Unk0413(Unk0413Packet),
     #[Id(0x04, 0x14)]
@@ -149,6 +162,8 @@ pub enum Packet {
     Unk0423(Unk0423Packet),
     #[Id(0x04, 0x24)]
     Unk0424(Unk0424Packet),
+    #[Id(0x04, 0x25)]
+    Unk0425(Unk0425Packet),
     #[Id(0x04, 0x2B)]
     Unk042B(Unk042BPacket),
     #[Id(0x04, 0x2E)]
@@ -163,11 +178,20 @@ pub enum Packet {
     MovementEnd(MovementEndPacket),
     #[Id(0x04, 0x75)]
     ActionEnd(ActionEndPacket),
+    #[Id(0x04, 0x79)]
+    Unk0479(Unk0479Packet),
     #[Id(0x04, 0x80)]
     MovementActionServer(MovementActionServerPacket),
     #[Id(0x04, 0x81)]
     ActionUpdateServer(ActionUpdateServerPacket),
+    #[Id(0x04, 0x86)]
+    Unk0486(Unk0486Packet),
+    #[Id(0x04, 0xB0)]
+    Unk04B0(Unk04B0Packet),
+    #[Id(0x04, 0xEA)]
+    Unk04EA(Unk04EAPacket),
 
+    // Player status packets [0x06]
     #[Category(PacketCategory::PlayerStatus)]
     #[Id(0x06, 0x00)]
     SetPlayerID(SetPlayerIDPacket),
@@ -176,6 +200,8 @@ pub enum Packet {
     #[Id(0x06, 0x05)]
     GainedEXP(GainedEXPPacket),
 
+    // Chat packets [0x07]
+    #[Category(PacketCategory::Chat)]
     #[Id(0x07, 0x00)]
     #[Classic]
     ChatMessage(ChatMessage),
@@ -205,6 +231,8 @@ pub enum Packet {
     #[Category(PacketCategory::QuestList)]
     #[Id(0x0B, 0x09)]
     Unk0B09(Unk0B09Packet),
+    #[Id(0x0B, 0x13)]
+    Unk0B13(Unk0B13Packet),
     #[Id(0x0B, 0x15)]
     AvailableQuestsRequest(AvailableQuestsRequestPacket),
     #[Id(0x0B, 0x16)]
@@ -213,6 +241,10 @@ pub enum Packet {
     QuestCategoryRequest(QuestCategoryRequestPacket),
     #[Id(0x0B, 0x18)]
     QuestCategory(QuestCategoryPacket),
+    #[Id(0x0B, 0x1F)]
+    SetQuestPoints(SetQuestPointsPacket),
+    #[Id(0x0B, 0x28)]
+    QuestPointsAdded(QuestPointsAddedPacket),
     #[Id(0x0B, 0x30)]
     QuestCounterRequest,
     #[Id(0x0B, 0xAF)]
@@ -268,6 +300,8 @@ pub enum Packet {
     PartyDisbandedMarker,
     #[Id(0x0E, 0x19)]
     ChatStatus(ChatStatusPacket),
+    #[Id(0x0E, 0x1A)]
+    Unk0E1A(Unk0E1APacket),
     #[Id(0x0E, 0x1B)]
     PartyInfo(PartyInfoPacket),
     #[Id(0x0E, 0x1C)]
@@ -278,6 +312,14 @@ pub enum Packet {
     PartyDetails(PartyDetailsPacket),
     #[Id(0x0E, 0x1F)]
     PartyDetailsStopper,
+    #[Id(0x0E, 0x21)]
+    #[Classic]
+    Unk0E21(Unk0E21Packet),
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[Id(0x0E, 0x21)]
+    #[NGS]
+    Unk0E21NGS(Unk0E21NGSPacket),
     #[Id(0x0E, 0x28)]
     SetBusy,
     #[Id(0x0E, 0x29)]
@@ -297,6 +339,17 @@ pub enum Packet {
     #[Category(PacketCategory::Item)]
     #[Id(0x0F, 0x00)]
     LoadItemAttributes(ItemAttributesPacket),
+    #[Id(0x0F, 0x01)]
+    ItemPickupRequest(ItemPickupRequestPacket),
+    #[Id(0x0F, 0x02)]
+    ItemPickupResponse(ItemPickupResponsePacket),
+    #[Id(0x0F, 0x04)]
+    NewItemDrop(NewItemDropPacket),
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[Id(0x0F, 0x05)]
+    #[NGS]
+    AddedItemNGS(AddedItemNGSPacket),
     #[Id(0x0F, 0x06)]
     UpdateInventory(UpdateInventoryPacket),
     #[Id(0x0F, 0x0C)]
@@ -391,6 +444,8 @@ pub enum Packet {
     LoadItem(LoadItemInternal),
     #[Id(0x0F, 0x33)]
     LearnedPA(LearnedPAPacket),
+    #[Id(0x0F, 0x5B)]
+    Unk0F5B,
     #[Id(0x0F, 0x65)]
     PotentialList(PotentialListPacket),
     #[Id(0x0F, 0x6F)]
@@ -406,7 +461,7 @@ pub enum Packet {
     #[Id(0x0F, 0x8A)]
     CharacterCapaignsRequest,
     #[Id(0x0F, 0x9C)]
-    Unk0f9c(Unk0f9cPacket),
+    Unk0F9C(Unk0F9CPacket),
     #[Id(0x0F, 0xBC)]
     ChangeWeaponPalette(ChangeWeaponPalettePacket),
     #[Id(0x0F, 0xDF)]
@@ -436,13 +491,17 @@ pub enum Packet {
     #[NGS]
     MoveMSToStorageNGS(MoveMSToStorageNGSPacket),
     #[Id(0x0F, 0xEF)]
-    Unk0fef(Unk0fefPacket),
+    Unk0FEF(Unk0FEFPacket),
     #[Id(0x0F, 0xFC)]
-    Unk0ffc(Unk0ffcPacket),
+    Unk0FFC(Unk0FFCPacket),
 
+    // Unknown 0x10 packets [0x10]
+    #[Category(PacketCategory::Unk10)]
     #[Id(0x10, 0x00)]
     #[Classic]
     RunLua(LuaPacket),
+    #[Id(0x10, 0x03)]
+    Unk1003(Unk1003Packet),
 
     // Login packets [0x11]
     #[Category(PacketCategory::Login)]
@@ -522,6 +581,14 @@ pub enum Packet {
     #[Id(0x11, 0x6B)]
     #[Classic]
     SegaIDInfoRequest,
+    #[Id(0x11, 0x6F)]
+    #[Classic]
+    Unk116F(Unk116FPacket),
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[Id(0x11, 0x6F)]
+    #[NGS]
+    Unk116FNGS(Unk116FNGSPacket),
     #[Id(0x11, 0x71)]
     NotificationStatus(NotificationStatusPacket),
     #[Id(0x11, 0x86)]
@@ -542,10 +609,16 @@ pub enum Packet {
     CharacterNewName(CharacterNewNamePacket),
     #[Id(0x11, 0x9D)]
     NicknameChangeRequest,
+    #[Id(0x11, 0xAF)]
+    Unk11AF(Unk11AFPacket),
+    #[Id(0x11, 0xB0)]
+    Unk11B0(Unk11B0Packet),
     #[Id(0x11, 0xB8)]
     CharacterMoveRequest(CharacterMoveRequestPacket),
     #[Id(0x11, 0xB9)]
     CharacterMove(CharacterMovePacket),
+    #[Id(0x11, 0xD7)]
+    Unk11D7(Unk11D7Packet),
     #[Id(0x11, 0xDE)]
     PlayerReported(PlayerReportedPacket),
     #[Id(0x11, 0xEA)]
@@ -553,6 +626,11 @@ pub enum Packet {
     #[Id(0x11, 0xED)]
     #[Classic]
     BannerList(BannerListPacket),
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[Id(0x11, 0xED)]
+    #[NGS]
+    BannerListNGS(BannerListNGSPacket),
     #[Id(0x11, 0xEE)]
     EmailCodeRequest(EmailCodeRequestPacket),
     #[Id(0x11, 0xFF)]
@@ -565,6 +643,10 @@ pub enum Packet {
     SpawnEmergency(SpawnEmergencyPacket),
     #[Id(0x15, 0x03)]
     EmergencyEnd(EmergencyEndPacket),
+    #[Id(0x15, 0x05)]
+    EmergencyProgress(EmergencyProgressPacket),
+    #[Id(0x15, 0x08)]
+    Unk1508(Unk1508Packet),
     #[Id(0x15, 0x11)]
     AvailableEmergencies(AvailableEmergenciesPacket),
 
@@ -579,9 +661,14 @@ pub enum Packet {
     #[Id(0x18, 0x1A)]
     AddedRequest(AddedRequestPacket),
 
-    #[Category(PacketCategory::Unknown)]
+    // Unknown 0x19 packets [0x19]
+    #[Category(PacketCategory::Unk19)]
     #[Id(0x19, 0x01)]
     SystemMessage(SystemMessagePacket),
+    #[Id(0x19, 0x04)]
+    Unk1904,
+    #[Id(0x19, 0x06)]
+    Unk1906,
     #[Id(0x19, 0x0F)]
     LobbyMonitor(LobbyMonitorPacket),
 
@@ -639,6 +726,19 @@ pub enum Packet {
     #[Id(0x21, 0x0F)]
     NewDefaultPAs(NewDefaultPAsPacket),
 
+    // Unknown 0x23 packets [0x23]
+    #[Category(PacketCategory::Unk23)]
+    #[Id(0x23, 0x04)]
+    Unk2304(Unk2304Packet),
+
+    // Unknown 0x2A packets [0x2A]
+    #[Category(PacketCategory::Unk2A)]
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[Id(0x2A, 0x08)]
+    #[NGS]
+    Unk2A08NGS(Unk2A08NGSPacket),
+
     // Settings packets [0x2B]
     #[Category(PacketCategory::Settings)]
     #[Id(0x2B, 0x00)]
@@ -672,6 +772,13 @@ pub enum Packet {
     #[Id(0x2F, 0x09)]
     #[Classic]
     ReceiveSymbolArt(ReceiveSymbolArtPacket),
+
+    // Unknown 0x34 packets [0x34]
+    #[Category(PacketCategory::Unk34)]
+    #[Id(0x34, 0x35)]
+    Unk3435(Unk3435Packet),
+    #[Id(0x34, 0x5C)]
+    Unk345C(Unk345CPacket),
 
     // ARKS Misions packets [0x4A]
     #[Category(PacketCategory::ARKSMissions)]
@@ -739,6 +846,8 @@ pub enum PacketCategory {
     Object,
     /// Player status related packets. See [`playerstatus`]
     PlayerStatus,
+    /// Chat related packets. See [`chat`]
+    Chat,
     /// Spawning related packets. See [`spawn`]
     Spawning,
     /// Quest list related packets. See [`questlist`]
@@ -747,24 +856,34 @@ pub enum PacketCategory {
     Party,
     /// Item related packets. See [`items`]
     Item,
+    /// Unknown 0x10 packet. See [`unk10`]
+    Unk10,
     /// Login related packets. See [`login`]
     Login,
     /// Emergency related packets. See [`emergency`]
     Emergency,
     /// Friends related packets. See [`friends`]
     Friends,
+    /// Unknown 0x19 packet. See [`unk19`]
+    Unk19,
     /// Mail related packets. See [`mail`]
     Mail,
     /// Charater related packets.
     Characters,
-    /// Daily orders related packets.
+    /// Daily orders related packets. See [`orders`]
     DailyOrders,
     /// Palette related packets. See [`palette`]
     Palette,
-    /// Settings related packets.
+    /// Unknown 0x23 packet. See [`unk23`]
+    Unk23,
+    /// Unknown 0x2A packet. See [`unk2a`]
+    Unk2A,
+    /// Settings related packets. See [`settings`]
     Settings,
     /// Symbol Art related packets. See [`symbolart`]
     SymbolArt,
+    /// Unknown 0x34 packet. See [`unk34`]
+    Unk34,
     /// ARKS Missions related packets. See [`missions`]
     ARKSMissions,
     /// Classic Mission pass related packets. See [`missionpass`]
@@ -843,9 +962,10 @@ pub enum EntityType {
     Player = 4,
     Map = 5,
     Object = 6,
-    Unk1 = 7,
+    StaticObject = 7,
     Party = 13,
-    Unk2 = 22,
+    Unk10 = 16,
+    APC = 22,
     #[Read_default]
     Undefined = 0xFFFF,
 }
@@ -858,143 +978,6 @@ pub struct ObjectHeader {
     pub unk: u32,
     pub entity_type: EntityType,
     pub map_id: u16,
-}
-
-// ----------------------------------------------------------------
-// Packets
-// ----------------------------------------------------------------
-
-// 0x07, 0x00
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x07, 0x00)]
-#[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
-pub struct ChatMessage {
-    pub object: ObjectHeader,
-    pub area: ChatArea,
-    pub unk3: u8,
-    pub unk4: u16,
-    #[VariableStr(0x9D3F, 0x44)]
-    pub unk5: String,
-    #[VariableStr(0x9D3F, 0x44)]
-    pub message: String,
-}
-
-// 0x07, 0x00
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x07, 0x00)]
-#[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
-pub struct ChatMessageNGS {
-    pub object: ObjectHeader,
-    pub unk2: ChatArea,
-    pub unk3: u8,
-    pub unk4: u16,
-    pub unk5: u16,
-    pub unk6: u16,
-    #[VariableStr(0x9D3F, 0x44)]
-    pub unk7: String,
-    #[VariableStr(0x9D3F, 0x44)]
-    pub message: String,
-}
-
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[repr(u8)]
-#[derive(Debug, Clone, Copy, Default, PartialEq, HelperReadWrite)]
-pub enum ChatArea {
-    #[default]
-    Map,
-    Party,
-    // the following is only speculation
-    Alliance,
-    Whisper,
-    Group,
-
-    #[Read_default]
-    Undefined = 0xFF,
-}
-
-// 0x19, 0x01
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x19, 0x01)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-pub struct SystemMessagePacket {
-    #[VariableStr(0x78F7, 0xA2)]
-    pub message: String,
-    #[VariableStr(0x78F7, 0xA2)]
-    pub unk: String,
-    pub msg_type: MessageType,
-    pub msg_num: u32,
-}
-
-// 0x19, 0x0F
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x19, 0x0F)]
-pub struct LobbyMonitorPacket {
-    pub video_id: u32,
-}
-
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[repr(u32)]
-#[derive(Debug, Clone, Copy, Default, PartialEq, HelperReadWrite)]
-pub enum MessageType {
-    AdminMessage = 1,
-    AdminMessageInstant,
-    #[default]
-    SystemMessage,
-    GoldenMessage,
-    EventInformationYellow,
-    EventInformationGreen,
-    ImportantMessage,
-    PopupMessage,
-
-    #[Read_default]
-    Undefined = 0xFFFF_FFFF,
-}
-
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x10, 0x00)]
-pub struct LuaPacket {
-    pub unk1: u16,
-    pub unk2: u16,
-    #[VariableStr(0, 0)]
-    pub lua: AsciiString,
-}
-
-// ----------------------------------------------------------------
-// Settings packets
-// ----------------------------------------------------------------
-
-// 0x2B, 0x01
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2B, 0x01)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-pub struct SaveSettingsPacket {
-    #[VariableStr(0xCEF1, 0xB5)]
-    pub settings: AsciiString,
-}
-
-// 0x2B, 0x02
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2B, 0x02)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-pub struct LoadSettingsPacket {
-    #[VariableStr(0x54AF, 0x100)]
-    pub settings: AsciiString,
 }
 
 // ----------------------------------------------------------------

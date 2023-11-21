@@ -78,6 +78,30 @@ pub struct EmergencyEndPacket {
     pub unk10: Vec<Unk1502_1>,
 }
 
+// 0x15, 0x05
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x15, 0x05)]
+pub struct EmergencyProgressPacket {
+    pub emergency: ObjectHeader,
+    pub unk2: u32,
+    pub unk3: u32,
+    pub done: u32,
+    pub unk5: u32,
+}
+
+// 0x15, 0x08
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x15, 0x08)]
+pub struct Unk1508Packet {
+    pub emergency: ObjectHeader,
+    pub unk2: u32,
+    pub unk3: u32,
+}
+
 // 0x15, 0x11
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]

@@ -435,56 +435,66 @@ fn check_syn_type(
 
                             let seek_pad = if no_seek {
                                 quote! {}
-                            } else if tmp_read.to_string().contains("read_u8()") {
-                                quote! { reader.seek(std::io::SeekFrom::Current((((len + 4 - 1) & (usize::MAX ^ (4 - 1))) - len) as i64))?; }
-                            } else if tmp_read.to_string().contains("read_u16()") {
-                                quote! { reader.seek(std::io::SeekFrom::Current(((((len * 2) + 4 - 1) & (usize::MAX ^ (4 - 1))) - (len * 2)) as i64))?; }
                             } else {
-                                quote! {}
+                                quote! { reader.seek(std::io::SeekFrom::Current((((len + 4 - 1) & (usize::MAX ^ (4 - 1))) - len) as i64))?; }
                             };
                             let write_pad = if no_seek {
                                 quote! {}
-                            } else if tmp_read.to_string().contains("read_u8()") {
-                                quote! { writer.write_all(&vec![0u8; ((len + 4 - 1) & (usize::MAX ^ (4 - 1))) - len]).unwrap(); }
-                            } else if tmp_read.to_string().contains("read_u16()") {
-                                quote! { writer.write_all(&vec![0u8; (((len * 2) + 4 - 1) & (usize::MAX ^ (4 - 1))) - (len * 2)]).unwrap(); }
                             } else {
-                                quote! {}
+                                quote! { writer.write_all(&vec![0u8; ((len + 4 - 1) & (usize::MAX ^ (4 - 1))) - len]).unwrap(); }
                             };
 
                             if set.fixed_len == 0 {
                                 read.extend(quote! {
                                     let mut #name = vec![];
+                                    let seek1 = reader.seek(std::io::SeekFrom::Current(0))?;
                                     for _ in 0..len {
                                         #tmp_read
                                         #name.push(#tmp_name);
                                     }
+                                    let seek2 = reader.seek(std::io::SeekFrom::Current(0))?;
+                                    let len = (seek2 - seek1) as usize;
                                     #seek_pad
                                 });
                                 write.extend(quote! {
                                     let len = self.#name.len();
-                                    for #tmp_name in &self.#name {
-                                        #tmp_write
-                                    }
+                                    let mut tmp_buf = vec![];
+                                    {
+                                        let writer = &mut tmp_buf;
+                                        for #tmp_name in &self.#name {
+                                            #tmp_write
+                                        }
+                                    };
+                                    writer.write_all(&tmp_buf).unwrap();
+                                    let len = tmp_buf.len();
                                     #write_pad
                                 });
                             } else {
                                 let len = set.fixed_len;
                                 read.extend(quote! {
                                     let mut #name = vec![];
+                                    let seek1 = reader.seek(std::io::SeekFrom::Current(0))?;
                                     let len = #len as usize;
                                     for _ in 0..len {
                                         #tmp_read
                                         #name.push(#tmp_name);
                                     }
+                                    let seek2 = reader.seek(std::io::SeekFrom::Current(0))?;
+                                    let len = (seek2 - seek1) as usize;
                                     #seek_pad
                                 });
                                 write.extend(quote! {
                                     let len = #len as usize;
                                     let def_thing = vec![Default::default()];
-                                    for #tmp_name in self.#name.iter().chain(def_thing.iter().cycle()).take(len) {
-                                        #tmp_write
-                                    }
+                                    let mut tmp_buf = vec![];
+                                    {
+                                        let writer = &mut tmp_buf;
+                                        for #tmp_name in self.#name.iter().chain(def_thing.iter().cycle()).take(len) {
+                                            #tmp_write
+                                        }
+                                    };
+                                    writer.write_all(&tmp_buf).unwrap();
+                                    let len = tmp_buf.len();
                                     #write_pad
                                 });
                             }

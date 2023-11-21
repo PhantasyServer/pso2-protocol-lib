@@ -5,7 +5,7 @@ use crate::AsciiString;
 // Server packets
 // ----------------------------------------------------------------
 
-// 0x03, 0x08
+// 0x03, 0x00
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
@@ -16,24 +16,21 @@ pub struct MapTransferPacket {
     pub settings: ZoneSettings,
 }
 
+// 0x03, 0x06
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x06)]
+pub struct Unk0306Packet {
+    pub unk: [u8; 0xC],
+}
+
 // 0x03, 0x08
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x03, 0x08)]
 pub struct ServerHelloPacket {
-    #[Const_u16(0x03)]
-    #[SeekAfter(8)]
-    pub blockid: u16,
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x08)]
-pub struct ServerHelloNGSPacket {
     pub unk1: u16,
     #[SeekAfter(4)]
     pub blockid: u16,
