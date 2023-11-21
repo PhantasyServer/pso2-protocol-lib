@@ -10,9 +10,9 @@ use super::{HelperReadWrite, PacketReadWrite};
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x34, 0x35)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xA475, 0x100)]
 pub struct Unk3435Packet {
     pub unk1: u32,
-    #[Magic(0xA475, 0x100)]
     pub unk2: Vec<Unk3435_1>,
 }
 

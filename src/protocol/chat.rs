@@ -10,14 +10,13 @@ use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x07, 0x00)]
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
+#[Magic(0x9D3F, 0x44)]
 pub struct ChatMessage {
     pub object: ObjectHeader,
     pub area: ChatArea,
     pub unk3: u8,
     pub unk4: u16,
-    #[VariableStr(0x9D3F, 0x44)]
     pub unk5: String,
-    #[VariableStr(0x9D3F, 0x44)]
     pub message: String,
 }
 
@@ -28,6 +27,7 @@ pub struct ChatMessage {
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x07, 0x00)]
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
+#[Magic(0x9D3F, 0x44)]
 pub struct ChatMessageNGS {
     pub object: ObjectHeader,
     pub unk2: ChatArea,
@@ -35,9 +35,7 @@ pub struct ChatMessageNGS {
     pub unk4: u16,
     pub unk5: u16,
     pub unk6: u16,
-    #[VariableStr(0x9D3F, 0x44)]
     pub unk7: String,
-    #[VariableStr(0x9D3F, 0x44)]
     pub message: String,
 }
 

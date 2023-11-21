@@ -22,6 +22,7 @@ pub struct MailListRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1A, 0x01)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x36A1, 0xBF)]
 pub struct MailListPacket {
     pub unk1: u16,
     pub unk2: u16,
@@ -29,11 +30,8 @@ pub struct MailListPacket {
     pub unk4: u16,
     pub unk5: [u8; 4],
     pub unk6: u32,
-    #[VariableStr(0x36A1, 0xBF)]
     pub name: String,
-    #[VariableStr(0x36A1, 0xBF)]
     pub nickname: String,
-    #[Magic(0x36A1, 0xBF)]
     pub headers: Vec<MailHeader>,
 }
 
@@ -43,8 +41,8 @@ pub struct MailListPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1A, 0x02)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xBC5F, 0x0B)]
 pub struct DeleteMailRequestPacket {
-    #[Magic(0xBC5F, 0x0B)]
     pub ids: Vec<MailId>,
 }
 
@@ -54,8 +52,8 @@ pub struct DeleteMailRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1A, 0x03)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x421C, 0x56)]
 pub struct DeletedMailPacket {
-    #[Magic(0x421C, 0x56)]
     pub ids: Vec<MailId>,
     pub unk: u32,
 }
@@ -75,9 +73,9 @@ pub struct MailBodyRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1A, 0x07)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x5913, 0x82)]
 pub struct MailBodyPacket {
     pub id: MailId,
-    #[VariableStr(0x5913, 0x82)]
     pub message: String,
     pub unk3: u32,
 }

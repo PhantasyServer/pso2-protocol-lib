@@ -393,8 +393,13 @@ impl ItemAttributes {
         packet_type: PacketType,
     ) -> std::io::Result<Self> {
         match packet_type {
-            PacketType::Vita => Ok(Self::Vita(ItemAttributesVita::read(reader, packet_type)?)),
-            _ => Ok(Self::PC(ItemAttributesPC::read(reader, packet_type)?)),
+            PacketType::Vita => Ok(Self::Vita(ItemAttributesVita::read(
+                reader,
+                packet_type,
+                0,
+                0,
+            )?)),
+            _ => Ok(Self::PC(ItemAttributesPC::read(reader, packet_type, 0, 0)?)),
         }
     }
     pub fn write_attrs(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
@@ -407,19 +412,19 @@ impl ItemAttributes {
 
 impl ItemAttributesPC {
     pub fn read_attrs(reader: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Result<Self> {
-        Self::read(reader, crate::protocol::PacketType::Classic)
+        Self::read(reader, crate::protocol::PacketType::Classic, 0, 0)
     }
     pub fn write_attrs(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
-        self.write(writer, crate::protocol::PacketType::Classic)
+        self.write(writer, crate::protocol::PacketType::Classic, 0, 0)
     }
 }
 
 impl ItemAttributesVita {
     pub fn read_attrs(reader: &mut (impl std::io::Read + std::io::Seek)) -> std::io::Result<Self> {
-        Self::read(reader, crate::protocol::PacketType::Classic)
+        Self::read(reader, crate::protocol::PacketType::Classic, 0, 0)
     }
     pub fn write_attrs(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
-        self.write(writer, crate::protocol::PacketType::Classic)
+        self.write(writer, crate::protocol::PacketType::Classic, 0, 0)
     }
 }
 

@@ -11,8 +11,8 @@ use crate::AsciiString;
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2B, 0x01)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xCEF1, 0xB5)]
 pub struct SaveSettingsPacket {
-    #[VariableStr(0xCEF1, 0xB5)]
     pub settings: AsciiString,
 }
 
@@ -22,7 +22,7 @@ pub struct SaveSettingsPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2B, 0x02)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x54AF, 0x100)]
 pub struct LoadSettingsPacket {
-    #[VariableStr(0x54AF, 0x100)]
     pub settings: AsciiString,
 }

@@ -20,10 +20,10 @@ pub struct MissionPassInfoPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x4D, 0x03)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xB0C, 0x35)]
 pub struct MissionPassPacket {
     pub unk1: u32,
     pub cur_season_id: u32,
-    #[VariableStr(0xB0C, 0x35)]
     pub cur_season: String,
     pub stars_per_tier: u32,
     pub tiers: u32,
@@ -33,14 +33,11 @@ pub struct MissionPassPacket {
     pub end_date: u32,
     pub catchup_start: u32,
     pub unk11: u32,
-    #[VariableStr(0xB0C, 0x35)]
     pub cur_banner: String,
     pub price_per_tier: u32,
     pub gold_pass_price: u32,
-    #[Magic(0xB0C, 0x35)]
     pub cur_items: Vec<MissionPassItem>,
     pub last_season_id: u32,
-    #[VariableStr(0xB0C, 0x35)]
     pub last_season: String,
     pub last_stars_per_tier: u32,
     pub last_tiers: u32,
@@ -50,11 +47,9 @@ pub struct MissionPassPacket {
     pub last_end_date: u32,
     pub last_catchup_start: u32,
     pub last_catchup_end: u32,
-    #[VariableStr(0xB0C, 0x35)]
     pub last_banner: String,
     pub last_price_per_tier: u32,
     pub last_gold_pass_price: u32,
-    #[Magic(0xB0C, 0x35)]
     pub last_items: Vec<MissionPassItem>,
     pub unk30: u32,
     pub unk31: u32,

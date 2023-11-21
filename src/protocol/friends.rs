@@ -20,13 +20,12 @@ pub struct FriendListRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x18, 0x15)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x2E1E, 0x63)]
 pub struct FriendListPacket {
     pub unk1: u32,
     pub unk2: u16,
     pub unk3: u16,
-    #[Magic(0x2E1E, 0x63)]
     pub friends: Vec<FriendListEntry>,
-    #[VariableStr(0x2E1E, 0x63)]
     pub nickname: String,
 }
 
@@ -36,10 +35,10 @@ pub struct FriendListPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x18, 0x18)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xBF57, 0x44)]
 pub struct SendFriendRequestPacket {
     pub id: u32,
     #[Seek(4)]
-    #[VariableStr(0xBF57, 0x44)]
     pub msg: String,
 }
 

@@ -97,8 +97,19 @@ pub(crate) trait PacketReadWrite: Sized {
 }
 
 pub(crate) trait HelperReadWrite: Sized {
-    fn read(reader: &mut (impl Read + Seek), packet_type: PacketType) -> std::io::Result<Self>;
-    fn write(&self, writer: &mut impl Write, packet_type: PacketType) -> std::io::Result<()>;
+    fn read(
+        reader: &mut (impl Read + Seek),
+        packet_type: PacketType,
+        xor: u32,
+        sub: u32,
+    ) -> std::io::Result<Self>;
+    fn write(
+        &self,
+        writer: &mut impl Write,
+        packet_type: PacketType,
+        xor: u32,
+        sub: u32,
+    ) -> std::io::Result<()>;
 }
 
 /// All known packets
@@ -910,11 +921,11 @@ impl PacketHeader {
         let (id, subid, flag) = if !matches!(packet_type, PacketType::NGS) {
             let id = reader.read_u8()?;
             let subid = reader.read_u8()? as u16;
-            let flag = Flags::read(reader, packet_type)?;
+            let flag = Flags::read(reader, packet_type, 0, 0)?;
             reader.read_u8()?;
             (id, subid, flag)
         } else {
-            let flag = Flags::read(reader, packet_type)?;
+            let flag = Flags::read(reader, packet_type, 0, 0)?;
             let id = reader.read_u8()?;
             let subid = reader.read_u16::<LittleEndian>()?;
             (id, subid, flag)
@@ -927,10 +938,10 @@ impl PacketHeader {
         if !matches!(packet_type, PacketType::NGS) {
             buf.write_u8(self.id).unwrap();
             buf.write_u8(self.subid as u8).unwrap();
-            self.flag.write(&mut buf, packet_type).unwrap();
+            self.flag.write(&mut buf, packet_type, 0, 0).unwrap();
             buf.write_u8(0).unwrap();
         } else {
-            self.flag.write(&mut buf, packet_type).unwrap();
+            self.flag.write(&mut buf, packet_type, 0, 0).unwrap();
             buf.write_u8(self.id).unwrap();
             buf.write_u16::<LittleEndian>(self.subid).unwrap();
         }

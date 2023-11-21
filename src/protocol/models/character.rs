@@ -259,7 +259,12 @@ pub struct ClassInfo {
 // ----------------------------------------------------------------
 
 impl HelperReadWrite for Character {
-    fn read(reader: &mut (impl Read + Seek), packet_type: PacketType) -> std::io::Result<Self> {
+    fn read(
+        reader: &mut (impl Read + Seek),
+        packet_type: PacketType,
+        xor: u32,
+        sub: u32,
+    ) -> std::io::Result<Self> {
         let character_id = reader.read_u32::<LittleEndian>()?;
         let player_id = reader.read_u32::<LittleEndian>()?;
         let unk1 = reader.read_u32::<LittleEndian>()?;
@@ -272,8 +277,8 @@ impl HelperReadWrite for Character {
             reader.seek(std::io::SeekFrom::Current(4))?;
         }
 
-        let look = Look::read(reader, packet_type)?;
-        let classes = ClassInfo::read(reader, packet_type)?;
+        let look = Look::read(reader, packet_type, xor, sub)?;
+        let classes = ClassInfo::read(reader, packet_type, xor, sub)?;
         let unk3 = String::read(reader, 32)?;
 
         reader.seek(std::io::SeekFrom::Current(0x56))?;
@@ -294,7 +299,13 @@ impl HelperReadWrite for Character {
             unk3,
         })
     }
-    fn write(&self, writer: &mut impl Write, packet_type: PacketType) -> std::io::Result<()> {
+    fn write(
+        &self,
+        writer: &mut impl Write,
+        packet_type: PacketType,
+        xor: u32,
+        sub: u32,
+    ) -> std::io::Result<()> {
         writer.write_u32::<LittleEndian>(self.character_id)?;
         writer.write_u32::<LittleEndian>(self.player_id)?;
         writer.write_u32::<LittleEndian>(self.unk1)?;
@@ -306,8 +317,8 @@ impl HelperReadWrite for Character {
         if matches!(packet_type, PacketType::Vita) {
             writer.write_u32::<LittleEndian>(0)?;
         }
-        self.look.write(writer, packet_type)?;
-        self.classes.write(writer, packet_type)?;
+        self.look.write(writer, packet_type, xor, sub)?;
+        self.classes.write(writer, packet_type, xor, sub)?;
         writer.write_all(&self.unk3.write(32))?;
 
         writer.write_all(&[0u8; 0x56])?;

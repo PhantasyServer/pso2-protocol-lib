@@ -42,9 +42,9 @@ pub struct DealDamagePacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x06, 0x05)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x7C49, 0x9E)]
 pub struct GainedEXPPacket {
     pub sender: ObjectHeader,
-    #[Magic(0x7C49, 0x9E)]
     pub receivers: Vec<EXPReceiver>,
 }
 

@@ -10,10 +10,9 @@ use super::{HelperReadWrite, PacketReadWrite};
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x19, 0x01)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x78F7, 0xA2)]
 pub struct SystemMessagePacket {
-    #[VariableStr(0x78F7, 0xA2)]
     pub message: String,
-    #[VariableStr(0x78F7, 0xA2)]
     pub unk: String,
     pub msg_type: MessageType,
     pub msg_num: u32,

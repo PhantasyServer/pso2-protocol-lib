@@ -3,7 +3,7 @@ use super::{
     HelperReadWrite, ObjectHeader, PacketReadWrite, PacketType,
 };
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use std::{ops::Deref, time::Duration};
+use std::time::Duration;
 
 // ----------------------------------------------------------------
 // Items packets
@@ -15,12 +15,12 @@ use std::{ops::Deref, time::Duration};
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x00)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x8A92, 0x30)]
 pub struct ItemAttributesPacket {
     pub id: u16,
     pub segment: u16,
     pub total_size: u32,
     // data contains an ice archive that includes a "item_parameter.bin".
-    #[Magic(0x8A92, 0x30)]
     pub data: Vec<u8>,
 }
 
@@ -83,10 +83,9 @@ pub struct AddedItemNGSPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x06)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xAD04, 0xF3)]
 pub struct UpdateInventoryPacket {
-    #[Magic(0xAD04, 0xF3)]
     pub updated: Vec<UpdatedInventoryItem>,
-    #[Magic(0xAD04, 0xF3)]
     pub unk: Vec<UpdatedInventoryItem>,
     pub unk2: u32,
 }
@@ -97,9 +96,9 @@ pub struct UpdateInventoryPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x0C)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xCF76, 0xB5)]
 pub struct LoadEquipedPacket {
     pub player: ObjectHeader,
-    #[Magic(0xCF76, 0xB5)]
     pub items: Vec<EquipedItem>,
     pub unk1: u32,
     #[FixedLen(0x28)]
@@ -113,9 +112,9 @@ pub struct LoadEquipedPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x0C)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xCF76, 0xB5)]
 pub struct LoadEquipedNGSPacket {
     pub player: ObjectHeader,
-    #[Magic(0xCF76, 0xB5)]
     pub items: Vec<EquipedItemNGS>,
     pub unk1: u32,
     #[FixedLen(0x28)]
@@ -131,13 +130,12 @@ pub struct LoadEquipedNGSPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x0D)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x5533, 0x1)]
 pub struct LoadPlayerInventoryPacket {
     pub object: ObjectHeader,
-    #[VariableStr(0x5533, 0x1)]
     pub name: String,
     pub meseta: u64,
     pub max_capacity: u32,
-    #[Magic(0x5533, 0x1)]
     pub items: Vec<Item>,
 }
 
@@ -148,13 +146,12 @@ pub struct LoadPlayerInventoryPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x0D)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x5533, 0x1)]
 pub struct LoadPlayerInventoryNGSPacket {
     pub object: ObjectHeader,
-    #[VariableStr(0x5533, 0x1)]
     pub name: String,
     pub meseta: u64,
     pub max_capacity: u32,
-    #[Magic(0x5533, 0x1)]
     pub items: Vec<ItemNGS>,
 }
 
@@ -164,8 +161,8 @@ pub struct LoadPlayerInventoryNGSPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x0F)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x60AF, 0x97)]
 pub struct MoveToStorageRequestPacket {
-    #[Magic(0x60AF, 0x97)]
     pub uuids: Vec<MoveStorageItemRequest>,
 }
 
@@ -175,12 +172,10 @@ pub struct MoveToStorageRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x10)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xE66C, 0xE2)]
 pub struct MoveToStoragePacket {
-    #[Magic(0xE66C, 0xE2)]
     pub updated_inventory: Vec<UpdatedInventoryItem>,
-    #[Magic(0xE66C, 0xE2)]
     pub new_items: Vec<NewStorageItem>,
-    #[Magic(0xE66C, 0xE2)]
     pub updated: Vec<UpdatedItem>,
 }
 
@@ -191,12 +186,10 @@ pub struct MoveToStoragePacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x10)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xE66C, 0xE2)]
 pub struct MoveToStorageNGSPacket {
-    #[Magic(0xE66C, 0xE2)]
     pub updated_inventory: Vec<UpdatedInventoryItem>,
-    #[Magic(0xE66C, 0xE2)]
     pub new_items: Vec<NewStorageItemNGS>,
-    #[Magic(0xE66C, 0xE2)]
     pub updated: Vec<UpdatedItem>,
 }
 
@@ -206,8 +199,8 @@ pub struct MoveToStorageNGSPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x11)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x6C2A, 0x2D)]
 pub struct MoveToInventoryRequestPacket {
-    #[Magic(0x6C2A, 0x2D)]
     pub uuids: Vec<MoveStorageItemRequest>,
 }
 
@@ -217,10 +210,9 @@ pub struct MoveToInventoryRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x12)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xF1E8, 0x78)]
 pub struct MoveToInventoryPacket {
-    #[Magic(0xF1E8, 0x78)]
     pub updated: Vec<UpdatedStorageItem>,
-    #[Magic(0xF1E8, 0x78)]
     pub new_items: Vec<NewInventoryItem>,
 }
 
@@ -231,10 +223,9 @@ pub struct MoveToInventoryPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x12)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xF1E8, 0x78)]
 pub struct MoveToInventoryNGSPacket {
-    #[Magic(0xF1E8, 0x78)]
     pub updated: Vec<UpdatedStorageItem>,
-    #[Magic(0xF1E8, 0x78)]
     pub new_items: Vec<NewInventoryItemNGS>,
 }
 
@@ -244,11 +235,10 @@ pub struct MoveToInventoryNGSPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x13)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x77A5, 0xC3)]
 pub struct LoadStoragesPacket {
     pub stored_meseta: u64,
-    #[Magic(0x77A5, 0xC3)]
     pub unk3: Vec<StorageInfo>,
-    #[Magic(0x77A5, 0xC3)]
     pub items: Vec<Item>,
     pub unk5: u32,
 }
@@ -260,11 +250,10 @@ pub struct LoadStoragesPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x13)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x77A5, 0xC3)]
 pub struct LoadStoragesNGSPacket {
     pub stored_meseta: u64,
-    #[Magic(0x77A5, 0xC3)]
     pub unk3: Vec<StorageInfo>,
-    #[Magic(0x77A5, 0xC3)]
     pub items: Vec<ItemNGS>,
     pub unk5: u32,
 }
@@ -303,8 +292,8 @@ pub struct StorageMesetaPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x17)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x8E9C, 0xF0)]
 pub struct DiscardItemRequestPacket {
-    #[Magic(0x8E9C, 0xF0)]
     pub items: Vec<UUIDAmount>,
 }
 
@@ -314,10 +303,10 @@ pub struct DiscardItemRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x18)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x145A, 0x3B)]
 pub struct MoveStoragesRequestPacket {
     pub old_id: u16,
     pub new_id: u16,
-    #[Magic(0x145A, 0x3B)]
     pub items: Vec<UUIDAmount>,
 }
 
@@ -327,12 +316,10 @@ pub struct MoveStoragesRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x19)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x9A17, 0x86)]
 pub struct MoveStoragesPacket {
-    #[Magic(0x9A17, 0x86)]
     pub new_items: Vec<NewStorageItem>,
-    #[Magic(0x9A17, 0x86)]
     pub updated_new: Vec<UpdatedStorageItem>,
-    #[Magic(0x9A17, 0x86)]
     pub updated_old: Vec<UpdatedStorageItem>,
 }
 
@@ -343,12 +330,10 @@ pub struct MoveStoragesPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x19)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x9A17, 0x86)]
 pub struct MoveStoragesNGSPacket {
-    #[Magic(0x9A17, 0x86)]
     pub new_items: Vec<NewStorageItemNGS>,
-    #[Magic(0x9A17, 0x86)]
     pub updated_new: Vec<UpdatedStorageItem>,
-    #[Magic(0x9A17, 0x86)]
     pub updated_old: Vec<UpdatedStorageItem>,
 }
 
@@ -367,10 +352,10 @@ pub struct GetItemDescriptionPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x1D)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xB10E, 0xB2)]
 pub struct LoadItemDescriptionPacket {
     pub unk1: u32,
     pub item: ItemId,
-    #[VariableStr(0xB10E, 0xB2)]
     pub desc: String,
 }
 
@@ -401,12 +386,10 @@ pub struct EquipedWeaponNGSPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x22)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x4DC2, 0x2A)]
 pub struct UpdateStoragePacket {
-    #[Magic(0x4DC2, 0x2A)]
     pub unk: Vec<UpdatedStorageItem>,
-    #[Magic(0x4DC2, 0x2A)]
     pub updated: Vec<UpdatedStorageItem>,
-    #[Magic(0x4DC2, 0x2A)]
     pub new_items: Vec<NewStorageItem>,
     pub unk2: u32,
     pub unk3: u64,
@@ -419,12 +402,10 @@ pub struct UpdateStoragePacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x22)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x4DC2, 0x2A)]
 pub struct UpdateStorageNGSPacket {
-    #[Magic(0x4DC2, 0x2A)]
     pub unk: Vec<UpdatedStorageItem>,
-    #[Magic(0x4DC2, 0x2A)]
     pub updated: Vec<UpdatedStorageItem>,
-    #[Magic(0x4DC2, 0x2A)]
     pub new_items: Vec<NewStorageItemNGS>,
     pub unk2: u32,
     pub unk3: u64,
@@ -436,8 +417,8 @@ pub struct UpdateStorageNGSPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x25)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xDEFB, 0x0B)]
 pub struct DiscardStorageItemRequestPacket {
-    #[Magic(0xDEFB, 0x0B)]
     pub items: Vec<MoveStorageItemRequest>,
 }
 
@@ -467,16 +448,13 @@ pub struct LearnedPAPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x65)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x4E66, 0xD3)]
 pub struct PotentialListPacket {
     pub unk1: u16,
     pub unk2: u16,
-    #[Magic(0x4E66, 0xD3)]
     pub potential_ids: Vec<u32>,
-    #[Magic(0x4E66, 0xD3)]
     pub unk4: Vec<u8>,
-    #[Magic(0x4E66, 0xD3)]
     pub target_items: Vec<ShortItemId>,
-    #[Magic(0x4E66, 0xD3)]
     pub unk6: Vec<u32>,
     pub unk7: u32,
 }
@@ -487,9 +465,9 @@ pub struct PotentialListPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x70)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x0D8C, 0x0D)]
 pub struct AccountCapaignsPacket {
     pub unk1: u32,
-    #[Magic(0x0D8C, 0x0D)]
     pub campaigns: Vec<Campaign>,
 }
 
@@ -499,8 +477,8 @@ pub struct AccountCapaignsPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x71)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x934A, 0x58)]
 pub struct CampaignItemsRequestPacket {
-    #[Magic(0x934A, 0x58)]
     pub ids: Vec<u32>,
 }
 
@@ -510,9 +488,9 @@ pub struct CampaignItemsRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x72)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x1908, 0xA3)]
 pub struct CampaignItemListPacket {
     pub unk1: u32,
-    #[Magic(0x1908, 0xA3)]
     pub items: Vec<CampaignItemDefinition>,
 }
 
@@ -531,8 +509,8 @@ pub struct ReceiveCampaignRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x9C)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xA25, 0xF6)]
 pub struct Unk0F9CPacket {
-    #[Magic(0xA25, 0xF6)]
     pub ids: Vec<Unk0f9c>,
 }
 
@@ -555,9 +533,9 @@ pub struct ChangeWeaponPalettePacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xDF)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xAC9, 0x9F)]
 pub struct LoadMaterialStoragePacket {
     pub player_id: u32,
-    #[Magic(0xAC9, 0x9F)]
     pub items: Vec<MaterialStorageItem>,
     pub info: StorageInfo,
 }
@@ -568,8 +546,8 @@ pub struct LoadMaterialStoragePacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xE0)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x9087, 0xEA)]
 pub struct MoveToMatStorageRequestPacket {
-    #[Magic(0x9087, 0xEA)]
     pub items: Vec<MaterialStorageItem>,
 }
 
@@ -579,10 +557,9 @@ pub struct MoveToMatStorageRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xE1)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x1644, 0x35)]
 pub struct MoveToMatStoragePacket {
-    #[Magic(0x1644, 0x35)]
     pub updated_inventory: Vec<UpdatedInventoryItem>,
-    #[Magic(0x1644, 0x35)]
     pub items: Vec<MaterialStorageItem>,
 }
 
@@ -592,8 +569,8 @@ pub struct MoveToMatStoragePacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xE2)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x9C02, 0x80)]
 pub struct MoveFromMatStorageRequestPacket {
-    #[Magic(0x9C02, 0x80)]
     pub items: Vec<MaterialStorageItem>,
 }
 
@@ -603,10 +580,9 @@ pub struct MoveFromMatStorageRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xE3)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x21C0, 0xCB)]
 pub struct MoveFromMatStoragePacket {
-    #[Magic(0x21C0, 0xCB)]
     pub mat_items: Vec<MaterialStorageItem>,
-    #[Magic(0x21C0, 0xCB)]
     pub new_items: Vec<NewInventoryItem>,
 }
 
@@ -617,10 +593,9 @@ pub struct MoveFromMatStoragePacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xE3)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x21C0, 0xCB)]
 pub struct MoveFromMatStorageNGSPacket {
-    #[Magic(0x21C0, 0xCB)]
     pub mat_items: Vec<MaterialStorageItem>,
-    #[Magic(0x21C0, 0xCB)]
     pub new_items: Vec<NewInventoryItemNGS>,
 }
 
@@ -630,9 +605,9 @@ pub struct MoveFromMatStorageNGSPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xE8)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xBE74, 0x43)]
 pub struct MoveMSToStorageRequestPacket {
     pub storage_id: u32,
-    #[Magic(0xBE74, 0x43)]
     pub items: Vec<MaterialStorageItem>,
 }
 
@@ -642,12 +617,10 @@ pub struct MoveMSToStorageRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xE9)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x4432, 0x8E)]
 pub struct MoveMSToStoragePacket {
-    #[Magic(0x4432, 0x8E)]
     pub mat_items: Vec<MaterialStorageItem>,
-    #[Magic(0x4432, 0x8E)]
     pub new_items: Vec<NewStorageItem>,
-    #[Magic(0x4432, 0x8E)]
     pub updated: Vec<UpdatedStorageItem>,
 }
 
@@ -658,12 +631,10 @@ pub struct MoveMSToStoragePacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xE9)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x4432, 0x8E)]
 pub struct MoveMSToStorageNGSPacket {
-    #[Magic(0x4432, 0x8E)]
     pub mat_items: Vec<MaterialStorageItem>,
-    #[Magic(0x4432, 0x8E)]
     pub new_items: Vec<NewStorageItemNGS>,
-    #[Magic(0x4432, 0x8E)]
     pub updated: Vec<UpdatedStorageItem>,
 }
 
@@ -673,8 +644,8 @@ pub struct MoveMSToStorageNGSPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xEF)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x66A4, 0x51)]
 pub struct Unk0FEFPacket {
-    #[Magic(0x66A4, 0x51)]
     pub ids: Vec<ItemId>,
 }
 
@@ -684,8 +655,8 @@ pub struct Unk0FEFPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xFC)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x3145, 0x21)]
 pub struct Unk0FFCPacket {
-    #[Magic(0x3145, 0x21)]
     pub ids: Vec<Unk0ffc>,
     pub unk: u32,
 }
@@ -700,12 +671,10 @@ pub struct Unk0FFCPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x30)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x9E22, 0x46)]
 pub struct LoadItemInternal {
-    #[Magic(0x9E22, 0x46)]
     pub ids: Vec<ItemId>,
-    #[VariableStr(0x9E22, 0x46)]
     pub names: String,
-    #[Magic(0x9E22, 0x46)]
     pub name_length: Vec<u8>,
 }
 
@@ -1173,9 +1142,11 @@ impl HelperReadWrite for Item {
     fn read(
         reader: &mut (impl std::io::Read + std::io::Seek),
         packet_type: PacketType,
+        xor: u32,
+        sub: u32,
     ) -> std::io::Result<Self> {
         let uuid = reader.read_u64::<LittleEndian>()?;
-        let unk5 = ItemId::read(reader, packet_type)?;
+        let unk5 = ItemId::read(reader, packet_type, xor, sub)?;
         let unk6 = ItemType::read(reader, &unk5, packet_type)?;
         Ok(Self {
             uuid,
@@ -1187,9 +1158,11 @@ impl HelperReadWrite for Item {
         &self,
         writer: &mut impl std::io::Write,
         packet_type: PacketType,
+        xor: u32,
+        sub: u32,
     ) -> std::io::Result<()> {
         writer.write_u64::<LittleEndian>(self.uuid)?;
-        self.id.write(writer, packet_type)?;
+        self.id.write(writer, packet_type, xor, sub)?;
         self.data.write(writer, packet_type)?;
         Ok(())
     }
@@ -1201,9 +1174,11 @@ impl HelperReadWrite for ItemNGS {
     fn read(
         reader: &mut (impl std::io::Read + std::io::Seek),
         packet_type: PacketType,
+        xor: u32,
+        sub: u32,
     ) -> std::io::Result<Self> {
         let uuid = reader.read_u64::<LittleEndian>()?;
-        let unk5 = ItemId::read(reader, packet_type)?;
+        let unk5 = ItemId::read(reader, packet_type, xor, sub)?;
         let unk6 = ItemTypeNGS::read(reader, &unk5, packet_type)?;
         let mut unk29 = [0u16; 12];
         reader.read_u16_into::<LittleEndian>(&mut unk29)?;
@@ -1218,9 +1193,11 @@ impl HelperReadWrite for ItemNGS {
         &self,
         writer: &mut impl std::io::Write,
         packet_type: PacketType,
+        xor: u32,
+        sub: u32,
     ) -> std::io::Result<()> {
         writer.write_u64::<LittleEndian>(self.uuid)?;
-        self.id.write(writer, packet_type)?;
+        self.id.write(writer, packet_type, xor, sub)?;
         self.data.write(writer, packet_type)?;
         for n in self.unk29 {
             writer.write_u16::<LittleEndian>(n)?;
@@ -1236,11 +1213,11 @@ impl ItemType {
         packet_type: PacketType,
     ) -> std::io::Result<Self> {
         Ok(match item.item_type {
-            1 => Self::Weapon(WeaponItem::read(reader, packet_type)?),
-            2 => Self::Clothing(ClothingItem::read(reader, packet_type)?),
-            3 => Self::Consumable(ConsumableItem::read(reader, packet_type)?),
-            5 => Self::Unit(UnitItem::read(reader, packet_type)?),
-            10 => Self::Camo(CamoItem::read(reader, packet_type)?),
+            1 => Self::Weapon(WeaponItem::read(reader, packet_type, 0, 0)?),
+            2 => Self::Clothing(ClothingItem::read(reader, packet_type, 0, 0)?),
+            3 => Self::Consumable(ConsumableItem::read(reader, packet_type, 0, 0)?),
+            5 => Self::Unit(UnitItem::read(reader, packet_type, 0, 0)?),
+            10 => Self::Camo(CamoItem::read(reader, packet_type, 0, 0)?),
             _ => Self::Unknown({
                 let mut tmp = [0u8; 0x28];
                 reader.read_exact(&mut tmp)?;
@@ -1254,11 +1231,11 @@ impl ItemType {
         packet_type: PacketType,
     ) -> std::io::Result<()> {
         match self {
-            Self::Weapon(x) => x.write(writer, packet_type)?,
-            Self::Clothing(x) => x.write(writer, packet_type)?,
-            Self::Consumable(x) => x.write(writer, packet_type)?,
-            Self::Camo(x) => x.write(writer, packet_type)?,
-            Self::Unit(x) => x.write(writer, packet_type)?,
+            Self::Weapon(x) => x.write(writer, packet_type, 0, 0)?,
+            Self::Clothing(x) => x.write(writer, packet_type, 0, 0)?,
+            Self::Consumable(x) => x.write(writer, packet_type, 0, 0)?,
+            Self::Camo(x) => x.write(writer, packet_type, 0, 0)?,
+            Self::Unit(x) => x.write(writer, packet_type, 0, 0)?,
             Self::Unknown(x) => {
                 let mut data = x.to_vec();
                 data.resize(0x28, 0);
@@ -1278,11 +1255,11 @@ impl ItemTypeNGS {
         packet_type: PacketType,
     ) -> std::io::Result<Self> {
         Ok(match item.item_type {
-            1 => Self::Weapon(WeaponItemNGS::read(reader, packet_type)?),
-            2 => Self::Clothing(ClothingNGSItem::read(reader, packet_type)?),
-            5 => Self::Unit(UnitItemNGS::read(reader, packet_type)?),
-            3 => Self::Consumable(ConsumableNGSItem::read(reader, packet_type)?),
-            10 => Self::Camo(CamoNGSItem::read(reader, packet_type)?),
+            1 => Self::Weapon(WeaponItemNGS::read(reader, packet_type, 0, 0)?),
+            2 => Self::Clothing(ClothingNGSItem::read(reader, packet_type, 0, 0)?),
+            5 => Self::Unit(UnitItemNGS::read(reader, packet_type, 0, 0)?),
+            3 => Self::Consumable(ConsumableNGSItem::read(reader, packet_type, 0, 0)?),
+            10 => Self::Camo(CamoNGSItem::read(reader, packet_type, 0, 0)?),
             _ => Self::Unknown({
                 let mut tmp = [0u8; 0x38];
                 reader.read_exact(&mut tmp)?;
@@ -1296,11 +1273,11 @@ impl ItemTypeNGS {
         packet_type: PacketType,
     ) -> std::io::Result<()> {
         match self {
-            Self::Weapon(x) => x.write(writer, packet_type)?,
-            Self::Clothing(x) => x.write(writer, packet_type)?,
-            Self::Consumable(x) => x.write(writer, packet_type)?,
-            Self::Camo(x) => x.write(writer, packet_type)?,
-            Self::Unit(x) => x.write(writer, packet_type)?,
+            Self::Weapon(x) => x.write(writer, packet_type, 0, 0)?,
+            Self::Clothing(x) => x.write(writer, packet_type, 0, 0)?,
+            Self::Consumable(x) => x.write(writer, packet_type, 0, 0)?,
+            Self::Camo(x) => x.write(writer, packet_type, 0, 0)?,
+            Self::Unit(x) => x.write(writer, packet_type, 0, 0)?,
             Self::Unknown(x) => {
                 let mut data = x.to_vec();
                 data.resize(0x38, 0);
@@ -1315,6 +1292,8 @@ impl HelperReadWrite for PackedAffixes {
     fn read(
         reader: &mut (impl std::io::Read + std::io::Seek),
         _: PacketType,
+        _: u32,
+        _: u32,
     ) -> std::io::Result<Self> {
         let mut packed = [0u8; 12];
         let mut affixes = vec![];
@@ -1328,7 +1307,13 @@ impl HelperReadWrite for PackedAffixes {
         Ok(Self(affixes.try_into().unwrap()))
     }
 
-    fn write(&self, writer: &mut impl std::io::Write, _: PacketType) -> std::io::Result<()> {
+    fn write(
+        &self,
+        writer: &mut impl std::io::Write,
+        _: PacketType,
+        _: u32,
+        _: u32,
+    ) -> std::io::Result<()> {
         let mut packed = vec![];
         let affixes = self.0;
         for i in 0..4 {

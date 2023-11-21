@@ -104,8 +104,8 @@ pub struct QuestCategoryRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x18)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x1DB0, 0xC5)]
 pub struct QuestCategoryPacket {
-    #[Magic(0x1DB0, 0xC5)]
     pub quests: Vec<Quest>,
 }
 

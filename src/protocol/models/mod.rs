@@ -52,8 +52,10 @@ impl HelperReadWrite for EulerPosition {
     fn read(
         reader: &mut (impl std::io::Read + std::io::Seek),
         packet_type: PacketType,
+        xor: u32,
+        sub: u32,
     ) -> std::io::Result<Self> {
-        let pos = Position::read(reader, packet_type)?;
+        let pos = Position::read(reader, packet_type, xor, sub)?;
         Ok(pos.into())
     }
 
@@ -61,9 +63,11 @@ impl HelperReadWrite for EulerPosition {
         &self,
         writer: &mut impl std::io::Write,
         packet_type: PacketType,
+        xor: u32,
+        sub: u32,
     ) -> std::io::Result<()> {
         let pos: Position = (*self).into();
-        pos.write(writer, packet_type)
+        pos.write(writer, packet_type, xor, sub)
     }
 }
 
@@ -71,6 +75,8 @@ impl HelperReadWrite for SGValue {
     fn read(
         reader: &mut (impl std::io::Read + std::io::Seek),
         _: PacketType,
+        _: u32,
+        _: u32,
     ) -> std::io::Result<Self> {
         let mut buf = [0u8; 4];
         reader.read_exact(&mut buf[2..4])?;
@@ -80,7 +86,13 @@ impl HelperReadWrite for SGValue {
         Ok(Self(value))
     }
 
-    fn write(&self, writer: &mut impl std::io::Write, _: PacketType) -> std::io::Result<()> {
+    fn write(
+        &self,
+        writer: &mut impl std::io::Write,
+        _: PacketType,
+        _: u32,
+        _: u32,
+    ) -> std::io::Result<()> {
         let value = (self.0 * 5.0) as u32;
         let buf = value.to_le_bytes();
         writer.write_all(&buf[2..4])?;
@@ -93,6 +105,8 @@ impl HelperReadWrite for FunValue {
     fn read(
         reader: &mut (impl std::io::Read + std::io::Seek),
         _: PacketType,
+        _: u32,
+        _: u32,
     ) -> std::io::Result<Self> {
         let mut buf = [0u8; 4];
         reader.read_exact(&mut buf[2..4])?;
@@ -101,7 +115,13 @@ impl HelperReadWrite for FunValue {
         Ok(Self(value))
     }
 
-    fn write(&self, writer: &mut impl std::io::Write, _: PacketType) -> std::io::Result<()> {
+    fn write(
+        &self,
+        writer: &mut impl std::io::Write,
+        _: PacketType,
+        _: u32,
+        _: u32,
+    ) -> std::io::Result<()> {
         let buf = self.0.to_le_bytes();
         writer.write_all(&buf[2..4])?;
         writer.write_all(&buf[0..2])?;

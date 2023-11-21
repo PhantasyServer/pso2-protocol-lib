@@ -23,9 +23,9 @@ pub struct TakenOrdersRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1F, 0x02)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x70B2, 0x9E)]
 pub struct OrderListRequestPacket {
     pub unk1: u32,
-    #[VariableStr(0x70B2, 0x9E)]
     pub source: AsciiString,
     pub unk3: u32,
     pub unk4: u32,

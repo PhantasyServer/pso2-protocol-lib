@@ -90,6 +90,7 @@ pub struct ObjectSpawnPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x08, 0x0C)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x9FCD, 0xE7)]
 pub struct NPCSpawnPacket {
     pub object: ObjectHeader,
     pub position: Position,
@@ -107,7 +108,6 @@ pub struct NPCSpawnPacket {
     pub unk10: u32,
     pub unk11: u32,
     pub unk12: u32,
-    #[VariableStr(0x9FCD, 0xE7)]
     pub unk13: AsciiString,
 }
 
@@ -117,6 +117,7 @@ pub struct NPCSpawnPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x08, 0x0D)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x258B, 0x32)]
 pub struct EnemySpawnPacket {
     pub object: ObjectHeader,
     pub position: Position,
@@ -132,7 +133,6 @@ pub struct EnemySpawnPacket {
     pub unk7: u16,
     pub unk8: u16,
     pub unk9: [u32; 16],
-    #[VariableStr(0x258B, 0x32)]
     pub unk10: AsciiString,
     pub unk11: u8,
     pub unk12: u8,

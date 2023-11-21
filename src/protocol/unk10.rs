@@ -13,7 +13,6 @@ use crate::AsciiString;
 pub struct LuaPacket {
     pub unk1: u16,
     pub unk2: u16,
-    #[VariableStr(0, 0)]
     pub lua: AsciiString,
 }
 
@@ -23,9 +22,9 @@ pub struct LuaPacket {
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x10, 0x03)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xD975, 0x2F)]
 pub struct Unk1003Packet {
     pub unk1: u16,
     pub unk2: u16,
-    #[VariableStr(0xD975, 0x2F)]
     pub unk3: AsciiString,
 }

@@ -9,7 +9,12 @@ use syn::{
 pub fn packet_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
     let name = &ast.ident;
     let (id, subid) = get_packet_id(&ast.attrs)?;
+    let xor_sub = get_magic(&ast.attrs)?;
     let flags = get_flags(&ast.attrs)?;
+    if flags.to_string().contains("packed") && xor_sub.is_none() {
+        return Err(syn::Error::new(ast.ident.span(), "No magic provided"));
+    }
+    let (xor, sub) = xor_sub.unwrap_or((0, 0));
 
     let mut read = quote! {};
     let mut write = quote! {};
@@ -25,6 +30,7 @@ pub fn packet_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
                 use byteorder::{LittleEndian, ReadBytesExt};
                 use crate::protocol::HelperReadWrite;
                 use crate::asciistring::StringRW;
+                let (xor, sub) = (#xor, #sub);
                 #read
             }
             fn write(&self, packet_type: crate::protocol::PacketType) -> Vec<u8> {
@@ -34,6 +40,7 @@ pub fn packet_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
                 use std::io::Write;
                 let mut buf = crate::protocol::PacketHeader::new(#id, #subid, #flags).write(packet_type);
                 let writer = &mut buf;
+                let (xor, sub) = (#xor, #sub);
                 #write
                 buf
             }
@@ -66,12 +73,12 @@ pub fn helper_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
     let gen = quote! {
         #[automatically_derived]
         impl HelperReadWrite for #name {
-            fn read(reader: &mut (impl std::io::Read + std::io::Seek), packet_type: crate::protocol::PacketType) -> std::io::Result<Self> {
+            fn read(reader: &mut (impl std::io::Read + std::io::Seek), packet_type: crate::protocol::PacketType, xor: u32, sub: u32) -> std::io::Result<Self> {
                 use byteorder::{LittleEndian, ReadBytesExt};
                 use crate::asciistring::StringRW;
                 #read
             }
-            fn write(&self, writer: &mut impl std::io::Write, packet_type: crate::protocol::PacketType) -> std::io::Result<()> {
+            fn write(&self, writer: &mut impl std::io::Write, packet_type: crate::protocol::PacketType, xor: u32, sub: u32) -> std::io::Result<()> {
                 use byteorder::{LittleEndian, WriteBytesExt};
                 use crate::asciistring::StringRW;
                 #write
@@ -118,14 +125,7 @@ fn parse_enum_field(
                 syn::Meta::NameValue(_) => {}
                 syn::Meta::Path(path) => {
                     let string = path.get_ident().unwrap().to_string();
-                    get_attrs(
-                        &mut settings,
-                        &string,
-                        None,
-                        &mut quote! {},
-                        &mut quote! {},
-                        name,
-                    )?;
+                    get_attrs(&mut settings, &string, None, &mut quote! {}, &mut quote! {})?;
                 }
                 syn::Meta::List(_) => {}
             }
@@ -251,11 +251,11 @@ fn parse_struct_field(
                 syn::Meta::NameValue(_) => {}
                 syn::Meta::Path(path) => {
                     let string = path.get_ident().unwrap().to_string();
-                    get_attrs(&mut settings, &string, None, read, write, name)?;
+                    get_attrs(&mut settings, &string, None, read, write)?;
                 }
                 syn::Meta::List(list) => {
                     let string = list.path.get_ident().unwrap().to_string();
-                    get_attrs(&mut settings, &string, Some(&list), read, write, name)?;
+                    get_attrs(&mut settings, &string, Some(&list), read, write)?;
                 }
             }
         }
@@ -303,6 +303,7 @@ struct Settings {
     to_skip: bool,
     only_on: Option<TS2>,
     fixed_len: u32,
+    len_size: Option<Size>,
 }
 
 fn get_attrs(
@@ -311,7 +312,6 @@ fn get_attrs(
     list: Option<&MetaList>,
     read: &mut TS2,
     write: &mut TS2,
-    name: &Ident,
 ) -> syn::Result<()> {
     match string {
         "Read_default" => set.is_default = true,
@@ -330,67 +330,30 @@ fn get_attrs(
             set.only_on = Some(attrs.clone());
         }
         "Seek" => {
-            let amount: LitInt = list.unwrap().parse_args()?;
-            let amount: i64 = amount.base10_parse()?;
+            let amount: i64 = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
             read.extend(quote! {reader.seek(std::io::SeekFrom::Current(#amount))?;});
             write.extend(quote! {writer.write_all(&[0u8; #amount as usize]).unwrap();});
         }
         "SeekAfter" => {
-            let amount: LitInt = list.unwrap().parse_args()?;
-            set.seek_after = amount.base10_parse()?;
+            set.seek_after = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
         }
         "FixedLen" => {
-            let amount: LitInt = list.unwrap().parse_args()?;
-            set.fixed_len = amount.base10_parse()?;
+            set.fixed_len = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
         }
         "Const_u16" => {
-            let num: LitInt = list.unwrap().parse_args()?;
-            let num: u16 = num.base10_parse()?;
+            let num: u16 = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
             read.extend(quote! {reader.seek(std::io::SeekFrom::Current(2))?;});
             write.extend(quote! {writer.write_u16::<LittleEndian>(#num).unwrap();});
         }
         "FixedStr" => {
-            let len: LitInt = list.unwrap().parse_args()?;
-            let len = len.base10_parse()?;
+            let len = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
             set.str_type = StringType::Fixed(len);
         }
-        "VariableStr" => {
-            let attrs: AttributeList = list.unwrap().parse_args()?;
-            if attrs.fields.len() != 2 {
-                return Err(syn::Error::new(list.span(), "Invalid number of arguments"));
-            }
-            let magic = attrs.fields[0].base10_parse()?;
-            let sub = attrs.fields[1].base10_parse()?;
-            set.str_type = StringType::Variable(magic, sub);
-        }
-        "Magic" => {
-            let attrs: AttributeList = list.unwrap().parse_args()?;
-            if attrs.fields.len() != 2 {
-                return Err(syn::Error::new(list.span(), "Invalid number of arguments"));
-            }
-            let magic: u32 = attrs.fields[0].base10_parse()?;
-            let sub: u32 = attrs.fields[1].base10_parse()?;
-            read.extend(
-                quote! {let len = crate::protocol::read_magic(reader, #sub, #magic)? as usize;},
-            );
-            write.extend(quote! {
-                writer.write_u32::<LittleEndian>(crate::protocol::write_magic(self.#name.len() as u32, #sub, #magic))
-                .unwrap();
-            });
-        }
         "Len_u32" => {
-            read.extend(quote! { let len = reader.read_u32::<LittleEndian>()?; });
-            write.extend(quote! {
-                writer.write_u32::<LittleEndian>(self.#name.len() as u32)
-                .unwrap();
-            });
+            set.len_size = Some(Size::U32);
         }
         "Len_u16" => {
-            read.extend(quote! { let len = reader.read_u16::<LittleEndian>()?; });
-            write.extend(quote! {
-                writer.write_u16::<LittleEndian>(self.#name.len() as u16)
-                .unwrap();
-            });
+            set.len_size = Some(Size::U16);
         }
         _ => {}
     }
@@ -410,8 +373,7 @@ fn check_syn_type(
         Type::Path(path) => match path.path.get_ident() {
             Some(identity) => {
                 let string = identity.to_string();
-                let (in_read, in_write) =
-                    check_code_type(string, name, set, path.span(), is_first)?;
+                let (in_read, in_write) = check_code_type(string, name, set, is_first)?;
                 read.extend(in_read);
                 write.extend(in_write);
             }
@@ -444,30 +406,56 @@ fn check_syn_type(
                                 quote! { writer.write_all(&vec![0u8; ((len + 4 - 1) & (usize::MAX ^ (4 - 1))) - len]).unwrap(); }
                             };
 
+                            let read_len = if let Some(size) = &set.len_size {
+                                match size {
+                                    Size::U8 => quote! { reader.read_u8()? },
+                                    Size::U16 => quote! { reader.read_u16::<LittleEndian>()? },
+                                    Size::U32 => quote! { reader.read_u32::<LittleEndian>()? },
+                                }
+                            } else {
+                                quote! { crate::protocol::read_magic(reader, sub, xor)? as usize }
+                            };
+                            let write_len = if let Some(size) = &set.len_size {
+                                match size {
+                                    Size::U8 => {
+                                        quote! { writer.write_u8(self.#name.len() as u8).unwrap() }
+                                    }
+                                    Size::U16 => {
+                                        quote! { writer.write_u16::<LittleEndian>(self.#name.len() as u16).unwrap() }
+                                    }
+                                    Size::U32 => {
+                                        quote! { writer.write_u32::<LittleEndian>(self.#name.len() as u32).unwrap() }
+                                    }
+                                }
+                            } else {
+                                quote! { writer.write_u32::<LittleEndian>(crate::protocol::write_magic(self.#name.len() as u32, sub, xor)).unwrap() }
+                            };
+
                             if set.fixed_len == 0 {
                                 read.extend(quote! {
+                                    let len = #read_len;
                                     let mut #name = vec![];
                                     let seek1 = reader.seek(std::io::SeekFrom::Current(0))?;
                                     for _ in 0..len {
-                                        #tmp_read
+                                        #tmp_read;
                                         #name.push(#tmp_name);
                                     }
                                     let seek2 = reader.seek(std::io::SeekFrom::Current(0))?;
                                     let len = (seek2 - seek1) as usize;
-                                    #seek_pad
+                                    #seek_pad;
                                 });
                                 write.extend(quote! {
-                                    let len = self.#name.len();
+                                    #write_len;
                                     let mut tmp_buf = vec![];
                                     {
                                         let writer = &mut tmp_buf;
                                         for #tmp_name in &self.#name {
-                                            #tmp_write
+                                            #tmp_write;
                                         }
                                     };
                                     writer.write_all(&tmp_buf).unwrap();
                                     let len = tmp_buf.len();
-                                    #write_pad
+                                    #write_pad;
                                 });
                             } else {
                                 let len = set.fixed_len;
@@ -551,7 +539,6 @@ fn check_code_type(
     string: String,
     name: &Ident,
     set: &Settings,
-    span: Span,
     is_first: bool,
 ) -> syn::Result<(TS2, TS2)> {
     let mut read = quote! {};
@@ -648,41 +635,37 @@ fn check_code_type(
             }
         }
         "String" => match set.str_type {
-            StringType::Unknown => return Err(syn::Error::new(span, "Unknown string type")),
+            StringType::Unknown => {
+                read.extend(quote! {let #name = String::read_variable(reader, sub, xor)?;});
+                write.extend(
+                    quote! {writer.write_all(&#write_name.write_variable(sub, xor)).unwrap();},
+                );
+            }
             StringType::Fixed(len) => {
                 read.extend(quote! {let #name = String::read(reader, #len)?;});
                 write
                     .extend(quote! {writer.write_all(&#write_name.write(#len as usize)).unwrap();});
             }
-            StringType::Variable(magic, sub) => {
-                read.extend(quote! {let #name = String::read_variable(reader, #sub, #magic)?;});
-                write.extend(
-                    quote! {writer.write_all(&#write_name.write_variable(#sub, #magic))
-                    .unwrap();},
-                );
-            }
         },
         "AsciiString" => match set.str_type {
+            StringType::Unknown => {
+                read.extend(
+                    quote! {let #name = crate::AsciiString::read_variable(reader, sub, xor)?;},
+                );
+                write.extend(
+                    quote! {writer.write_all(&#write_name.write_variable(sub, xor)).unwrap();},
+                );
+            }
             StringType::Fixed(len) => {
                 read.extend(quote! {let #name = crate::AsciiString::read(reader, #len)?;});
                 write
                     .extend(quote! {writer.write_all(&#write_name.write(#len as usize)).unwrap();});
             }
-            StringType::Variable(magic, sub) => {
-                read.extend(
-                    quote! {let #name = crate::AsciiString::read_variable(reader, #sub, #magic)?;},
-                );
-                write.extend(
-                    quote! {writer.write_all(&#write_name.write_variable(#sub, #magic))
-                    .unwrap();},
-                );
-            }
-            _ => return Err(syn::Error::new(span, "Unknown string type")),
         },
         _ => {
             let out_type = Ident::new(&string, Span::call_site());
-            read.extend(quote! {let #name = #out_type::read(reader, packet_type)?;});
-            write.extend(quote! {#write_name.write(writer, packet_type).unwrap();});
+            read.extend(quote! {let #name = #out_type::read(reader, packet_type, xor, sub)?;});
+            write.extend(quote! {#write_name.write(writer, packet_type, xor, sub).unwrap();});
         }
     }
     Ok((read, write))
@@ -761,6 +744,33 @@ fn get_repr(attrs: &Vec<Attribute>) -> syn::Result<Size> {
     return Ok(Size::U8);
 }
 
+fn get_magic(attrs: &Vec<Attribute>) -> syn::Result<Option<(u32, u32)>> {
+    for attr in attrs.iter() {
+        if !attr.path().is_ident("Magic") {
+            continue;
+        }
+        match &attr.meta {
+            syn::Meta::NameValue(_) => {}
+            syn::Meta::Path(_) => {
+                return Err(syn::Error::new(
+                    attr.span(),
+                    "Invalid syntax \nPerhaps you ment Magic(..)?",
+                ));
+            }
+            syn::Meta::List(list) => {
+                let attrs: AttributeList = list.parse_args()?;
+                if attrs.fields.len() != 2 {
+                    return Err(syn::Error::new(attr.span(), "Invalid number of arguments"));
+                }
+                let id = attrs.fields[0].base10_parse()?;
+                let subid = attrs.fields[1].base10_parse()?;
+                return Ok(Some((id, subid)));
+            }
+        }
+    }
+    Ok(None)
+}
+
 fn get_flags_struct(attrs: &Vec<Attribute>) -> syn::Result<Option<Size>> {
     for attr in attrs.iter() {
         if !attr.path().is_ident("Flags") {
@@ -811,8 +821,6 @@ enum StringType {
     Unknown,
     // len
     Fixed(u64),
-    // magic, sub
-    Variable(u32, u32),
 }
 
 struct AttributeList {

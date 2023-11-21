@@ -15,6 +15,7 @@ use crate::{
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x00)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xCCE7, 0x13)]
 pub struct AddMemberPacket {
     pub new_member: ObjectHeader,
     pub unk1: u32,
@@ -24,9 +25,7 @@ pub struct AddMemberPacket {
     pub class: Class,
     pub subclass: Class,
     pub padding: [u8; 3],
-    #[VariableStr(0xCCE7, 0x13)]
     pub nickname: String,
-    #[VariableStr(0xCCE7, 0x13)]
     pub char_name: String,
     pub unk5: [u8; 0xC],
     pub unk6: u16,
@@ -38,9 +37,7 @@ pub struct AddMemberPacket {
     pub unk12: u32,
     pub unk13: [u8; 0xC],
     pub unk14: [u32; 3],
-    #[VariableStr(0xCCE7, 0x13)]
     pub unk15: String,
-    #[VariableStr(0xCCE7, 0x13)]
     pub unk16: AsciiString,
 }
 
@@ -51,6 +48,7 @@ pub struct AddMemberPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x00)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xCCE7, 0x13)]
 pub struct AddMemberNGSPacket {
     pub new_member: ObjectHeader,
     pub unk1: u32,
@@ -60,9 +58,7 @@ pub struct AddMemberNGSPacket {
     pub class: Class,
     pub subclass: Class,
     pub padding: [u8; 3],
-    #[VariableStr(0xCCE7, 0x13)]
     pub nickname: String,
-    #[VariableStr(0xCCE7, 0x13)]
     pub char_name: String,
     pub unk5: [u8; 0xC],
     pub unk6: u16,
@@ -75,11 +71,8 @@ pub struct AddMemberNGSPacket {
     pub unk12: u32,
     pub unk13: [u8; 0xC],
     pub unk14: [u32; 3],
-    #[VariableStr(0xCCE7, 0x13)]
     pub unk15: String,
-    #[VariableStr(0xCCE7, 0x13)]
     pub unk16: AsciiString,
-    #[VariableStr(0xCCE7, 0x13)]
     pub unk17: AsciiString,
 }
 
@@ -99,12 +92,12 @@ pub struct RemoveMemberPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x02)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xD863, 0xA9)]
 pub struct PartyInitPacket {
     pub party_object: ObjectHeader,
     pub leader: ObjectHeader,
     pub people_amount: u32,
     pub entries: [PartyEntry; 4],
-    #[VariableStr(0xD863, 0xA9)]
     pub unk2: AsciiString,
 }
 
@@ -115,12 +108,12 @@ pub struct PartyInitPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x02)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xD863, 0xA9)]
 pub struct PartyInitNGSPacket {
     pub party_object: ObjectHeader,
     pub leader: ObjectHeader,
     pub people_amount: u32,
     pub entries: [PartyEntryNGS; 4],
-    #[VariableStr(0xD863, 0xA9)]
     pub unk2: AsciiString,
 }
 
@@ -149,14 +142,12 @@ pub struct PartyInviteRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x06)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xEF59, 0xD5)]
 pub struct NewInvitePacket {
     pub party_object: ObjectHeader,
     pub inviter: ObjectHeader,
-    #[VariableStr(0xEF59, 0xD5)]
     pub name: String,
-    #[VariableStr(0xEF59, 0xD5)]
     pub inviter_name: String,
-    #[VariableStr(0xEF59, 0xD5)]
     pub questname: String,
 }
 
@@ -176,14 +167,11 @@ pub struct AcceptInvitePacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x0C)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x11CB, 0x98)]
 pub struct NewPartySettingsPacket {
-    #[VariableStr(0x11CB, 0x98)]
     pub name: String,
-    #[VariableStr(0x11CB, 0x98)]
     pub password: String,
-    #[VariableStr(0x11CB, 0x98)]
     pub comments: String,
-    #[VariableStr(0x11CB, 0x98)]
     pub questname: String,
     pub min_level: u8,
     pub max_level: u8,
@@ -198,12 +186,10 @@ pub struct NewPartySettingsPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x0D)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x9789, 0xE3)]
 pub struct PartySettingsPacket {
-    #[VariableStr(0x9789, 0xe3)]
     pub name: String,
-    #[VariableStr(0x9789, 0xe3)]
     pub password: String,
-    #[VariableStr(0x9789, 0xe3)]
     pub comments: String,
     pub min_level: u8,
     pub max_level: u8,
@@ -285,6 +271,7 @@ pub struct Unk0E1APacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x1B)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xE7E8, 0xFF)]
 pub struct PartyInfoPacket {
     pub num_of_infos: u32,
     pub infos: [PartyInfo; 10],
@@ -305,8 +292,8 @@ pub struct PartyInfoStopperPacker {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x1D)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xF364, 0x95)]
 pub struct GetPartyDetailsPacket {
-    #[Magic(0xF364, 0x95)]
     pub parties: Vec<ObjectHeader>,
 }
 
@@ -316,6 +303,7 @@ pub struct GetPartyDetailsPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x1E)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x7921, 0xE0)]
 pub struct PartyDetailsPacket {
     pub num_of_details: u32,
     pub details: [PartyDetails; 0xC],
@@ -327,9 +315,10 @@ pub struct PartyDetailsPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x21)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x0A5A, 0xC1)]
 pub struct Unk0E21Packet {
     pub people_amount: u32,
-    pub entries: [PartyEntry21; 4],
+    pub entries: [PartyEntry; 4],
 }
 
 #[cfg(feature = "ngs_packets")]
@@ -339,9 +328,10 @@ pub struct Unk0E21Packet {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x21)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x0A5A, 0xC1)]
 pub struct Unk0E21NGSPacket {
     pub people_amount: u32,
-    pub entries: [PartyEntryNGS21; 4],
+    pub entries: [PartyEntryNGS; 4],
 }
 
 // 0x0E, 0x2B
@@ -369,8 +359,8 @@ pub struct InviteDeclinePacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x2E)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xD4FC, 0x92)]
 pub struct GetPartyInfoPacket {
-    #[Magic(0xD4FC, 0x92)]
     pub parties: Vec<ObjectHeader>,
 }
 
@@ -403,9 +393,7 @@ pub struct PartySetupFinishPacket {
 #[derive(Debug, Clone, Default, PartialEq, HelperReadWrite)]
 pub struct PartyEntry {
     pub id: ObjectHeader,
-    #[VariableStr(0xD863, 0xA9)]
     pub nickname: String,
-    #[VariableStr(0xD863, 0xA9)]
     pub char_name: String,
     pub level: u8,
     pub sublevel: u8,
@@ -419,12 +407,9 @@ pub struct PartyEntry {
     pub unk3: u16,
     pub unk4: [u8; 0xC],
     pub unk5: [u32; 3],
-    #[VariableStr(0xD863, 0xA9)]
     pub unk6: String,
     #[OnlyOn(PacketType::Vita)]
-    #[VariableStr(0xD863, 0xA9)]
     pub unk10: String,
-    #[VariableStr(0xD863, 0xA9)]
     pub unk7: AsciiString,
     pub lang: ShortLanguage,
     pub unk9: [u8; 3],
@@ -437,9 +422,7 @@ pub struct PartyEntry {
 #[derive(Debug, Clone, Default, PartialEq, HelperReadWrite)]
 pub struct PartyEntryNGS {
     pub id: ObjectHeader,
-    #[VariableStr(0xD863, 0xA9)]
     pub nickname: String,
-    #[VariableStr(0xD863, 0xA9)]
     pub char_name: String,
     pub level: u8,
     pub sublevel: u8,
@@ -453,13 +436,10 @@ pub struct PartyEntryNGS {
     pub unk3: u16,
     pub unk4: [u8; 0xC],
     pub unk5: [u32; 3],
-    #[VariableStr(0xD863, 0xA9)]
     pub unk6: String,
-    #[VariableStr(0xD863, 0xA9)]
     pub unk7: AsciiString,
     pub lang: ShortLanguage,
     pub unk9: [u8; 3],
-    #[VariableStr(0xD863, 0xA9)]
     pub unk10: String,
 }
 
@@ -508,7 +488,6 @@ pub struct PartyFlags {
 pub struct PartyInfo {
     pub unk1: [u8; 0xC],
     pub party_object: ObjectHeader,
-    #[VariableStr(0xE7E8, 0xFF)]
     pub name: String,
     pub unk2: [u8; 9],
     pub unk3: [u8; 3],
@@ -531,7 +510,6 @@ pub enum RejectStatus {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, HelperReadWrite)]
 pub struct PartyDetails {
-    #[VariableStr(0x7921, 0xE0)]
     pub party_desc: String,
     pub party_id: ObjectHeader,
     pub unk3: [u8; 0x10],
@@ -548,9 +526,7 @@ pub struct PartyDetails {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, HelperReadWrite)]
 pub struct PartyMember {
-    #[VariableStr(0x7921, 0xE0)]
     pub char_name: String,
-    #[VariableStr(0x7921, 0xE0)]
     pub nickname: String,
     pub id: ObjectHeader,
     pub class: Class,
@@ -569,69 +545,4 @@ pub enum BusyState {
     #[Read_default]
     NotBusy,
     Busy,
-}
-
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, HelperReadWrite)]
-pub struct PartyEntry21 {
-    pub id: ObjectHeader,
-    #[VariableStr(0x0A5A, 0xC1)]
-    pub nickname: String,
-    #[VariableStr(0x0A5A, 0xC1)]
-    pub char_name: String,
-    pub level: u8,
-    pub sublevel: u8,
-    pub class: Class,
-    pub subclass: Class,
-    pub color: Color,
-    pub unk1: [u8; 7],
-    pub unk2: u32,
-    pub hp: [u32; 3],
-    pub map_id: u16,
-    pub unk3: u16,
-    pub unk4: [u8; 0xC],
-    pub unk5: [u32; 3],
-    #[VariableStr(0x0A5A, 0xC1)]
-    pub unk6: String,
-    #[OnlyOn(PacketType::Vita)]
-    #[VariableStr(0x0A5A, 0xC1)]
-    pub unk10: String,
-    #[VariableStr(0x0A5A, 0xC1)]
-    pub unk7: AsciiString,
-    pub lang: ShortLanguage,
-    pub unk9: [u8; 3],
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, HelperReadWrite)]
-pub struct PartyEntryNGS21 {
-    pub id: ObjectHeader,
-    #[VariableStr(0x0A5A, 0xC1)]
-    pub nickname: String,
-    #[VariableStr(0x0A5A, 0xC1)]
-    pub char_name: String,
-    pub level: u8,
-    pub sublevel: u8,
-    pub class: Class,
-    pub subclass: Class,
-    pub color: Color,
-    pub unk1: [u8; 7],
-    pub unk2: u32,
-    pub hp: [u32; 3],
-    pub map_id: u16,
-    pub unk3: u16,
-    pub unk4: [u8; 0xC],
-    pub unk5: [u32; 3],
-    #[VariableStr(0x0A5A, 0xC1)]
-    pub unk6: String,
-    #[VariableStr(0x0A5A, 0xC1)]
-    pub unk7: AsciiString,
-    pub lang: ShortLanguage,
-    pub unk9: [u8; 3],
-    #[VariableStr(0x0A5A, 0xC1)]
-    pub unk10: String,
 }

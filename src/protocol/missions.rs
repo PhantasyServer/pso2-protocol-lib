@@ -10,9 +10,9 @@ use super::{HelperReadWrite, PacketReadWrite};
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x4A, 0x01)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xC691, 0x47)]
 pub struct MissionListPacket {
     pub unk1: u32,
-    #[Magic(0xC691, 0x47)]
     pub missions: Vec<Mission>,
     pub daily_update: u32,
     pub weekly_update: u32,
@@ -25,13 +25,11 @@ pub struct MissionListPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x4A, 0x03)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xD20D, 0xDD)]
 pub struct Unk4A03Packet {
     pub unk1: u32,
-    #[Magic(0xD20D, 0xDD)]
     pub unk2: Vec<Mission>,
-    #[Magic(0xD20D, 0xDD)]
     pub unk3: Vec<u32>,
-    #[Magic(0xD20D, 0xDD)]
     pub unk4: Vec<Unk2Struct>,
     pub unk5: u32,
 }
@@ -43,13 +41,11 @@ pub struct Unk4A03Packet {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x4A, 0x03)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xD20D, 0xDD)]
 pub struct Unk4A03NGSPacket {
     pub unk1: u32,
-    #[Magic(0xD20D, 0xDD)]
     pub unk2: Vec<Mission>,
-    #[Magic(0xD20D, 0xDD)]
     pub unk3: Vec<u32>,
-    #[Magic(0xD20D, 0xDD)]
     pub unk4: Vec<Unk2NGSStruct>,
     pub unk5: u32,
 }

@@ -23,13 +23,13 @@ use std::{
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x00)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x5E6, 0x6B)]
 pub struct SegaIDLoginPacket {
     //FIXME: fix data sizes
     pub unk1: u32,
     pub unk2: u32,
     pub unk3: u32,
     pub ver_id: [u8; 0x20],
-    #[Magic(0x5E6, 0x6B)]
     pub interfaces: Vec<NetInterface>,
     #[Seek(0x14)]
     #[FixedLen(0x90)]
@@ -59,7 +59,6 @@ pub struct SegaIDLoginPacket {
     #[Seek(0x4)]
     pub unk10: u32,
     #[SeekAfter(0x4)]
-    #[VariableStr(0x5E6, 0x6B)]
     pub unk11: AsciiString,
 }
 
@@ -69,9 +68,9 @@ pub struct SegaIDLoginPacket {
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x01)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x8BA4, 0xB6)]
 pub struct LoginResponsePacket {
     pub status: LoginStatus,
-    #[VariableStr(0x8BA4, 0xB6)]
     pub error: String,
     pub player: ObjectHeader,
     #[FixedStr(0x20)]
@@ -106,7 +105,6 @@ pub struct LoginResponsePacket {
     #[FixedStr(0x20)]
     pub unk28: String,
     pub unk29: u32,
-    #[VariableStr(0x8BA4, 0xB6)]
     pub unk30: String,
     pub unk31: u32,
 }
@@ -160,18 +158,14 @@ pub struct CharacterDeletionRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x08)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x33D4, 0xC4)]
 pub struct CharacterDeletionPacket {
     pub status: DeletionStatus,
     pub unk1: u32,
-    #[Magic(0x33D4, 0xC4)]
     pub unk2: Vec<ItemId>,
-    #[Magic(0x33D4, 0xC4)]
     pub unk3: Vec<ItemId>,
-    #[Magic(0x33D4, 0xC4)]
     pub unk4: Vec<ItemId>,
-    #[Magic(0x33D4, 0xC4)]
     pub unk5: Vec<ItemId>,
-    #[Magic(0x33D4, 0xC4)]
     pub unk6: Vec<ItemId>,
 }
 
@@ -332,24 +326,18 @@ pub struct BlockBalancePacket {
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x2D)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x883D, 0x9F)]
 pub struct SystemInformationPacket {
-    #[VariableStr(0x883D, 0x9F)]
     pub cpu_info: AsciiString,
-    #[VariableStr(0x883D, 0x9F)]
     pub video_info: AsciiString,
     pub vram: u64,
     pub total_ram: u64,
     pub unk1: u32,
     pub unk2: u32,
-    #[VariableStr(0x883D, 0x9F)]
     pub windows_version: String,
-    #[VariableStr(0x883D, 0x9F)]
     pub window_size: AsciiString,
-    #[VariableStr(0x883D, 0x9F)]
     pub unk3: String,
-    #[VariableStr(0x883D, 0x9F)]
     pub unk4: String,
-    #[VariableStr(0x883D, 0x9F)]
     pub video_driver: String,
     pub total_disk_space: u64,
     pub free_disk_space: u64,
@@ -361,8 +349,8 @@ pub struct SystemInformationPacket {
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x3D)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xE418, 0x51)]
 pub struct ShipListPacket {
-    #[Magic(0xE418, 0x51)]
     pub ships: Vec<ShipEntry>,
     pub timestamp: Duration,
 }
@@ -394,6 +382,7 @@ pub struct CreateCharacter2ResponsePacket {
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x63)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xBE3F, 0x77)]
 pub struct VitaLoginPacket {
     pub unk1: u8,
     pub unk2: u8,
@@ -401,7 +390,6 @@ pub struct VitaLoginPacket {
     pub unk4: u32,
     pub unk5: u32,
     pub ver_id: [u8; 0x20],
-    #[Magic(0xBE3F, 0x77)]
     pub interfaces: Vec<NetInterface>,
     pub unk6: [u8; 0x10],
     #[Seek(0x4)]
@@ -434,9 +422,7 @@ pub struct VitaLoginPacket {
     pub unk13: u8,
     pub unk14: u8,
     pub unk15: u16,
-    #[VariableStr(0xBE3F, 0x77)]
     pub unk16: AsciiString,
-    #[Magic(0xBE3F, 0x77)]
     pub unk17: Vec<u8>,
     pub unk18: [u8; 0x10],
 }
@@ -447,14 +433,13 @@ pub struct VitaLoginPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x67)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xD536, 0xA4)]
 pub struct SalonResponse {
     pub reedit_time: u32,
     pub unk2: u32,
     pub unk3: u32,
     pub unk4: u32,
-    #[Magic(0xD536, 0xA4)]
     pub unk5: Vec<SalonThing1>,
-    #[Magic(0xD536, 0xA4)]
     pub unk6: Vec<SalonThing2>,
     pub unk7: u32,
 }
@@ -465,8 +450,8 @@ pub struct SalonResponse {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x68)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x5AF4, 0xEF)]
 pub struct ChallengeRequestPacket {
-    #[Magic(0x5AF4, 0xEF)]
     pub data: Vec<u8>,
 }
 
@@ -476,8 +461,8 @@ pub struct ChallengeRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x69)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xE0B1, 0x3A)]
 pub struct ChallengeResponsePacket {
-    #[Magic(0xE0B1, 0x3A)]
     pub data: Vec<u8>,
 }
 
@@ -487,8 +472,8 @@ pub struct ChallengeResponsePacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x6F)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x0323, 0xFD)]
 pub struct Unk116FPacket {
-    #[VariableStr(0x0323, 0xFD)]
     pub unk1: String,
     pub unk2: u32,
 }
@@ -500,8 +485,8 @@ pub struct Unk116FPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x6F)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x0323, 0xFD)]
 pub struct Unk116FNGSPacket {
-    #[VariableStr(0x0323, 0xFD)]
     pub unk1: String,
     pub unk2: u32,
     pub unk3: u32,
@@ -525,8 +510,8 @@ pub struct NotificationStatusPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x87)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x8CEB, 0x8)]
 pub struct LoginHistoryPacket {
-    #[Magic(0x8ceb, 8)]
     pub attempts: Vec<LoginAttempt>,
 }
 
@@ -656,11 +641,11 @@ pub struct Unk11D7Packet {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0xDE)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x60, 0x8F)]
 pub struct PlayerReportedPacket {
     pub targed_id: u32,
     pub reason: u8,
     #[Seek(3)]
-    #[VariableStr(0x60, 0x8F)]
     pub msg: String,
 }
 
@@ -670,9 +655,9 @@ pub struct PlayerReportedPacket {
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0xEA)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x4544, 0x14)]
 pub struct NicknameErrorPacket {
     pub unk1: u32,
-    #[VariableStr(0x4544, 0x14)]
     pub nickname: String,
 }
 
@@ -682,8 +667,8 @@ pub struct NicknameErrorPacket {
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0xED)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xD67D, 0xF5)]
 pub struct BannerListPacket {
-    #[VariableStr(0xD67D, 0xF5)]
     pub banners: AsciiString,
 }
 
@@ -692,12 +677,10 @@ pub struct BannerListPacket {
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0xED)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xD67D, 0xF5)]
 pub struct BannerListNGSPacket {
-    #[VariableStr(0xD67D, 0xF5)]
     pub banners: AsciiString,
-    #[VariableStr(0xD67D, 0xF5)]
     pub unk1: AsciiString,
-    #[VariableStr(0xD67D, 0xF5)]
     pub unk2: AsciiString,
 }
 
@@ -707,9 +690,9 @@ pub struct BannerListNGSPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0xEE)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x5C3B, 0x40)]
 pub struct EmailCodeRequestPacket {
     pub unk1: u32,
-    #[VariableStr(0x5C3B, 0x40)]
     pub message: String,
 }
 
@@ -719,12 +702,12 @@ pub struct EmailCodeRequestPacket {
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0xFF)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x3DD3, 0x3D)]
 pub struct Unk11FFPacket {
     pub unk1: u8,
     pub unk2: u8,
     pub unk3: u8,
     pub unk4: u8,
-    #[VariableStr(0x3DD3, 0x3D)]
     pub unk5: String,
     pub unk6: [u8; 0xC],
     #[FixedLen(0x40)]
@@ -935,7 +918,7 @@ impl PacketReadWrite for CharacterListPacket {
         let mut characters = vec![];
         for i in 0..30 {
             reader.seek(std::io::SeekFrom::Current(4))?;
-            let character = Character::read(reader, packet_type)?;
+            let character = Character::read(reader, packet_type, 0, 0)?;
             if i < char_amount {
                 characters.push(character);
             }
@@ -986,7 +969,7 @@ impl PacketReadWrite for CharacterListPacket {
 
         for character in characters.iter().cycle().take(30) {
             buf.write_u32::<LittleEndian>(0).unwrap();
-            character.write(&mut buf, packet_type).unwrap();
+            character.write(&mut buf, packet_type, 0, 0).unwrap();
         }
         // ???
         for _ in 0..0x41A4 {
@@ -1073,7 +1056,7 @@ impl PacketReadWrite for BlockListPacket {
     ) -> std::io::Result<Self> {
         let mut blocks = vec![];
         for _ in 0..200 {
-            let block = BlockInfo::read(reader, packet_type)?;
+            let block = BlockInfo::read(reader, packet_type, 0, 0)?;
             blocks.push(block);
         }
         let unk = reader.read_u32::<LittleEndian>()?;
@@ -1084,7 +1067,7 @@ impl PacketReadWrite for BlockListPacket {
         let mut buf = PacketHeader::new(0x11, 0x10, Flags::default()).write(packet_type);
         let default = vec![BlockInfo::default()];
         for i in self.blocks.iter().chain(default.iter().cycle()).take(200) {
-            i.write(&mut buf, packet_type).unwrap();
+            i.write(&mut buf, packet_type, 0, 0).unwrap();
         }
         buf.write_u32::<LittleEndian>(self.unk).unwrap();
         buf

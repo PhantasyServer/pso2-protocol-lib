@@ -53,6 +53,7 @@ pub struct MapLoadedPacket {
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x03, 0x24)]
 #[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x7542, 0x5E)]
 pub struct LoadLevelPacket {
     pub map_object: ObjectHeader,
     #[cfg_attr(feature = "serde", serde(skip))]
@@ -61,27 +62,16 @@ pub struct LoadLevelPacket {
     pub unk4: [u8; 0xC],
     pub unk5: [u8; 0xC],
     pub unk6: [u8; 0xC],
-    #[VariableStr(0x7542, 0x5E)]
     pub unk7: AsciiString,
-    #[Magic(0x7542, 0x5E)]
     pub other_settings: Vec<ZoneSettings>,
-    #[Magic(0x7542, 0x5E)]
     pub warps: Vec<WarpInfo>,
-    #[Magic(0x7542, 0x5E)]
     pub unk10: Vec<LoadLevelThing3>,
-    #[Magic(0x7542, 0x5E)]
     pub unk11: Vec<LoadLevelThing4>,
-    #[Magic(0x7542, 0x5E)]
     pub unk12: Vec<LoadLevelThing5>,
-    #[Magic(0x7542, 0x5E)]
     pub unk13: Vec<LoadLevelThing6>,
-    #[Magic(0x7542, 0x5E)]
     pub unk14: Vec<LoadLevelThing7>,
-    #[Magic(0x7542, 0x5E)]
     pub unk15: Vec<LoadLevelThing8>,
-    #[Magic(0x7542, 0x5E)]
     pub unk16: Vec<UnkThing1>,
-    #[VariableStr(0x7542, 0x5E)]
     pub unk17: AsciiString,
     pub unk18: u32,
     pub unk19: u32,
@@ -91,15 +81,11 @@ pub struct LoadLevelPacket {
     pub unk22: u32,
     pub unk23: [u8; 0x10],
     pub unk24: [u8; 0x10],
-    #[Magic(0x7542, 0x5E)]
     pub unk25: Vec<u32>,
     #[FixedLen(0x200)]
     pub unk26: Vec<u8>,
-    #[Magic(0x7542, 0x5E)]
     pub unk27: Vec<UnkThing2>,
-    #[VariableStr(0x7542, 0x5E)]
     pub unk28: AsciiString,
-    #[VariableStr(0x7542, 0x5E)]
     pub unk29: AsciiString,
     pub unk30: u64,
     pub unk31: u64,
@@ -116,11 +102,8 @@ pub struct LoadLevelPacket {
     pub unk42: u64,
     pub unk43: u8,
     pub unk44: u8,
-    #[Magic(0x7542, 0x5E)]
     pub unk45: Vec<LoadLevelThing9>,
-    #[VariableStr(0x7542, 0x5E)]
     pub unk46: AsciiString,
-    #[Magic(0x7542, 0x5E)]
     pub unk47: Vec<LoadLevelThing10>,
     pub unk48: u32,
     pub unk49: [u8; 0x14],
