@@ -66,14 +66,12 @@ pub struct NewItemDropPacket {
 }
 
 // 0x0F, 0x05
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x05)]
-pub struct AddedItemNGSPacket {
-    pub item: ItemNGS,
+pub struct AddedItemPacket {
+    pub item: Item,
     pub unk: u32,
 }
 
@@ -103,24 +101,14 @@ pub struct LoadEquipedPacket {
     pub unk1: u32,
     #[FixedLen(0x28)]
     pub unk2: Vec<u8>,
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x0C)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-#[Magic(0xCF76, 0xB5)]
-pub struct LoadEquipedNGSPacket {
-    pub player: ObjectHeader,
-    pub items: Vec<EquipedItemNGS>,
-    pub unk1: u32,
-    #[FixedLen(0x28)]
-    pub unk2: Vec<u8>,
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[OnlyOn(PacketType::NGS)]
     #[FixedLen(0x58)]
     pub unk3: Vec<u8>,
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[OnlyOn(PacketType::NGS)]
     pub unk4: u32,
 }
 
@@ -137,22 +125,6 @@ pub struct LoadPlayerInventoryPacket {
     pub meseta: u64,
     pub max_capacity: u32,
     pub items: Vec<Item>,
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x0D)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-#[Magic(0x5533, 0x1)]
-pub struct LoadPlayerInventoryNGSPacket {
-    pub object: ObjectHeader,
-    pub name: String,
-    pub meseta: u64,
-    pub max_capacity: u32,
-    pub items: Vec<ItemNGS>,
 }
 
 // 0x0F, 0x0F
@@ -179,20 +151,6 @@ pub struct MoveToStoragePacket {
     pub updated: Vec<UpdatedItem>,
 }
 
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x10)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-#[Magic(0xE66C, 0xE2)]
-pub struct MoveToStorageNGSPacket {
-    pub updated_inventory: Vec<UpdatedInventoryItem>,
-    pub new_items: Vec<NewStorageItemNGS>,
-    pub updated: Vec<UpdatedItem>,
-}
-
 // 0x0F, 0x11
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -216,19 +174,6 @@ pub struct MoveToInventoryPacket {
     pub new_items: Vec<NewInventoryItem>,
 }
 
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x12)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-#[Magic(0xF1E8, 0x78)]
-pub struct MoveToInventoryNGSPacket {
-    pub updated: Vec<UpdatedStorageItem>,
-    pub new_items: Vec<NewInventoryItemNGS>,
-}
-
 // 0x0F, 0x13
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -238,24 +183,9 @@ pub struct MoveToInventoryNGSPacket {
 #[Magic(0x77A5, 0xC3)]
 pub struct LoadStoragesPacket {
     pub stored_meseta: u64,
-    pub unk3: Vec<StorageInfo>,
+    pub unk1: Vec<StorageInfo>,
     pub items: Vec<Item>,
-    pub unk5: u32,
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x13)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-#[Magic(0x77A5, 0xC3)]
-pub struct LoadStoragesNGSPacket {
-    pub stored_meseta: u64,
-    pub unk3: Vec<StorageInfo>,
-    pub items: Vec<ItemNGS>,
-    pub unk5: u32,
+    pub unk2: u32,
 }
 
 // 0x0F, 0x14
@@ -323,20 +253,6 @@ pub struct MoveStoragesPacket {
     pub updated_old: Vec<UpdatedStorageItem>,
 }
 
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x19)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-#[Magic(0x9A17, 0x86)]
-pub struct MoveStoragesNGSPacket {
-    pub new_items: Vec<NewStorageItemNGS>,
-    pub updated_new: Vec<UpdatedStorageItem>,
-    pub updated_old: Vec<UpdatedStorageItem>,
-}
-
 // 0x0F, 0x1C
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -369,17 +285,6 @@ pub struct EquipedWeaponPacket {
     pub item: Item,
 }
 
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x21)]
-pub struct EquipedWeaponNGSPacket {
-    pub player: ObjectHeader,
-    pub item: ItemNGS,
-}
-
 // 0x0F, 0x22
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -391,22 +296,6 @@ pub struct UpdateStoragePacket {
     pub unk: Vec<UpdatedStorageItem>,
     pub updated: Vec<UpdatedStorageItem>,
     pub new_items: Vec<NewStorageItem>,
-    pub unk2: u32,
-    pub unk3: u64,
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x22)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-#[Magic(0x4DC2, 0x2A)]
-pub struct UpdateStorageNGSPacket {
-    pub unk: Vec<UpdatedStorageItem>,
-    pub updated: Vec<UpdatedStorageItem>,
-    pub new_items: Vec<NewStorageItemNGS>,
     pub unk2: u32,
     pub unk3: u64,
 }
@@ -586,19 +475,6 @@ pub struct MoveFromMatStoragePacket {
     pub new_items: Vec<NewInventoryItem>,
 }
 
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0xE3)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-#[Magic(0x21C0, 0xCB)]
-pub struct MoveFromMatStorageNGSPacket {
-    pub mat_items: Vec<MaterialStorageItem>,
-    pub new_items: Vec<NewInventoryItemNGS>,
-}
-
 // 0x0F, 0xE8
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -621,20 +497,6 @@ pub struct MoveMSToStorageRequestPacket {
 pub struct MoveMSToStoragePacket {
     pub mat_items: Vec<MaterialStorageItem>,
     pub new_items: Vec<NewStorageItem>,
-    pub updated: Vec<UpdatedStorageItem>,
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0xE9)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-#[Magic(0x4432, 0x8E)]
-pub struct MoveMSToStorageNGSPacket {
-    pub mat_items: Vec<MaterialStorageItem>,
-    pub new_items: Vec<NewStorageItemNGS>,
     pub updated: Vec<UpdatedStorageItem>,
 }
 
@@ -699,20 +561,10 @@ pub struct Item {
     #[cfg_attr(feature = "serde", serde(flatten))]
     pub id: ItemId,
     pub data: ItemType,
-}
 
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct ItemNGS {
-    pub uuid: u64,
-    #[cfg_attr(feature = "serde", serde(flatten))]
-    pub id: ItemId,
-    pub data: ItemTypeNGS,
-
-    pub unk29: [u16; 12],
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    pub unk: [u16; 12],
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -759,27 +611,6 @@ pub struct NewInventoryItem {
     pub is_new: u16,
 }
 
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-pub struct NewStorageItemNGS {
-    pub item: ItemNGS,
-    pub storage_id: u32,
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-pub struct NewInventoryItemNGS {
-    pub item: ItemNGS,
-    pub amount: u16,
-    pub is_new: u16,
-}
-
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
@@ -808,16 +639,6 @@ pub struct UpdatedStorageItem {
     pub storage_id: u32,
 }
 
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-pub struct EquipedItemNGS {
-    pub item: ItemNGS,
-    pub unk: u32,
-}
-
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub enum ItemType {
@@ -827,19 +648,25 @@ pub enum ItemType {
     Camo(CamoItem),
     Unit(UnitItem),
     Unknown(Vec<u8>),
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
-pub enum ItemTypeNGS {
-    Weapon(WeaponItemNGS),
-    Clothing(ClothingNGSItem),
-    Consumable(ConsumableNGSItem),
-    Camo(CamoNGSItem),
-    Unit(UnitItemNGS),
-    Unknown(Vec<u8>),
+    // NGS Options
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    WeaponNGS(WeaponItemNGS),
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    ClothingNGS(ClothingNGSItem),
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    ConsumableNGS(ConsumableNGSItem),
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    CamoNGS(CamoNGSItem),
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    UnitNGS(UnitItemNGS),
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    UnknownNGS(Vec<u8>),
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -1148,10 +975,23 @@ impl HelperReadWrite for Item {
         let uuid = reader.read_u64::<LittleEndian>()?;
         let unk5 = ItemId::read(reader, packet_type, xor, sub)?;
         let unk6 = ItemType::read(reader, &unk5, packet_type)?;
+        #[cfg(feature = "ngs_packets")]
+        let unk = match packet_type {
+            PacketType::NGS => {
+                let mut data = [0u16; 12];
+                for byte in data.iter_mut() {
+                    *byte = reader.read_u16::<LittleEndian>()?;
+                }
+                data
+            }
+            _ => [0u16; 12],
+        };
         Ok(Self {
             uuid,
             id: unk5,
             data: unk6,
+            #[cfg(feature = "ngs_packets")]
+            unk,
         })
     }
     fn write(
@@ -1164,43 +1004,14 @@ impl HelperReadWrite for Item {
         writer.write_u64::<LittleEndian>(self.uuid)?;
         self.id.write(writer, packet_type, xor, sub)?;
         self.data.write(writer, packet_type)?;
-        Ok(())
-    }
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-impl HelperReadWrite for ItemNGS {
-    fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
-        packet_type: PacketType,
-        xor: u32,
-        sub: u32,
-    ) -> std::io::Result<Self> {
-        let uuid = reader.read_u64::<LittleEndian>()?;
-        let unk5 = ItemId::read(reader, packet_type, xor, sub)?;
-        let unk6 = ItemTypeNGS::read(reader, &unk5, packet_type)?;
-        let mut unk29 = [0u16; 12];
-        reader.read_u16_into::<LittleEndian>(&mut unk29)?;
-        Ok(Self {
-            uuid,
-            id: unk5,
-            data: unk6,
-            unk29,
-        })
-    }
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        packet_type: PacketType,
-        xor: u32,
-        sub: u32,
-    ) -> std::io::Result<()> {
-        writer.write_u64::<LittleEndian>(self.uuid)?;
-        self.id.write(writer, packet_type, xor, sub)?;
-        self.data.write(writer, packet_type)?;
-        for n in self.unk29 {
-            writer.write_u16::<LittleEndian>(n)?;
+        #[cfg(feature = "ngs_packets")]
+        match packet_type {
+            PacketType::NGS => {
+                for byte in self.unk {
+                    writer.write_u16::<LittleEndian>(byte)?;
+                }
+            }
+            _ => {}
         }
         Ok(())
     }
@@ -1212,12 +1023,34 @@ impl ItemType {
         item: &ItemId,
         packet_type: PacketType,
     ) -> std::io::Result<Self> {
-        Ok(match item.item_type {
-            1 => Self::Weapon(WeaponItem::read(reader, packet_type, 0, 0)?),
-            2 => Self::Clothing(ClothingItem::read(reader, packet_type, 0, 0)?),
-            3 => Self::Consumable(ConsumableItem::read(reader, packet_type, 0, 0)?),
-            5 => Self::Unit(UnitItem::read(reader, packet_type, 0, 0)?),
-            10 => Self::Camo(CamoItem::read(reader, packet_type, 0, 0)?),
+        Ok(match (item.item_type, packet_type) {
+            #[cfg(feature = "ngs_packets")]
+            (1, PacketType::NGS) => {
+                Self::WeaponNGS(WeaponItemNGS::read(reader, packet_type, 0, 0)?)
+            }
+            #[cfg(feature = "ngs_packets")]
+            (2, PacketType::NGS) => {
+                Self::ClothingNGS(ClothingNGSItem::read(reader, packet_type, 0, 0)?)
+            }
+            #[cfg(feature = "ngs_packets")]
+            (5, PacketType::NGS) => Self::UnitNGS(UnitItemNGS::read(reader, packet_type, 0, 0)?),
+            #[cfg(feature = "ngs_packets")]
+            (3, PacketType::NGS) => {
+                Self::ConsumableNGS(ConsumableNGSItem::read(reader, packet_type, 0, 0)?)
+            }
+            #[cfg(feature = "ngs_packets")]
+            (10, PacketType::NGS) => Self::CamoNGS(CamoNGSItem::read(reader, packet_type, 0, 0)?),
+            #[cfg(feature = "ngs_packets")]
+            (_, PacketType::NGS) => Self::UnknownNGS({
+                let mut tmp = [0u8; 0x38];
+                reader.read_exact(&mut tmp)?;
+                tmp.into()
+            }),
+            (1, _) => Self::Weapon(WeaponItem::read(reader, packet_type, 0, 0)?),
+            (2, _) => Self::Clothing(ClothingItem::read(reader, packet_type, 0, 0)?),
+            (3, _) => Self::Consumable(ConsumableItem::read(reader, packet_type, 0, 0)?),
+            (5, _) => Self::Unit(UnitItem::read(reader, packet_type, 0, 0)?),
+            (10, _) => Self::Camo(CamoItem::read(reader, packet_type, 0, 0)?),
             _ => Self::Unknown({
                 let mut tmp = [0u8; 0x28];
                 reader.read_exact(&mut tmp)?;
@@ -1241,44 +1074,18 @@ impl ItemType {
                 data.resize(0x28, 0);
                 writer.write_all(&data)?
             }
-        }
-        Ok(())
-    }
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-impl ItemTypeNGS {
-    pub(crate) fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
-        item: &ItemId,
-        packet_type: PacketType,
-    ) -> std::io::Result<Self> {
-        Ok(match item.item_type {
-            1 => Self::Weapon(WeaponItemNGS::read(reader, packet_type, 0, 0)?),
-            2 => Self::Clothing(ClothingNGSItem::read(reader, packet_type, 0, 0)?),
-            5 => Self::Unit(UnitItemNGS::read(reader, packet_type, 0, 0)?),
-            3 => Self::Consumable(ConsumableNGSItem::read(reader, packet_type, 0, 0)?),
-            10 => Self::Camo(CamoNGSItem::read(reader, packet_type, 0, 0)?),
-            _ => Self::Unknown({
-                let mut tmp = [0u8; 0x38];
-                reader.read_exact(&mut tmp)?;
-                tmp.into()
-            }),
-        })
-    }
-    pub(crate) fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        packet_type: PacketType,
-    ) -> std::io::Result<()> {
-        match self {
-            Self::Weapon(x) => x.write(writer, packet_type, 0, 0)?,
-            Self::Clothing(x) => x.write(writer, packet_type, 0, 0)?,
-            Self::Consumable(x) => x.write(writer, packet_type, 0, 0)?,
-            Self::Camo(x) => x.write(writer, packet_type, 0, 0)?,
-            Self::Unit(x) => x.write(writer, packet_type, 0, 0)?,
-            Self::Unknown(x) => {
+            #[cfg(feature = "ngs_packets")]
+            Self::WeaponNGS(x) => x.write(writer, packet_type, 0, 0)?,
+            #[cfg(feature = "ngs_packets")]
+            Self::ClothingNGS(x) => x.write(writer, packet_type, 0, 0)?,
+            #[cfg(feature = "ngs_packets")]
+            Self::ConsumableNGS(x) => x.write(writer, packet_type, 0, 0)?,
+            #[cfg(feature = "ngs_packets")]
+            Self::CamoNGS(x) => x.write(writer, packet_type, 0, 0)?,
+            #[cfg(feature = "ngs_packets")]
+            Self::UnitNGS(x) => x.write(writer, packet_type, 0, 0)?,
+            #[cfg(feature = "ngs_packets")]
+            Self::UnknownNGS(x) => {
                 let mut data = x.to_vec();
                 data.resize(0x38, 0);
                 writer.write_all(&data)?
@@ -1334,14 +1141,6 @@ impl HelperReadWrite for PackedAffixes {
 // ----------------------------------------------------------------
 
 impl Default for ItemType {
-    fn default() -> Self {
-        Self::Weapon(Default::default())
-    }
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-impl Default for ItemTypeNGS {
     fn default() -> Self {
         Self::Weapon(Default::default())
     }

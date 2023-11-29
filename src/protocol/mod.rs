@@ -214,13 +214,7 @@ pub enum Packet {
     // Chat packets [0x07]
     #[Category(PacketCategory::Chat)]
     #[Id(0x07, 0x00)]
-    #[Classic]
     ChatMessage(ChatMessage),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x07, 0x00)]
-    #[NGS]
-    ChatMessageNGS(ChatMessageNGS),
 
     // Spawn packets [0x08]
     #[Category(PacketCategory::Spawning)]
@@ -264,23 +258,11 @@ pub enum Packet {
     // Party packets [0x0E]
     #[Category(PacketCategory::Party)]
     #[Id(0x0E, 0x00)]
-    #[Classic]
     AddMember(AddMemberPacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x0E, 0x00)]
-    #[NGS]
-    AddMemberNGS(AddMemberNGSPacket),
     #[Id(0x0E, 0x01)]
     RemoveMember(RemoveMemberPacket),
     #[Id(0x0E, 0x02)]
-    #[Classic]
     PartyInit(PartyInitPacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x0E, 0x02)]
-    #[NGS]
-    PartyInitNGS(PartyInitNGSPacket),
     #[Id(0x0E, 0x03)]
     RemovedFromParty,
     #[Id(0x0E, 0x04)]
@@ -324,13 +306,7 @@ pub enum Packet {
     #[Id(0x0E, 0x1F)]
     PartyDetailsStopper,
     #[Id(0x0E, 0x21)]
-    #[Classic]
     Unk0E21(Unk0E21Packet),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x0E, 0x21)]
-    #[NGS]
-    Unk0E21NGS(Unk0E21NGSPacket),
     #[Id(0x0E, 0x28)]
     SetBusy,
     #[Id(0x0E, 0x29)]
@@ -356,57 +332,24 @@ pub enum Packet {
     ItemPickupResponse(ItemPickupResponsePacket),
     #[Id(0x0F, 0x04)]
     NewItemDrop(NewItemDropPacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[Id(0x0F, 0x05)]
-    #[NGS]
-    AddedItemNGS(AddedItemNGSPacket),
+    AddedItem(AddedItemPacket),
     #[Id(0x0F, 0x06)]
     UpdateInventory(UpdateInventoryPacket),
     #[Id(0x0F, 0x0C)]
-    #[Classic]
     LoadEquiped(LoadEquipedPacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x0F, 0x0C)]
-    #[NGS]
-    LoadEquipedNGS(LoadEquipedNGSPacket),
     #[Id(0x0F, 0x0D)]
-    #[Classic]
     LoadPlayerInventory(LoadPlayerInventoryPacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x0F, 0x0D)]
-    #[NGS]
-    LoadPlayerInventoryNGS(LoadPlayerInventoryNGSPacket),
     #[Id(0x0F, 0x0F)]
     MoveToStorageRequest(MoveToStorageRequestPacket),
     #[Id(0x0F, 0x10)]
-    #[Classic]
     MoveToStorage(MoveToStoragePacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x0F, 0x10)]
-    #[NGS]
-    MoveToStorageNGS(MoveToStorageNGSPacket),
     #[Id(0x0F, 0x11)]
     MoveToInventoryRequest(MoveToInventoryRequestPacket),
     #[Id(0x0F, 0x12)]
-    #[Classic]
     MoveToInventory(MoveToInventoryPacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x0F, 0x12)]
-    #[NGS]
-    MoveToInventoryNGS(MoveToInventoryNGSPacket),
     #[Id(0x0F, 0x13)]
-    #[Classic]
     LoadStorages(LoadStoragesPacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x0F, 0x13)]
-    #[NGS]
-    LoadStoragesNGS(LoadStoragesNGSPacket),
     #[Id(0x0F, 0x14)]
     InventoryMeseta(InventoryMesetaPacket),
     #[Id(0x0F, 0x15)]
@@ -418,33 +361,15 @@ pub enum Packet {
     #[Id(0x0F, 0x18)]
     MoveStoragesRequest(MoveStoragesRequestPacket),
     #[Id(0x0F, 0x19)]
-    #[Classic]
     MoveStorages(MoveStoragesPacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x0F, 0x19)]
-    #[NGS]
-    MoveStoragesNGS(MoveStoragesNGSPacket),
     #[Id(0x0F, 0x1C)]
     GetItemDescription(GetItemDescriptionPacket),
     #[Id(0x0F, 0x1D)]
     LoadItemDescription(LoadItemDescriptionPacket),
     #[Id(0x0F, 0x21)]
-    #[Classic]
     EquipedWeapon(EquipedWeaponPacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x0F, 0x21)]
-    #[NGS]
-    EquipedWeaponNGS(EquipedWeaponNGSPacket),
     #[Id(0x0F, 0x22)]
-    #[Classic]
     UpdateStorage(UpdateStoragePacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x0F, 0x22)]
-    #[NGS]
-    UpdateStorageNGS(UpdateStorageNGSPacket),
     #[Id(0x0F, 0x25)]
     DiscardStorageItemRequest(DiscardStorageItemRequestPacket),
     #[cfg(not(test))]
@@ -484,23 +409,11 @@ pub enum Packet {
     #[Id(0x0F, 0xE2)]
     MoveFromMatStorageRequest(MoveFromMatStorageRequestPacket),
     #[Id(0x0F, 0xE3)]
-    #[Classic]
     MoveFromMatStorage(MoveFromMatStoragePacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x0F, 0xE3)]
-    #[NGS]
-    MoveFromMatStorageNGS(MoveFromMatStorageNGSPacket),
     #[Id(0x0F, 0xE8)]
     MoveMSToStorageRequest(MoveMSToStorageRequestPacket),
     #[Id(0x0F, 0xE9)]
-    #[Classic]
     MoveMSToStorage(MoveMSToStoragePacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x0F, 0xE9)]
-    #[NGS]
-    MoveMSToStorageNGS(MoveMSToStorageNGSPacket),
     #[Id(0x0F, 0xEF)]
     Unk0FEF(Unk0FEFPacket),
     #[Id(0x0F, 0xFC)]
@@ -548,14 +461,14 @@ pub enum Packet {
     BlockListRequest,
     #[Id(0x11, 0x10)]
     BlockList(BlockListPacket),
+    #[Id(0x11, 0x1B)]
+    #[Classic]
+    UserInfo(UserInfoPacket),
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[Id(0x11, 0x1B)]
     #[NGS]
     UserInfoNGS(UserInfoNGSPacket),
-    #[Id(0x11, 0x1B)]
-    #[Classic]
-    UserInfo(UserInfoPacket),
     #[Id(0x11, 0x1E)]
     NicknameRequest(NicknameRequestPacket),
     #[Id(0x11, 0x1D)]
@@ -593,13 +506,7 @@ pub enum Packet {
     #[Classic]
     SegaIDInfoRequest,
     #[Id(0x11, 0x6F)]
-    #[Classic]
     Unk116F(Unk116FPacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x11, 0x6F)]
-    #[NGS]
-    Unk116FNGS(Unk116FNGSPacket),
     #[Id(0x11, 0x71)]
     NotificationStatus(NotificationStatusPacket),
     #[Id(0x11, 0x86)]
@@ -635,13 +542,7 @@ pub enum Packet {
     #[Id(0x11, 0xEA)]
     NicknameError(NicknameErrorPacket),
     #[Id(0x11, 0xED)]
-    #[Classic]
     BannerList(BannerListPacket),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x11, 0xED)]
-    #[NGS]
-    BannerListNGS(BannerListNGSPacket),
     #[Id(0x11, 0xEE)]
     EmailCodeRequest(EmailCodeRequestPacket),
     #[Id(0x11, 0xFF)]
@@ -744,11 +645,8 @@ pub enum Packet {
 
     // Unknown 0x2A packets [0x2A]
     #[Category(PacketCategory::Unk2A)]
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[Id(0x2A, 0x08)]
-    #[NGS]
-    Unk2A08NGS(Unk2A08NGSPacket),
+    Unk2A08NGS(Unk2A08Packet),
 
     // Settings packets [0x2B]
     #[Category(PacketCategory::Settings)]
@@ -798,13 +696,7 @@ pub enum Packet {
     #[Id(0x4A, 0x01)]
     MissionList(MissionListPacket),
     #[Id(0x4A, 0x03)]
-    #[Classic]
     Unk4A03(Unk4A03Packet),
-    #[cfg(feature = "ngs_packets")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[Id(0x4A, 0x03)]
-    #[NGS]
-    Unk4A03NGS(Unk4A03NGSPacket),
     #[Id(0x4A, 0x0C)]
     SetTrackedMission(SetTrackedMissionPacket),
 
@@ -867,7 +759,7 @@ pub enum PacketCategory {
     Party,
     /// Item related packets. See [`items`]
     Item,
-    /// Unknown 0x10 packet. See [`unk10`]
+    /// Unknown 0x10 packets. See [`unk10`]
     Unk10,
     /// Login related packets. See [`login`]
     Login,
@@ -875,7 +767,7 @@ pub enum PacketCategory {
     Emergency,
     /// Friends related packets. See [`friends`]
     Friends,
-    /// Unknown 0x19 packet. See [`unk19`]
+    /// Unknown 0x19 packets. See [`unk19`]
     Unk19,
     /// Mail related packets. See [`mail`]
     Mail,
@@ -885,15 +777,15 @@ pub enum PacketCategory {
     DailyOrders,
     /// Palette related packets. See [`palette`]
     Palette,
-    /// Unknown 0x23 packet. See [`unk23`]
+    /// Unknown 0x23 packets. See [`unk23`]
     Unk23,
-    /// Unknown 0x2A packet. See [`unk2a`]
+    /// Unknown 0x2A packets. See [`unk2a`]
     Unk2A,
     /// Settings related packets. See [`settings`]
     Settings,
     /// Symbol Art related packets. See [`symbolart`]
     SymbolArt,
-    /// Unknown 0x34 packet. See [`unk34`]
+    /// Unknown 0x34 packets. See [`unk34`]
     Unk34,
     /// ARKS Missions related packets. See [`missions`]
     ARKSMissions,
@@ -1043,7 +935,6 @@ mod tests {
                     }
                     None => continue,
                 }
-                println!("Testing: {:?}", entry);
                 let reader = BufReader::new(fs::File::open(&entry).unwrap());
                 let mut reader = PPACReader::open(reader).unwrap();
                 reader.set_out_type(crate::ppac::OutputType::Both);
@@ -1062,7 +953,7 @@ mod tests {
                     let packet = match packet.packet {
                         Some(x) => x,
                         None => {
-                            println!("{id} - FAIL (can't read)");
+                            println!("{entry:?}, {id} - FAIL (can't read)");
                             *is_failed = true;
                             let path = format!(
                                 "failed_tests/{}/{id}_unreadable",
@@ -1079,7 +970,7 @@ mod tests {
                     let out_data = packet.write(out_type);
                     if in_data.len() != out_data.len() {
                         println!(
-                            "{id} - FAIL (different length - in: 0x{:X}, out: 0x{:X})",
+                            "{entry:?}, {id} - FAIL (different length - in: 0x{:X}, out: 0x{:X})",
                             in_data.len(),
                             out_data.len()
                         );
@@ -1098,7 +989,7 @@ mod tests {
                             .write_all(&out_data)
                             .unwrap();
                     } else if in_data != out_data {
-                        println!("{id} - FAIL (different data)");
+                        println!("{entry:?}, {id} - FAIL (different data)");
                         *is_failed = true;
                         let path = format!(
                             "failed_tests/{}/{id}_data",

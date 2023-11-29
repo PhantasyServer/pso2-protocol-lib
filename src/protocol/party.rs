@@ -39,40 +39,9 @@ pub struct AddMemberPacket {
     pub unk14: [u32; 3],
     pub unk15: String,
     pub unk16: AsciiString,
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x00)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-#[Magic(0xCCE7, 0x13)]
-pub struct AddMemberNGSPacket {
-    pub new_member: ObjectHeader,
-    pub unk1: u32,
-    pub level: u32,
-    pub sublevel: u32,
-    #[SeekAfter(3)]
-    pub class: Class,
-    pub subclass: Class,
-    pub padding: [u8; 3],
-    pub nickname: String,
-    pub char_name: String,
-    pub unk5: [u8; 0xC],
-    pub unk6: u16,
-    pub unk7: u8,
-    pub language: ShortLanguage,
-    pub hp: [u32; 3],
-    pub map_id: u16,
-    pub unk10: [u8; 4],
-    pub unk11: u16,
-    pub unk12: u32,
-    pub unk13: [u8; 0xC],
-    pub unk14: [u32; 3],
-    pub unk15: String,
-    pub unk16: AsciiString,
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[OnlyOn(PacketType::NGS)]
     pub unk17: AsciiString,
 }
 
@@ -98,22 +67,6 @@ pub struct PartyInitPacket {
     pub leader: ObjectHeader,
     pub people_amount: u32,
     pub entries: [PartyEntry; 4],
-    pub unk2: AsciiString,
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x02)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-#[Magic(0xD863, 0xA9)]
-pub struct PartyInitNGSPacket {
-    pub party_object: ObjectHeader,
-    pub leader: ObjectHeader,
-    pub people_amount: u32,
-    pub entries: [PartyEntryNGS; 4],
     pub unk2: AsciiString,
 }
 
@@ -321,19 +274,6 @@ pub struct Unk0E21Packet {
     pub entries: [PartyEntry; 4],
 }
 
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x21)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-#[Magic(0x0A5A, 0xC1)]
-pub struct Unk0E21NGSPacket {
-    pub people_amount: u32,
-    pub entries: [PartyEntryNGS; 4],
-}
-
 // 0x0E, 0x2B
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -413,34 +353,10 @@ pub struct PartyEntry {
     pub unk7: AsciiString,
     pub lang: ShortLanguage,
     pub unk9: [u8; 3],
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, HelperReadWrite)]
-pub struct PartyEntryNGS {
-    pub id: ObjectHeader,
-    pub nickname: String,
-    pub char_name: String,
-    pub level: u8,
-    pub sublevel: u8,
-    pub class: Class,
-    pub subclass: Class,
-    pub color: Color,
-    pub unk1: [u8; 7],
-    pub unk2: u32,
-    pub hp: [u32; 3],
-    pub map_id: u16,
-    pub unk3: u16,
-    pub unk4: [u8; 0xC],
-    pub unk5: [u32; 3],
-    pub unk6: String,
-    pub unk7: AsciiString,
-    pub lang: ShortLanguage,
-    pub unk9: [u8; 3],
-    pub unk10: String,
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[OnlyOn(PacketType::NGS)]
+    pub unk11: String,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

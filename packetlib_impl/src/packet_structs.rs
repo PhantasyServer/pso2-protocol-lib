@@ -681,7 +681,7 @@ fn get_packet_id(attrs: &Vec<Attribute>) -> syn::Result<(u8, u16)> {
             syn::Meta::Path(_) => {
                 return Err(syn::Error::new(
                     attr.span(),
-                    "Invalid syntax \nPerhaps you ment Id(..)?",
+                    "Invalid syntax \nPerhaps you ment Id(id, subid)?",
                 ));
             }
             syn::Meta::List(list) => {
@@ -754,7 +754,7 @@ fn get_magic(attrs: &Vec<Attribute>) -> syn::Result<Option<(u32, u32)>> {
             syn::Meta::Path(_) => {
                 return Err(syn::Error::new(
                     attr.span(),
-                    "Invalid syntax \nPerhaps you ment Magic(..)?",
+                    "Invalid syntax \nPerhaps you ment Magic(xor, sub)?",
                 ));
             }
             syn::Meta::List(list) => {
@@ -762,9 +762,9 @@ fn get_magic(attrs: &Vec<Attribute>) -> syn::Result<Option<(u32, u32)>> {
                 if attrs.fields.len() != 2 {
                     return Err(syn::Error::new(attr.span(), "Invalid number of arguments"));
                 }
-                let id = attrs.fields[0].base10_parse()?;
-                let subid = attrs.fields[1].base10_parse()?;
-                return Ok(Some((id, subid)));
+                let xor = attrs.fields[0].base10_parse()?;
+                let sub = attrs.fields[1].base10_parse()?;
+                return Ok(Some((xor, sub)));
             }
         }
     }

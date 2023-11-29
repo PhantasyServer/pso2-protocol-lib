@@ -476,19 +476,9 @@ pub struct ChallengeResponsePacket {
 pub struct Unk116FPacket {
     pub unk1: String,
     pub unk2: u32,
-}
-
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x6F)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-#[Magic(0x0323, 0xFD)]
-pub struct Unk116FNGSPacket {
-    pub unk1: String,
-    pub unk2: u32,
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[OnlyOn(PacketType::NGS)]
     pub unk3: u32,
 }
 
@@ -670,17 +660,13 @@ pub struct NicknameErrorPacket {
 #[Magic(0xD67D, 0xF5)]
 pub struct BannerListPacket {
     pub banners: AsciiString,
-}
-
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0xED)]
-#[Flags(Flags {packed: true, ..Default::default()})]
-#[Magic(0xD67D, 0xF5)]
-pub struct BannerListNGSPacket {
-    pub banners: AsciiString,
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[OnlyOn(PacketType::NGS)]
     pub unk1: AsciiString,
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[OnlyOn(PacketType::NGS)]
     pub unk2: AsciiString,
 }
 

@@ -1,19 +1,17 @@
-use super::{HelperReadWrite, PacketReadWrite};
+use super::{HelperReadWrite, PacketReadWrite, PacketType};
 
 // ----------------------------------------------------------------
 // Unknown 0x2A packets
 // ----------------------------------------------------------------
 
 // 0x2A, 0x08
-#[cfg(feature = "ngs_packets")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2A, 0x08)]
 #[Flags(Flags {packed: true, ..Default::default()})]
 #[Magic(0xB976, 0xA5)]
-pub struct Unk2A08NGSPacket {
+pub struct Unk2A08Packet {
     pub unk1: Vec<Unk2A08_1>,
     pub unk2: Vec<u32>,
     pub unk3: Vec<Unk2A08_2>,
@@ -35,9 +33,13 @@ pub struct Unk2A08NGSPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Unk2A08_1 {
-    // 0x10 on classic
-    #[FixedLen(0x14)]
-    pub unk: Vec<u8>,
+    #[FixedLen(0x10)]
+    pub unk1: Vec<u8>,
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[OnlyOn(PacketType::NGS)]
+    #[FixedLen(0x04)]
+    pub unk2: Vec<u8>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
