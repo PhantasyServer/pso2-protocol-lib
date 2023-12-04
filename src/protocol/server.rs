@@ -25,14 +25,20 @@ pub struct Unk0306Packet {
     pub unk: [u8; 0xC],
 }
 
-// 0x03, 0x08
+/// (0x03, 0x08) Server Hello.
+///
+/// (S -> C) Sent by the server when the client connects to the block server.
+///
+/// Respond with: [`crate::protocol::login::EncryptionRequestPacket`].
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x03, 0x08)]
 pub struct ServerHelloPacket {
+    /// Unknown. Seems to be always 0x03.
     pub unk1: u16,
     #[SeekAfter(4)]
+    /// Block Id.
     pub blockid: u16,
     pub unk2: u32,
 }

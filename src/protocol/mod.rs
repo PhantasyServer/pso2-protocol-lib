@@ -132,10 +132,21 @@ pub enum Packet {
     LoadingScreenTransition,
     #[Id(0x03, 0x06)]
     Unk0306(Unk0306Packet),
+    /// (0x03, 0x08) Server Hello.
     #[Id(0x03, 0x08)]
     ServerHello(ServerHelloPacket),
+    /// (0x03, 0x0B) Server Ping.
+    ///
+    /// (S -> C) Sent by the server periodically.
+    ///
+    /// Respond with: ServerPong.
     #[Id(0x03, 0x0B)]
     ServerPing,
+    /// (0x03, 0x0C) Server Pong.
+    ///
+    /// (C -> S) Sent by the client in response to the ping.
+    ///
+    /// Response to: ServerPing.
     #[Id(0x03, 0x0C)]
     ServerPong,
     #[Id(0x03, 0x10)]
@@ -646,7 +657,7 @@ pub enum Packet {
     // Unknown 0x2A packets [0x2A]
     #[Category(PacketCategory::Unk2A)]
     #[Id(0x2A, 0x08)]
-    Unk2A08NGS(Unk2A08Packet),
+    Unk2A08(Unk2A08Packet),
 
     // Settings packets [0x2B]
     #[Category(PacketCategory::Settings)]
