@@ -398,12 +398,12 @@ fn check_syn_type(
                             let seek_pad = if no_seek {
                                 quote! {}
                             } else {
-                                quote! { reader.seek(std::io::SeekFrom::Current((((len + 4 - 1) & (usize::MAX ^ (4 - 1))) - len) as i64))?; }
+                                quote! { reader.seek(std::io::SeekFrom::Current((len.next_multiple_of(4) - len) as i64))?; }
                             };
                             let write_pad = if no_seek {
                                 quote! {}
                             } else {
-                                quote! { writer.write_all(&vec![0u8; ((len + 4 - 1) & (usize::MAX ^ (4 - 1))) - len]).unwrap(); }
+                                quote! { writer.write_all(&vec![0u8; len.next_multiple_of(4) - len]).unwrap(); }
                             };
 
                             let read_len = if let Some(size) = &set.len_size {

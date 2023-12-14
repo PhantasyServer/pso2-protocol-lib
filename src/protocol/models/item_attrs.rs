@@ -12,6 +12,7 @@ pub enum ItemAttributes {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[NoPadding]
 pub struct ItemAttributesPC {
     pub unk1: u32,
     pub unk2: u128,
@@ -62,6 +63,7 @@ pub struct ItemAttributesPC {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[NoPadding]
 pub struct ItemAttributesVita {
     pub unk1: u32,
     pub unk2: u128,
@@ -355,6 +357,7 @@ pub struct Data18 {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[NoPadding]
 pub struct ShortData {
     #[Len_u16]
     pub unk: Vec<Data18>,
