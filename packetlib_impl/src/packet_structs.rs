@@ -280,6 +280,16 @@ fn parse_struct_field(
             write.extend(quote! {if matches!(packet_type, #data) {
                 #tmp_write
             }});
+        } else if let Some(data) = settings.not_on {
+            read.extend(quote! {let #name = if !matches!(packet_type, #data) {
+                #tmp_read
+                #name
+            } else {
+                Default::default()
+            };});
+            write.extend(quote! {if !matches!(packet_type, #data) {
+                #tmp_write
+            }});
         } else {
             read.extend(tmp_read);
             write.extend(tmp_write)
@@ -302,6 +312,7 @@ struct Settings {
     is_default: bool,
     to_skip: bool,
     only_on: Option<TS2>,
+    not_on: Option<TS2>,
     fixed_len: u32,
     len_size: Option<Size>,
 }
@@ -328,6 +339,18 @@ fn get_attrs(
                 }
             };
             set.only_on = Some(attrs.clone());
+        }
+        "NotOn" => {
+            let attrs = match list {
+                Some(x) => &x.tokens,
+                None => {
+                    return Err(syn::Error::new(
+                        Span::call_site(),
+                        "Invalid syntax \nPerhaps you ment NotOn(..)?",
+                    ))
+                }
+            };
+            set.not_on = Some(attrs.clone());
         }
         "Seek" => {
             let amount: i64 = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;

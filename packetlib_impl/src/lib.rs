@@ -13,7 +13,7 @@ use syn::{parse_macro_input, DeriveInput};
     PacketReadWrite,
     attributes(
         Id, Seek, SeekAfter, Const_u16, FixedStr, Flags, PSOTime, Magic, Len_u32, Len_u16, OnlyOn,
-        FixedLen,
+        FixedLen, NotOn
     )
 )]
 pub fn packet_read_write_derive(input: TokenStream) -> TokenStream {
@@ -40,6 +40,7 @@ pub fn packet_read_write_derive(input: TokenStream) -> TokenStream {
         OnlyOn,
         FixedLen,
         NoPadding,
+        NotOn
     )
 )]
 pub fn helper_read_write_derive(input: TokenStream) -> TokenStream {

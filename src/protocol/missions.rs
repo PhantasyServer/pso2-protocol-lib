@@ -1,4 +1,4 @@
-use super::{HelperReadWrite, PacketReadWrite, PacketType};
+use super::{HelperReadWrite, PacketReadWrite};
 
 // ----------------------------------------------------------------
 // ARKS Missions packets
@@ -80,7 +80,7 @@ pub struct Unk2Struct {
     pub unk: Vec<u32>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(PacketType::NGS)]
+    #[OnlyOn(super::PacketType::NGS)]
     #[FixedLen(0x28)]
     pub unk2: Vec<u32>,
 }

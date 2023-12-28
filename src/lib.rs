@@ -14,6 +14,6 @@ pub mod protocol;
 
 #[cfg(feature = "connection")]
 #[cfg_attr(docsrs, doc(cfg(feature = "connection")))]
-pub use connection::Connection;
+pub use connection::{Connection, PrivateKey, PublicKey};
 
 pub use asciistring::AsciiString;

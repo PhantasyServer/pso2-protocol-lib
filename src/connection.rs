@@ -1,3 +1,8 @@
+use rsa::{
+    pkcs8::{DecodePrivateKey, DecodePublicKey},
+    BigUint, RsaPrivateKey, RsaPublicKey,
+};
+
 #[cfg(feature = "ppac")]
 use crate::ppac::{Direction, PPACWriter};
 use crate::{
@@ -15,14 +20,55 @@ pub struct Connection {
     read_packets: Vec<Packet>,
     write_buffer: Vec<u8>,
     packet_length: usize,
-    in_keyfile: Option<std::path::PathBuf>,
-    out_keyfile: Option<std::path::PathBuf>,
+    in_keyfile: PrivateKey,
+    out_keyfile: PublicKey,
     packet_type: PacketType,
     #[cfg(feature = "ppac")]
     ppac: Option<PPACWriter<std::fs::File>>,
     #[cfg(feature = "ppac")]
     direction: Direction,
 }
+
+/// Possible RSA private key formats.
+#[derive(Debug, Clone)]
+pub enum PrivateKey {
+    /// No private key provided.
+    None,
+    /// Path to the RSA key in the PEM-encoded PKCS#8 file.
+    Path(std::path::PathBuf),
+    /// RSA key in component form. All values are in little endian form.
+    Params {
+        /// RSA modulus 'n'.
+        n: Vec<u8>,
+        /// Public exponent 'e'.
+        e: Vec<u8>,
+        /// Private exponent 'd'.
+        d: Vec<u8>,
+        /// First prime 'p'.
+        p: Vec<u8>,
+        /// Second prime 'q'.
+        q: Vec<u8>,
+    },
+    Key(RsaPrivateKey),
+}
+
+/// Possible RSA public key formats.
+#[derive(Debug, Clone)]
+pub enum PublicKey {
+    /// No public key provided.
+    None,
+    /// Path to the RSA key in the PEM-encoded PKCS#8 file.
+    Path(std::path::PathBuf),
+    /// RSA key in component form. All values are in little endian form.
+    Params {
+        /// RSA modulus 'n'.
+        n: Vec<u8>,
+        /// Public exponent 'e'.
+        e: Vec<u8>,
+    },
+    Key(RsaPublicKey),
+}
+
 impl Connection {
     /// Create a new connection.
     /// `in_keyfile` is the path to the keyfile to decrypt client's key,
@@ -31,8 +77,8 @@ impl Connection {
     pub fn new(
         stream: std::net::TcpStream,
         packet_type: PacketType,
-        in_keyfile: Option<std::path::PathBuf>,
-        out_keyfile: Option<std::path::PathBuf>,
+        in_keyfile: PrivateKey,
+        out_keyfile: PublicKey,
     ) -> Self {
         Self {
             stream,
@@ -135,11 +181,11 @@ impl Connection {
             self.read_packets.append(&mut packets);
             let packet = self.get_one_packet();
             if let Packet::EncryptionRequest(data) = &packet {
-                if let Some(keyfile) = &self.in_keyfile {
+                if !matches!(&self.in_keyfile, PrivateKey::None) {
                     self.encryption = Encryption::from_rsa_data(
                         &data.rsa_data,
                         matches!(self.packet_type, PacketType::NGS),
-                        keyfile,
+                        &self.in_keyfile,
                     )?;
                 }
             }
@@ -151,15 +197,16 @@ impl Connection {
     /// Send a packet. Return bytes written.
     pub fn write_packet(&mut self, packet: &Packet) -> std::io::Result<usize> {
         if let Packet::EncryptionRequest(data) = packet {
-            if let Some(out_keyfile) = &self.out_keyfile {
-                if let Some(in_keyfile) = &self.in_keyfile {
+            if !matches!(&self.out_keyfile, PublicKey::None) {
+                if !matches!(&self.in_keyfile, PrivateKey::None) {
                     let mut new_packet = EncryptionRequestPacket::default();
                     self.encryption = Encryption::from_rsa_data(
                         &data.rsa_data,
                         matches!(self.packet_type, PacketType::NGS),
-                        in_keyfile,
+                        &self.in_keyfile,
                     )?;
-                    new_packet.rsa_data = reencrypt(&data.rsa_data, in_keyfile, out_keyfile)?;
+                    new_packet.rsa_data =
+                        reencrypt(&data.rsa_data, &self.in_keyfile, &self.out_keyfile)?;
                     self.write_buffer.extend_from_slice(&{
                         let packet = Packet::EncryptionRequest(new_packet).write(self.packet_type);
                         #[cfg(feature = "ppac")]
@@ -239,5 +286,38 @@ fn check_disconnect(to_check: std::io::Result<usize>) -> std::io::Result<usize> 
             Err(std::io::ErrorKind::WouldBlock.into())
         }
         Err(err) => Err(err),
+    }
+}
+
+impl PrivateKey {
+    pub fn into_key(&self) -> rsa::errors::Result<Option<RsaPrivateKey>> {
+        match self {
+            Self::None => Ok(None),
+            Self::Path(p) => Ok(Some(RsaPrivateKey::read_pkcs8_pem_file(p)?)),
+            Self::Params { n, e, d, p, q } => Ok(Some(RsaPrivateKey::from_components(
+                BigUint::from_bytes_le(&n),
+                BigUint::from_bytes_le(&e),
+                BigUint::from_bytes_le(&d),
+                vec![BigUint::from_bytes_le(&p), BigUint::from_bytes_le(&q)],
+            )?)),
+            Self::Key(k) => Ok(Some(k.clone())),
+        }
+    }
+}
+
+impl PublicKey {
+    pub fn into_key(&self) -> rsa::errors::Result<Option<RsaPublicKey>> {
+        match self {
+            Self::None => Ok(None),
+            Self::Path(p) => Ok(Some(
+                RsaPublicKey::read_public_key_pem_file(p)
+                    .map_err(|e| rsa::Error::Pkcs8(rsa::pkcs8::Error::PublicKey(e)))?,
+            )),
+            Self::Params { n, e } => Ok(Some(RsaPublicKey::new(
+                BigUint::from_bytes_le(&n),
+                BigUint::from_bytes_le(&e),
+            )?)),
+            Self::Key(k) => Ok(Some(k.clone())),
+        }
     }
 }

@@ -61,6 +61,7 @@ mod private {
     impl Sealed for super::Packet {}
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(u8)]
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub enum PacketType {
@@ -461,6 +462,14 @@ pub enum Packet {
     BlockListRequest,
     #[Id(0x11, 0x10)]
     BlockList(BlockListPacket),
+    #[Id(0x11, 0x11)]
+    BlockSwitchRequest(BlockSwitchRequestPacket),
+    #[Id(0x11, 0x13)]
+    #[Classic]
+    BlockSwitchResponse(BlockSwitchResponsePacket),
+    #[Id(0x11, 0x14)]
+    #[Classic]
+    BlockLogin(BlockLoginPacket),
     #[Id(0x11, 0x1B)]
     #[Classic]
     UserInfo(UserInfoPacket),
@@ -493,6 +502,8 @@ pub enum Packet {
     #[Id(0x11, 0x63)]
     #[Classic]
     VitaLogin(VitaLoginPacket),
+    #[Id(0x11, 0x65)]
+    AllBlocksList(AllBlocksListPacket),
     #[Id(0x11, 0x66)]
     SalonEntryRequest,
     #[Id(0x11, 0x67)]

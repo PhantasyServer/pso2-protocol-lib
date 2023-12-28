@@ -1,4 +1,4 @@
-use super::{HelperReadWrite, ObjectHeader, PacketReadWrite, PacketType};
+use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
 
 // ----------------------------------------------------------------
 // Chat packets
@@ -18,11 +18,11 @@ pub struct ChatMessage {
     pub unk4: u16,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(PacketType::NGS)]
+    #[OnlyOn(super::PacketType::NGS)]
     pub unk5: u16,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(PacketType::NGS)]
+    #[OnlyOn(super::PacketType::NGS)]
     pub unk6: u16,
     pub unk7: String,
     pub message: String,

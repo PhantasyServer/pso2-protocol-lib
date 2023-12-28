@@ -4,6 +4,8 @@ use std::{
     net::{TcpListener, TcpStream},
 };
 
+use pso2packetlib::{PrivateKey, PublicKey};
+
 use crate::protocol::{DataBuffer, Packet};
 
 #[repr(C)]
@@ -143,24 +145,24 @@ pub extern "C" fn get_connection(
         return None;
     };
     let in_key = if !in_key.is_null() {
-        Some(
+        PrivateKey::Path(
             unsafe { CStr::from_ptr(in_key) }
                 .to_string_lossy()
                 .to_string()
                 .into(),
         )
     } else {
-        None
+        PrivateKey::None
     };
     let out_key = if !out_key.is_null() {
-        Some(
+        PublicKey::Path(
             unsafe { CStr::from_ptr(out_key) }
                 .to_string_lossy()
                 .to_string()
                 .into(),
         )
     } else {
-        None
+        PublicKey::None
     };
     Some(Box::new(Connection {
         err_str: None,
@@ -357,24 +359,24 @@ pub extern "C" fn new_connection(
         }
     };
     let in_key = if !in_key.is_null() {
-        Some(
+        PrivateKey::Path(
             unsafe { CStr::from_ptr(in_key) }
                 .to_string_lossy()
                 .to_string()
                 .into(),
         )
     } else {
-        None
+        PrivateKey::None
     };
     let out_key = if !out_key.is_null() {
-        Some(
+        PublicKey::Path(
             unsafe { CStr::from_ptr(out_key) }
                 .to_string_lossy()
                 .to_string()
                 .into(),
         )
     } else {
-        None
+        PublicKey::None
     };
     Box::new(Connection {
         err_str: None,
