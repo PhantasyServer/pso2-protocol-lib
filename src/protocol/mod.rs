@@ -8,6 +8,7 @@ use std::{
 // Packet definitions modules
 pub mod chat;
 pub mod emergency;
+pub mod flag;
 pub mod friends;
 pub mod items;
 pub mod login;
@@ -27,11 +28,11 @@ pub mod spawn;
 pub mod symbolart;
 pub mod unk10;
 pub mod unk19;
-pub mod unk23;
 pub mod unk2a;
 pub mod unk34;
 use chat::*;
 use emergency::*;
+use flag::*;
 use friends::*;
 use items::*;
 use login::*;
@@ -50,7 +51,6 @@ use spawn::*;
 use symbolart::*;
 use unk10::*;
 use unk19::*;
-use unk23::*;
 use unk2a::*;
 use unk34::*;
 
@@ -141,12 +141,28 @@ pub enum Packet {
     ServerPong,
     #[Id(0x03, 0x10)]
     MapLoaded(MapLoadedPacket),
+    #[Id(0x03, 0x12)]
+    ToCampship(ToCampshipPacket),
+    #[Id(0x03, 0x16)]
+    CampshipDown(CampshipDownPacket),
     #[Id(0x03, 0x23)]
     FinishLoading,
     #[Id(0x03, 0x24)]
     LoadLevel(LoadLevelPacket),
     #[Id(0x03, 0x2B)]
     UnlockControls,
+    #[Id(0x03, 0x34)]
+    CasinoToLobby(CasinoToLobbyPacket),
+    #[Id(0x03, 0x35)]
+    CasinoTransport(CasinoTransportPacket),
+    #[Id(0x03, 0x38)]
+    BridgeToLobby(BridgeToLobbyPacket),
+    #[Id(0x03, 0x39)]
+    BridgeTransport(BridgeTransportPacket),
+    #[Id(0x03, 0x3B)]
+    CafeToLobby(CafeToLobbyPacket),
+    #[Id(0x03, 0x3C)]
+    CafeTransport(CafeTransportPacket),
 
     // Object related packets [0x04]
     #[Category(PacketCategory::Object)]
@@ -220,8 +236,10 @@ pub enum Packet {
     // Spawn packets [0x08]
     #[Category(PacketCategory::Spawning)]
     #[Id(0x08, 0x04)]
-    #[Classic]
+    // #[Classic]
     CharacterSpawn(CharacterSpawnPacket),
+    #[Id(0x08, 0x05)]
+    TransporterSpawn(TransporterSpawnPacket),
     #[cfg(not(test))]
     #[Id(0x08, 0x09)]
     EventSpawn(EventSpawnPacket),
@@ -235,6 +253,8 @@ pub enum Packet {
 
     // Quest List packets [0x0B]
     #[Category(PacketCategory::QuestList)]
+    #[Id(0x0B, 0x06)]
+    StartCutscene(StartCutscenePacket),
     #[Id(0x0B, 0x09)]
     Unk0B09(Unk0B09Packet),
     #[Id(0x0B, 0x13)]
@@ -247,14 +267,30 @@ pub enum Packet {
     QuestCategoryRequest(QuestCategoryRequestPacket),
     #[Id(0x0B, 0x18)]
     QuestCategory(QuestCategoryPacket),
+    #[Id(0x0B, 0x19)]
+    QuestDifficultyRequest(QuestDifficultyRequestPacket),
+    #[Id(0x0B, 0x1A)]
+    QuestDifficulty(QuestDifficultyPacket),
+    #[Id(0x0B, 0x1B)]
+    QuestCategoryStopper,
+    #[Id(0x0B, 0x1C)]
+    QuestDifficultyStopper,
     #[Id(0x0B, 0x1F)]
     SetQuestPoints(SetQuestPointsPacket),
+    #[Id(0x0B, 0x20)]
+    AcceptQuest(AcceptQuestPacket),
     #[Id(0x0B, 0x28)]
     QuestPointsAdded(QuestPointsAddedPacket),
+    #[Id(0x0B, 0x2F)]
+    AcceptQuestOther(AcceptQuestOtherPacket),
     #[Id(0x0B, 0x30)]
     QuestCounterRequest,
+    #[Id(0x0B, 0x62)]
+    EQARKSLevel(EQARKSLevelPacket),
     #[Id(0x0B, 0xAF)]
     Unk0BAF(Unk0BAFPacket),
+    #[Id(0x0B, 0xD0)]
+    Unk0BD0(Unk0BD0Packet),
 
     // Party packets [0x0E]
     #[Category(PacketCategory::Party)]
@@ -308,6 +344,8 @@ pub enum Packet {
     PartyDetailsStopper,
     #[Id(0x0E, 0x21)]
     Unk0E21(Unk0E21Packet),
+    #[Id(0x0E, 0x25)]
+    SetQuestInfo(SetQuestInfoPacket),
     #[Id(0x0E, 0x28)]
     SetBusy,
     #[Id(0x0E, 0x29)]
@@ -318,8 +356,12 @@ pub enum Packet {
     SetInviteDecline(InviteDeclinePacket),
     #[Id(0x0E, 0x2E)]
     GetPartyInfo(GetPartyInfoPacket),
+    #[Id(0x0E, 0x31)]
+    SetPartyQuest(SetPartyQuestPacket),
     #[Id(0x0E, 0x4F)]
     SetPartyColor(SetPartyColorPacket),
+    #[Id(0x0E, 0x52)]
+    Unk0E52(Unk0E52Packet),
     #[Id(0x0E, 0x67)]
     PartySetupFinish(PartySetupFinishPacket),
 
@@ -592,6 +634,8 @@ pub enum Packet {
     Unk1904,
     #[Id(0x19, 0x06)]
     Unk1906,
+    #[Id(0x19, 0x09)]
+    SetLobbyEvent(SetLobbyEventPacket),
     #[Id(0x19, 0x0F)]
     LobbyMonitor(LobbyMonitorPacket),
 
@@ -649,10 +693,30 @@ pub enum Packet {
     #[Id(0x21, 0x0F)]
     NewDefaultPAs(NewDefaultPAsPacket),
 
-    // Unknown 0x23 packets [0x23]
-    #[Category(PacketCategory::Unk23)]
+    // Flag packets [0x23]
+    #[Category(PacketCategory::Flag)]
+    #[Id(0x23, 0x02)]
+    SetFlag(SetFlagPacket),
     #[Id(0x23, 0x04)]
-    Unk2304(Unk2304Packet),
+    ServerSetFlag(ServerSetFlagPacket),
+    #[Id(0x23, 0x05)]
+    ServerSetParam(ServerSetParamPacket),
+    #[Id(0x23, 0x06)]
+    AccountFlags(AccountFlagsPacket),
+    #[Id(0x23, 0x07)]
+    CharacterFlags(CharacterFlagsPacket),
+    #[Id(0x23, 0x0A)]
+    CutsceneEnd(CutsceneEndPacket),
+    #[Id(0x23, 0x0B)]
+    SkitItemAddRequest(SkitItemAddRequestPacket),
+    #[Id(0x23, 0x0C)]
+    SkitItemAddResponse(SkitItemAddResponsePacket),
+    #[Id(0x23, 0x0D)]
+    Unk230D(Unk230DPacket),
+    #[Id(0x23, 0x0E)]
+    Unk230E(Unk230EPacket),
+    #[Id(0x23, 0x10)]
+    Unk2310,
 
     // Unknown 0x2A packets [0x2A]
     #[Category(PacketCategory::Unk2A)]
@@ -789,7 +853,7 @@ pub enum PacketCategory {
     /// Palette related packets. See [`palette`]
     Palette,
     /// Unknown 0x23 packets. See [`unk23`]
-    Unk23,
+    Flag,
     /// Unknown 0x2A packets. See [`unk2a`]
     Unk2A,
     /// Settings related packets. See [`settings`]
@@ -877,6 +941,7 @@ pub enum EntityType {
     Map = 5,
     Object = 6,
     StaticObject = 7,
+    Quest = 11,
     Party = 13,
     Unk10 = 16,
     APC = 22,

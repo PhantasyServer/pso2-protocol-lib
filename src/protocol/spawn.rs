@@ -39,6 +39,26 @@ pub struct CharacterSpawnPacket {
     pub unk12_2: [u8; 0x20],
 }
 
+// 0x08, 0x05
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x08, 0x05)]
+pub struct TransporterSpawnPacket {
+    pub object: ObjectHeader,
+    pub position: Position,
+    pub unk1: u16,
+    #[FixedStr(0x20)]
+    pub name: AsciiString,
+    pub unk2: u32,
+    pub unk3: u16,
+    pub unk4: u16,
+    pub unk5: u16,
+    pub unk6: u16,
+    pub unk7: u32,
+    pub unk8: u32,
+}
+
 // 0x08, 0x09
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]

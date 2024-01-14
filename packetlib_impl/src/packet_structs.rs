@@ -110,6 +110,10 @@ fn parse_enum_field(
             read.extend(quote! {let num = reader.read_u32::<LittleEndian>()?;});
             write.extend(quote! {writer.write_u32::<LittleEndian>(*self as u32)?;});
         }
+        Size::U64 => {
+            read.extend(quote! {let num = reader.read_u64::<LittleEndian>()?;});
+            write.extend(quote! {writer.write_u64::<LittleEndian>(*self as u64)?;});
+        }
     }
     let mut discriminant: u32 = 0;
     for variant in &data.variants {
@@ -166,6 +170,10 @@ fn parse_flags_struct(
         Size::U32 => {
             read.extend(quote! {let num = reader.read_u32::<LittleEndian>()? as u64;});
             quote! {writer.write_u32::<LittleEndian>(num as u32)?;}
+        }
+        Size::U64 => {
+            read.extend(quote! {let num = reader.read_u64::<LittleEndian>()? as u64;});
+            quote! {writer.write_u64::<LittleEndian>(num as u64)?;}
         }
     };
     for field in data.fields.iter() {
@@ -434,6 +442,7 @@ fn check_syn_type(
                                     Size::U8 => quote! { reader.read_u8()? },
                                     Size::U16 => quote! { reader.read_u16::<LittleEndian>()? },
                                     Size::U32 => quote! { reader.read_u32::<LittleEndian>()? },
+                                    Size::U64 => quote! { reader.read_u64::<LittleEndian>()? },
                                 }
                             } else {
                                 quote! { crate::protocol::read_magic(reader, sub, xor)? as usize }
@@ -448,6 +457,9 @@ fn check_syn_type(
                                     }
                                     Size::U32 => {
                                         quote! { writer.write_u32::<LittleEndian>(self.#name.len() as u32).unwrap() }
+                                    }
+                                    Size::U64 => {
+                                        quote! { writer.write_u64::<LittleEndian>(self.#name.len() as u64).unwrap() }
                                     }
                                 }
                             } else {
@@ -759,6 +771,7 @@ fn get_repr(attrs: &Vec<Attribute>) -> syn::Result<Size> {
                     "u8" => Size::U8,
                     "u16" => Size::U16,
                     "u32" => Size::U32,
+                    "u64" => Size::U64,
                     _ => Size::U8,
                 })
             }
@@ -812,6 +825,7 @@ fn get_flags_struct(attrs: &Vec<Attribute>) -> syn::Result<Option<Size>> {
                     "u8" => Some(Size::U8),
                     "u16" => Some(Size::U16),
                     "u32" => Some(Size::U32),
+                    "u64" => Some(Size::U64),
                     _ => None,
                 })
             }
@@ -836,6 +850,7 @@ enum Size {
     U8,
     U16,
     U32,
+    U64,
 }
 
 #[derive(Default)]

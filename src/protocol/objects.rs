@@ -149,8 +149,8 @@ pub struct InteractPacket {
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
 #[Magic(0x5CCF, 0x15)]
 pub struct SetTagPacket {
-    pub object1: ObjectHeader,
-    pub object2: ObjectHeader,
+    pub receiver: ObjectHeader,
+    pub target: ObjectHeader,
     pub unk1: u32,
     pub object3: ObjectHeader,
     pub object4: ObjectHeader,
