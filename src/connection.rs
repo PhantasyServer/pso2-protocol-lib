@@ -30,6 +30,7 @@ pub struct Connection {
 }
 
 /// Possible RSA private key formats.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone)]
 pub enum PrivateKey {
     /// No private key provided.
@@ -197,25 +198,25 @@ impl Connection {
     /// Send a packet. Return bytes written.
     pub fn write_packet(&mut self, packet: &Packet) -> std::io::Result<usize> {
         if let Packet::EncryptionRequest(data) = packet {
-            if !matches!(&self.out_keyfile, PublicKey::None) {
-                if !matches!(&self.in_keyfile, PrivateKey::None) {
-                    let mut new_packet = EncryptionRequestPacket::default();
-                    self.encryption = Encryption::from_rsa_data(
-                        &data.rsa_data,
-                        matches!(self.packet_type, PacketType::NGS),
-                        &self.in_keyfile,
-                    )?;
-                    new_packet.rsa_data =
-                        reencrypt(&data.rsa_data, &self.in_keyfile, &self.out_keyfile)?;
-                    self.write_buffer.extend_from_slice(&{
-                        let packet = Packet::EncryptionRequest(new_packet).write(self.packet_type);
-                        #[cfg(feature = "ppac")]
-                        if let Some(writer) = &mut self.ppac {
-                            writer.write_data(crate::ppac::get_now(), self.direction, &packet)?;
-                        }
-                        packet
-                    });
-                }
+            if !matches!(&self.out_keyfile, PublicKey::None)
+                && !matches!(&self.in_keyfile, PrivateKey::None)
+            {
+                let mut new_packet = EncryptionRequestPacket::default();
+                self.encryption = Encryption::from_rsa_data(
+                    &data.rsa_data,
+                    matches!(self.packet_type, PacketType::NGS),
+                    &self.in_keyfile,
+                )?;
+                new_packet.rsa_data =
+                    reencrypt(&data.rsa_data, &self.in_keyfile, &self.out_keyfile)?;
+                self.write_buffer.extend_from_slice(&{
+                    let packet = Packet::EncryptionRequest(new_packet).write(self.packet_type);
+                    #[cfg(feature = "ppac")]
+                    if let Some(writer) = &mut self.ppac {
+                        writer.write_data(crate::ppac::get_now(), self.direction, &packet)?;
+                    }
+                    packet
+                });
             }
         } else {
             self.write_buffer
@@ -253,16 +254,18 @@ impl Connection {
         let data = &self.read_buffer;
         let mut len = 0;
         #[cfg(feature = "ngs_enc")]
-        if matches!(self.encryption, Encryption::AesNgs(_)) {
-            if data.len() >= 0x48 && data[0x40..0x44] == [1, 0, 255, 255] {
-                len = u32::from_le_bytes(data[0x44..0x48].try_into().unwrap()) as usize;
-            }
+        if matches!(self.encryption, Encryption::AesNgs(_))
+            && data.len() >= 0x48
+            && data[0x40..0x44] == [1, 0, 255, 255]
+        {
+            len = u32::from_le_bytes(data[0x44..0x48].try_into().unwrap()) as usize;
         }
         #[cfg(feature = "base_enc")]
-        if matches!(self.encryption, Encryption::Aes(_)) {
-            if data.len() >= 0x48 && data[0x40..0x44] == [1, 0, 255, 255] {
-                len = u32::from_le_bytes(data[0x44..0x48].try_into().unwrap()) as usize;
-            }
+        if matches!(self.encryption, Encryption::Aes(_))
+            && data.len() >= 0x48
+            && data[0x40..0x44] == [1, 0, 255, 255]
+        {
+            len = u32::from_le_bytes(data[0x44..0x48].try_into().unwrap()) as usize;
         }
         #[cfg(feature = "vita_enc")]
         if matches!(self.encryption, Encryption::Rc4(_)) {
@@ -295,10 +298,10 @@ impl PrivateKey {
             Self::None => Ok(None),
             Self::Path(p) => Ok(Some(RsaPrivateKey::read_pkcs8_pem_file(p)?)),
             Self::Params { n, e, d, p, q } => Ok(Some(RsaPrivateKey::from_components(
-                BigUint::from_bytes_le(&n),
-                BigUint::from_bytes_le(&e),
-                BigUint::from_bytes_le(&d),
-                vec![BigUint::from_bytes_le(&p), BigUint::from_bytes_le(&q)],
+                BigUint::from_bytes_le(n),
+                BigUint::from_bytes_le(e),
+                BigUint::from_bytes_le(d),
+                vec![BigUint::from_bytes_le(p), BigUint::from_bytes_le(q)],
             )?)),
             Self::Key(k) => Ok(Some(k.clone())),
         }
@@ -314,8 +317,8 @@ impl PublicKey {
                     .map_err(|e| rsa::Error::Pkcs8(rsa::pkcs8::Error::PublicKey(e)))?,
             )),
             Self::Params { n, e } => Ok(Some(RsaPublicKey::new(
-                BigUint::from_bytes_le(&n),
-                BigUint::from_bytes_le(&e),
+                BigUint::from_bytes_le(n),
+                BigUint::from_bytes_le(e),
             )?)),
             Self::Key(k) => Ok(Some(k.clone())),
         }

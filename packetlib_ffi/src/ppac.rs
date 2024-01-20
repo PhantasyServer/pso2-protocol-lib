@@ -81,9 +81,9 @@ pub extern "C" fn free_reader(_reader: Option<Box<PPACReader>>) {}
 /// Sets the output type.
 #[no_mangle]
 pub extern "C" fn set_out_type(reader: Option<&mut PPACReader>, out_type: OutputType) {
-    let _ = reader
-        .and_then(|r| r.reader.as_mut())
-        .and_then(|r| Some(r.set_out_type(out_type.into())));
+    if let Some(reader) = reader.and_then(|r| r.reader.as_mut()) {
+        reader.set_out_type(out_type.into());
+    }
 }
 
 /// Reads the packet and returns if the function succeeded.
@@ -121,24 +121,21 @@ pub extern "C" fn get_reader_data(reader: Option<&mut PPACReader>) -> PacketData
         raw_size: 0,
     };
     let Some(reader) = reader else { return data };
-    match reader.data.as_mut() {
-        Some(c) => {
-            data.time = c.time.as_secs();
-            data.direction = c.direction.into();
-            data.protocol_type = c.protocol_type.into();
-            data.data = c.packet.take().and_then(|p| Some(Box::new(p.into())));
-            data.raw_ptr = c
-                .data
-                .as_ref()
-                .and_then(|d| Some(d.as_ptr()))
-                .unwrap_or(std::ptr::null());
-            data.raw_size = c
-                .data
-                .as_ref()
-                .and_then(|d| Some(d.len()))
-                .unwrap_or_default();
-        }
-        None => {}
+    if let Some(reader_data) = reader.data.as_mut() {
+        data.time = reader_data.time.as_secs();
+        data.direction = reader_data.direction.into();
+        data.protocol_type = reader_data.protocol_type.into();
+        data.data = reader_data.packet.take().map(|p| Box::new(p.into()));
+        data.raw_ptr = reader_data
+            .data
+            .as_ref()
+            .map(|d| d.as_ptr())
+            .unwrap_or(std::ptr::null());
+        data.raw_size = reader_data
+            .data
+            .as_ref()
+            .map(|d| d.len())
+            .unwrap_or_default();
     }
     data
 }
@@ -166,7 +163,7 @@ fn read_packet_failable(reader: &mut PPACReader) -> Result<ReaderResult, Box<dyn
         Some(p) => p,
         None => return Ok(ReaderResult::ReaderEOF),
     };
-    let is_raw = !packet_data.data.is_none() && packet_data.packet.is_none();
+    let is_raw = packet_data.data.is_some() && packet_data.packet.is_none();
     reader.data = Some(packet_data);
     if is_raw {
         Ok(ReaderResult::RawOnly)

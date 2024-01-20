@@ -170,12 +170,18 @@ bool serde_supported(enum SerializedFormat serde_format);
 
 /**
  * Parses raw packet data and returns a [`Packet`] type or a null pointer if an error occured.
+ *
+ * # Safety
+ * `data_ptr' must point to valid packet data up to `size` bytes.
  */
 struct Packet *raw_to_packet(struct PacketWorker *worker, const uint8_t *data_ptr, size_t size);
 
 /**
  * Parses serialized packet data and returns a [`Packet`] type or a null pointer if an error
  * occurred.
+ *
+ * # Safety
+ * `data_ptr' must point to valid serialied data up to `size` bytes.
  */
 struct Packet *ser_to_packet(struct PacketWorker *worker, const uint8_t *data_ptr, size_t size);
 
@@ -204,6 +210,8 @@ struct DataBuffer packet_to_ser(struct PacketWorker *worker, const struct Packet
  * an error occurred.
  *
  * # Safety
+ * `data_ptr' must point to valid packet data up to `size` bytes.
+ *
  * The returned pointer is only valid until the next data-returning function call.
  * If the returned array is empty, the pointer might be non-null but still invalid. This is not
  * considered an error.
@@ -215,6 +223,8 @@ struct DataBuffer parse_packet(struct PacketWorker *worker, const uint8_t *data_
  * occured.
  *
  * # Safety
+ * `data_ptr' must point to valid packet data up to `size` bytes.
+ *
  * The returned pointer is only valid until the next data-returning function call.
  * If the returned array is empty, the pointer might be non-null but still invalid. This is not
  * considered an error.
@@ -274,6 +284,10 @@ uint32_t get_stream_ip(const struct SocketFactory *factory);
 
 /**
  * Creates a new connection from incoming connection.
+ *
+ * # Safety
+ * 'in_key' and `out_key` must either be null or must point to a UTF-8-encoded, zero-terminated
+ * path to a PKCS#8 file.
  */
 struct Connection *get_connection(struct SocketFactory *factory,
                                   enum PacketType packet_type,
@@ -282,6 +296,7 @@ struct Connection *get_connection(struct SocketFactory *factory,
 
 /**
  * Returns an incoming connection descriptor. Caller is responsible for closing the returned descriptor.
+ * If no stream was opened, returns -1.
  */
 int64_t stream_into_fd(struct SocketFactory *factory);
 
@@ -297,6 +312,7 @@ void close_fd(int64_t fd);
 
 /**
  * Returns an owned socket descriptor. Caller is responsible for closing the returned descriptor.
+ * If no listener was opened, returns -1.
  */
 int64_t listener_into_fd(struct SocketFactory *factory);
 
@@ -322,6 +338,9 @@ const uint8_t *get_sf_error(const struct SocketFactory *factory);
  *
  * # Safety
  * `fd` must be a valid descriptor.
+ *
+ * 'in_key' and `out_key` must either be null or must point to a UTF-8-encoded, zero-terminated
+ * path to a PKCS#8 file.
  */
 struct Connection *new_connection(int64_t fd,
                                   enum PacketType packet_type,

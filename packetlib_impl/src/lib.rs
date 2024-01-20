@@ -18,9 +18,7 @@ use syn::{parse_macro_input, DeriveInput};
 )]
 pub fn packet_read_write_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    packet_deriver(&input)
-        .unwrap_or_else(|err| err.to_compile_error().into())
-        .into()
+    packet_deriver(&input).unwrap_or_else(|err| err.to_compile_error().into())
 }
 
 #[proc_macro_derive(
@@ -46,9 +44,7 @@ pub fn packet_read_write_derive(input: TokenStream) -> TokenStream {
 )]
 pub fn helper_read_write_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    helper_deriver(&input)
-        .unwrap_or_else(|err| output_error(input.to_token_stream(), err))
-        .into()
+    helper_deriver(&input).unwrap_or_else(|err| output_error(input.to_token_stream(), err))
 }
 
 #[proc_macro_derive(
@@ -57,12 +53,10 @@ pub fn helper_read_write_derive(input: TokenStream) -> TokenStream {
 )]
 pub fn protocol_read_write_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    protocol_deriver(&input)
-        .unwrap_or_else(|err| output_error(input.to_token_stream(), err))
-        .into()
+    protocol_deriver(&input).unwrap_or_else(|err| output_error(input.to_token_stream(), err))
 }
 
 fn output_error(mut input: TS2, err: syn::Error) -> TokenStream {
-    input.extend(TS2::from(err.to_compile_error()));
+    input.extend(err.to_compile_error());
     input.into()
 }

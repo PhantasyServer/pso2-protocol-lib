@@ -32,7 +32,7 @@ impl Encryption {
         let private_key = match key.into_key() {
             Ok(Some(x)) => x,
             Ok(None) => {
-                return Err(Error::new(ErrorKind::Other, format!("No key provided")));
+                return Err(Error::new(ErrorKind::Other, "No key provided".to_string()));
             }
             Err(x) => {
                 return Err(Error::new(ErrorKind::Other, format!("{x}")));
@@ -304,7 +304,7 @@ pub fn reencrypt(
     let private_key = match in_key.into_key() {
         Ok(Some(x)) => x,
         Ok(None) => {
-            return Err(Error::new(ErrorKind::Other, format!("No key provided")));
+            return Err(Error::new(ErrorKind::Other, "No key provided".to_string()));
         }
         Err(x) => {
             return Err(Error::new(ErrorKind::Other, format!("{x}")));
@@ -319,7 +319,7 @@ pub fn reencrypt(
     let out_key = match out_key.into_key() {
         Ok(Some(x)) => x,
         Ok(None) => {
-            return Err(Error::new(ErrorKind::Other, format!("No key provided")));
+            return Err(Error::new(ErrorKind::Other, "No key provided".to_string()));
         }
         Err(x) => {
             return Err(Error::new(ErrorKind::Other, format!("{x}")));

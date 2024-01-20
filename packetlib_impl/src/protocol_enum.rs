@@ -118,7 +118,7 @@ fn parse_enum_field(
                 }
                 syn::Meta::List(list) => {
                     let string = list.path.get_ident().unwrap().to_string();
-                    get_attrs(&mut settings, &string, Some(&list), list.span())?;
+                    get_attrs(&mut settings, &string, Some(list), list.span())?;
                 }
             }
         }
@@ -175,16 +175,16 @@ fn parse_enum_field(
             PacketType::Classic => read.extend(quote! {
                 (#id, #subid, PacketType::Classic | PacketType::NA | PacketType::JP | PacketType::Vita) => {#push_string},
             }),
-            PacketType::NA => read.extend(quote! {
+            PacketType::Na => read.extend(quote! {
                 (#id, #subid, PacketType::NA) => {#push_string},
             }),
-            PacketType::JP => read.extend(quote! {
+            PacketType::Jp => read.extend(quote! {
                 (#id, #subid, PacketType::JP) => {#push_string},
             }),
             PacketType::Vita => read.extend(quote! {
                 (#id, #subid, PacketType::Vita) => {#push_string},
             }),
-            PacketType::NGS => read.extend(quote! {
+            PacketType::Ngs => read.extend(quote! {
                 (#id, #subid, PacketType::NGS) => {#push_string},
             }),
             PacketType::Empty => {}
@@ -204,10 +204,10 @@ fn get_attrs(
         "Unknown" => {
             set.skip = true;
         }
-        "NGS" => set.packet_type = PacketType::NGS,
+        "NGS" => set.packet_type = PacketType::Ngs,
         "Classic" => set.packet_type = PacketType::Classic,
-        "NA" => set.packet_type = PacketType::NA,
-        "JP" => set.packet_type = PacketType::JP,
+        "NA" => set.packet_type = PacketType::Na,
+        "JP" => set.packet_type = PacketType::Jp,
         "Vita" => set.packet_type = PacketType::Vita,
         "Id" => {
             let attrs: AttributeList = match list {
@@ -256,9 +256,9 @@ enum PacketType {
     #[default]
     Both,
     Classic,
-    NGS,
-    NA,
-    JP,
+    Ngs,
+    Na,
+    Jp,
     Vita,
     Empty,
 }

@@ -56,10 +56,10 @@ pub fn helper_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
     let mut write = quote! {};
     let repr_type = get_repr(&ast.attrs)?;
     let is_flags = get_flags_struct(&ast.attrs)?;
-    let no_seek = get_no_seek(&ast.attrs)?;
+    let no_seek = get_no_seek(&ast.attrs);
 
     match &ast.data {
-        Data::Struct(data) if matches!(is_flags, Some(_)) => {
+        Data::Struct(data) if is_flags.is_some() => {
             let Some(repr_type) = is_flags else {
                 unreachable!()
             };
@@ -247,7 +247,7 @@ fn parse_struct_field(
         let name = field.ident.as_ref().unwrap();
         return_token.extend(quote! {#name,});
 
-        if name.to_string() == "is_global" {
+        if *name == "is_global" {
             read.extend(quote! {let is_global = false;});
             continue;
         }
@@ -263,7 +263,7 @@ fn parse_struct_field(
                 }
                 syn::Meta::List(list) => {
                     let string = list.path.get_ident().unwrap().to_string();
-                    get_attrs(&mut settings, &string, Some(&list), read, write)?;
+                    get_attrs(&mut settings, &string, Some(list), read, write)?;
                 }
             }
         }
@@ -412,7 +412,7 @@ fn check_syn_type(
             }
             None => {
                 let segment = &path.path.segments[0];
-                if segment.ident.to_string() != "Vec" {
+                if segment.ident != "Vec" {
                     return Ok(());
                 }
                 let PathArguments::AngleBracketed(args) = &segment.arguments else {
@@ -726,7 +726,7 @@ fn check_code_type(
     Ok((read, write))
 }
 
-fn get_packet_id(attrs: &Vec<Attribute>) -> syn::Result<(u8, u16)> {
+fn get_packet_id(attrs: &[Attribute]) -> syn::Result<(u8, u16)> {
     for attr in attrs.iter() {
         if !attr.path().is_ident("Id") {
             continue;
@@ -747,13 +747,13 @@ fn get_packet_id(attrs: &Vec<Attribute>) -> syn::Result<(u8, u16)> {
         let subid = attrs.fields[1].base10_parse()?;
         return Ok((id, subid));
     }
-    return Err(syn::Error::new(
+    Err(syn::Error::new(
         proc_macro2::Span::call_site(),
         "No Id defined",
-    ));
+    ))
 }
 
-fn get_flags(attrs: &Vec<Attribute>) -> syn::Result<TS2> {
+fn get_flags(attrs: &[Attribute]) -> syn::Result<TS2> {
     for attr in attrs.iter() {
         if !attr.path().is_ident("Flags") {
             continue;
@@ -769,10 +769,10 @@ fn get_flags(attrs: &Vec<Attribute>) -> syn::Result<TS2> {
         let attrs = &list.tokens;
         return Ok(quote! {#attrs});
     }
-    return Ok(quote! {Flags::default()});
+    Ok(quote! {Flags::default()})
 }
 
-fn get_repr(attrs: &Vec<Attribute>) -> syn::Result<Size> {
+fn get_repr(attrs: &[Attribute]) -> syn::Result<Size> {
     for attr in attrs.iter() {
         if !attr.path().is_ident("repr") {
             continue;
@@ -791,10 +791,10 @@ fn get_repr(attrs: &Vec<Attribute>) -> syn::Result<Size> {
             }
         }
     }
-    return Ok(Size::U8);
+    Ok(Size::U8)
 }
 
-fn get_magic(attrs: &Vec<Attribute>) -> syn::Result<Option<(u32, u32)>> {
+fn get_magic(attrs: &[Attribute]) -> syn::Result<Option<(u32, u32)>> {
     for attr in attrs.iter() {
         if !attr.path().is_ident("Magic") {
             continue;
@@ -818,7 +818,7 @@ fn get_magic(attrs: &Vec<Attribute>) -> syn::Result<Option<(u32, u32)>> {
     Ok(None)
 }
 
-fn get_flags_struct(attrs: &Vec<Attribute>) -> syn::Result<Option<Size>> {
+fn get_flags_struct(attrs: &[Attribute]) -> syn::Result<Option<Size>> {
     for attr in attrs.iter() {
         if !attr.path().is_ident("Flags") {
             continue;
@@ -842,17 +842,17 @@ fn get_flags_struct(attrs: &Vec<Attribute>) -> syn::Result<Option<Size>> {
             }
         }
     }
-    return Ok(None);
+    Ok(None)
 }
 
-fn get_no_seek(attrs: &Vec<Attribute>) -> syn::Result<bool> {
+fn get_no_seek(attrs: &[Attribute]) -> bool {
     for attr in attrs.iter() {
         if !attr.path().is_ident("NoPadding") {
             continue;
         }
-        return Ok(true);
+        return true;
     }
-    return Ok(false);
+    false
 }
 
 #[derive(Default)]

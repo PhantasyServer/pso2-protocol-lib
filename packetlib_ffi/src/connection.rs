@@ -131,8 +131,12 @@ pub extern "C" fn get_stream_ip(factory: Option<&SocketFactory>) -> u32 {
 }
 
 /// Creates a new connection from incoming connection.
+///
+/// # Safety
+/// 'in_key' and `out_key` must either be null or must point to a UTF-8-encoded, zero-terminated
+/// path to a PKCS#8 file.
 #[no_mangle]
-pub extern "C" fn get_connection(
+pub unsafe extern "C" fn get_connection(
     factory: Option<&mut SocketFactory>,
     packet_type: crate::protocol::PacketType,
     in_key: *const i8,
@@ -178,25 +182,26 @@ pub extern "C" fn get_connection(
 }
 
 /// Returns an incoming connection descriptor. Caller is responsible for closing the returned descriptor.
+/// If no stream was opened, returns -1.
 #[no_mangle]
 pub extern "C" fn stream_into_fd(factory: Option<&mut SocketFactory>) -> i64 {
     let Some(factory) = factory else {
-        return i64::MAX;
+        return -1;
     };
     match factory.stream.take() {
         Some(stream) => {
             #[cfg(windows)]
             {
                 use std::os::windows::io::IntoRawSocket;
-                return stream.into_raw_socket() as i64;
+                stream.into_raw_socket() as i64
             }
             #[cfg(not(windows))]
             {
                 use std::os::fd::IntoRawFd;
-                return stream.into_raw_fd() as i64;
+                stream.into_raw_fd() as i64
             }
         }
-        None => i64::MAX,
+        None => -1,
     }
 }
 
@@ -204,14 +209,14 @@ pub extern "C" fn stream_into_fd(factory: Option<&mut SocketFactory>) -> i64 {
 #[no_mangle]
 pub extern "C" fn clone_fd(factory: Option<&mut SocketFactory>, fd: i64) -> i64 {
     let Some(factory) = factory else {
-        return i64::MAX;
+        return -1;
     };
     factory.err_str = None;
     match copy_fd_failable(fd) {
         Ok(fd) => fd,
         Err(e) => {
             factory.err_str = Some(CString::new(e.to_string()).unwrap_or_default());
-            i64::MAX
+            -1
         }
     }
 }
@@ -235,25 +240,26 @@ pub extern "C" fn close_fd(fd: i64) {
 }
 
 /// Returns an owned socket descriptor. Caller is responsible for closing the returned descriptor.
+/// If no listener was opened, returns -1.
 #[no_mangle]
 pub extern "C" fn listener_into_fd(factory: Option<&mut SocketFactory>) -> i64 {
     let Some(factory) = factory else {
-        return i64::MAX;
+        return -1;
     };
     match factory.listener.take() {
         Some(listener) => {
             #[cfg(windows)]
             {
                 use std::os::windows::io::IntoRawSocket;
-                return listener.into_raw_socket() as i64;
+                listener.into_raw_socket() as i64
             }
             #[cfg(not(windows))]
             {
                 use std::os::fd::IntoRawFd;
-                return listener.into_raw_fd() as i64;
+                listener.into_raw_fd() as i64
             }
         }
-        None => i64::MAX,
+        None => -1,
     }
 }
 
@@ -262,7 +268,7 @@ pub extern "C" fn listener_into_fd(factory: Option<&mut SocketFactory>) -> i64 {
 /// # Safety
 /// `fd` must be a valid descriptor.
 #[no_mangle]
-pub extern "C" fn listener_from_fd(factory: Option<&mut SocketFactory>, fd: i64) -> bool {
+pub unsafe extern "C" fn listener_from_fd(factory: Option<&mut SocketFactory>, fd: i64) -> bool {
     let Some(factory) = factory else {
         return false;
     };
@@ -273,13 +279,13 @@ pub extern "C" fn listener_from_fd(factory: Option<&mut SocketFactory>, fd: i64)
     {
         use std::os::windows::io::{FromRawSocket, RawSocket};
         factory.listener = Some(unsafe { TcpListener::from_raw_socket(fd as RawSocket) });
-        return true;
+        true
     }
     #[cfg(not(windows))]
     {
         use std::os::fd::{FromRawFd, RawFd};
         factory.listener = Some(unsafe { TcpListener::from_raw_fd(fd as RawFd) });
-        return true;
+        true
     }
 }
 
@@ -309,22 +315,22 @@ fn create_stream_failable(str: *const i8) -> Result<TcpStream, Box<dyn Error>> {
 }
 
 fn copy_fd_failable(fd: i64) -> Result<i64, Box<dyn Error>> {
-    if fd == i64::MAX {
-        return Ok(i64::MAX);
+    if fd == -1 {
+        return Ok(-1);
     }
     #[cfg(windows)]
     {
         use std::os::windows::io::{BorrowedSocket, IntoRawSocket, RawSocket};
         let socket = unsafe { BorrowedSocket::borrow_raw(fd as RawSocket) };
         let socket = socket.try_clone_to_owned()?;
-        return Ok(socket.into_raw_socket() as i64);
+        Ok(socket.into_raw_socket() as i64)
     }
     #[cfg(not(windows))]
     {
         use std::os::fd::{BorrowedFd, IntoRawFd, RawFd};
         let fd = unsafe { BorrowedFd::borrow_raw(fd as RawFd) };
         let fd = fd.try_clone_to_owned()?;
-        return Ok(fd.into_raw_fd() as i64);
+        Ok(fd.into_raw_fd() as i64)
     }
 }
 
@@ -339,8 +345,11 @@ pub struct Connection {
 ///
 /// # Safety
 /// `fd` must be a valid descriptor.
+///
+/// 'in_key' and `out_key` must either be null or must point to a UTF-8-encoded, zero-terminated
+/// path to a PKCS#8 file.
 #[no_mangle]
-pub extern "C" fn new_connection(
+pub unsafe extern "C" fn new_connection(
     fd: i64,
     packet_type: crate::protocol::PacketType,
     in_key: *const i8,
@@ -400,7 +409,7 @@ pub extern "C" fn free_connection(_conn: Option<Box<Connection>>) {}
 pub extern "C" fn get_conn_ip(conn: Option<&Connection>) -> u32 {
     conn.and_then(|c| c.con.as_ref())
         .and_then(|c| c.get_ip().ok())
-        .and_then(|i| Some(u32::from_be_bytes(i.octets())))
+        .map(|i| u32::from_be_bytes(i.octets()))
         .unwrap_or(0)
 }
 
@@ -410,9 +419,9 @@ pub extern "C" fn conn_set_packet_type(
     conn: Option<&mut Connection>,
     packet_type: crate::protocol::PacketType,
 ) {
-    let _ = conn
-        .and_then(|c| c.con.as_mut())
-        .and_then(|c| Some(c.change_packet_type(packet_type.into())));
+    if let Some(conn) = conn.and_then(|c| c.con.as_mut()) {
+        conn.change_packet_type(packet_type.into());
+    }
 }
 
 /// Returns a [`Packet`] or a null pointer if no connection was provided.
@@ -424,7 +433,7 @@ pub extern "C" fn conn_set_packet_type(
 #[no_mangle]
 pub extern "C" fn conn_get_data(conn: Option<&mut Connection>) -> Option<Box<Packet>> {
     match conn {
-        Some(c) => c.data.take().and_then(|d| Some(Box::new(d.into()))),
+        Some(c) => c.data.take().map(Box::new),
         None => None,
     }
 }
@@ -479,7 +488,7 @@ pub extern "C" fn conn_get_key(conn: Option<&mut Connection>) -> DataBuffer {
     let Some(conn) = conn else {
         return crate::protocol::NULL_BUF;
     };
-    match conn.con.as_mut().and_then(|c| Some(c.get_key())) {
+    match conn.con.as_mut().map(|c| c.get_key()) {
         Some(key) => {
             conn.key = key;
             DataBuffer {
