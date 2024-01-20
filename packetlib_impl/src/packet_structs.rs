@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use proc_macro2::{Span, TokenStream as TS2};
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse::Parse, punctuated::Punctuated, spanned::Spanned, Attribute, Data, DataEnum, DataStruct,
     Expr, Fields, GenericArgument, Ident, Lit, LitInt, MetaList, PathArguments, Token, Type,
@@ -323,6 +323,7 @@ struct Settings {
     not_on: Option<TS2>,
     fixed_len: u32,
     len_size: Option<Size>,
+    manual_rw: Option<(TS2, TS2)>,
 }
 
 fn get_attrs(
@@ -337,28 +338,29 @@ fn get_attrs(
         "PSOTime" => set.is_psotime = true,
         "Skip" => set.to_skip = true,
         "OnlyOn" => {
-            let attrs = match list {
-                Some(x) => &x.tokens,
-                None => {
-                    return Err(syn::Error::new(
-                        Span::call_site(),
-                        "Invalid syntax \nPerhaps you ment OnlyOn(..)?",
-                    ))
-                }
+            let Some(attrs) = list.map(|l| l.tokens.clone()) else {
+                return Err(syn::Error::new(
+                    Span::call_site(),
+                    "Invalid syntax \nPerhaps you ment OnlyOn(..)?",
+                ));
             };
-            set.only_on = Some(attrs.clone());
+            set.only_on = Some(attrs);
         }
         "NotOn" => {
-            let attrs = match list {
-                Some(x) => &x.tokens,
-                None => {
-                    return Err(syn::Error::new(
-                        Span::call_site(),
-                        "Invalid syntax \nPerhaps you ment NotOn(..)?",
-                    ))
-                }
+            let Some(attrs) = list.map(|l| l.tokens.clone()) else {
+                return Err(syn::Error::new(
+                    Span::call_site(),
+                    "Invalid syntax \nPerhaps you ment NotOn(..)?",
+                ));
             };
-            set.not_on = Some(attrs.clone());
+            set.not_on = Some(attrs);
+        }
+        "ManualRW" => {
+            let attrs: FnList = list.unwrap().parse_args()?;
+            set.manual_rw = Some((
+                attrs.fields[0].clone().into_token_stream(),
+                attrs.fields[1].clone().into_token_stream(),
+            ));
         }
         "Seek" => {
             let amount: i64 = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
@@ -410,119 +412,122 @@ fn check_syn_type(
             }
             None => {
                 let segment = &path.path.segments[0];
-                if segment.ident.to_string() == "Vec" {
-                    if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                        if let GenericArgument::Type(x) = &args.args[0] {
-                            let mut tmp_read = quote! {};
-                            let mut tmp_write = quote! {};
-                            let tmp_name = Ident::new("tmp", Span::call_site());
-                            check_syn_type(
-                                x,
-                                &mut tmp_read,
-                                &mut tmp_write,
-                                &tmp_name,
-                                set,
-                                false,
-                                no_seek,
-                            )?;
+                if segment.ident.to_string() != "Vec" {
+                    return Ok(());
+                }
+                let PathArguments::AngleBracketed(args) = &segment.arguments else {
+                    return Ok(());
+                };
+                let GenericArgument::Type(arg_type) = &args.args[0] else {
+                    return Ok(());
+                };
+                let mut tmp_read = quote! {};
+                let mut tmp_write = quote! {};
+                let tmp_name = Ident::new("tmp", Span::call_site());
+                check_syn_type(
+                    arg_type,
+                    &mut tmp_read,
+                    &mut tmp_write,
+                    &tmp_name,
+                    set,
+                    false,
+                    no_seek,
+                )?;
 
-                            let seek_pad = if no_seek {
-                                quote! {}
-                            } else {
-                                quote! { reader.seek(std::io::SeekFrom::Current((len.next_multiple_of(4) - len) as i64))?; }
-                            };
-                            let write_pad = if no_seek {
-                                quote! {}
-                            } else {
-                                quote! { writer.write_all(&vec![0u8; len.next_multiple_of(4) - len]).unwrap(); }
-                            };
+                let seek_pad = if no_seek {
+                    quote! {}
+                } else {
+                    quote! { reader.seek(std::io::SeekFrom::Current((len.next_multiple_of(4) - len) as i64))?; }
+                };
+                let write_pad = if no_seek {
+                    quote! {}
+                } else {
+                    quote! { writer.write_all(&vec![0u8; len.next_multiple_of(4) - len]).unwrap(); }
+                };
 
-                            let read_len = if let Some(size) = &set.len_size {
-                                match size {
-                                    Size::U8 => quote! { reader.read_u8()? },
-                                    Size::U16 => quote! { reader.read_u16::<LittleEndian>()? },
-                                    Size::U32 => quote! { reader.read_u32::<LittleEndian>()? },
-                                    Size::U64 => quote! { reader.read_u64::<LittleEndian>()? },
-                                }
-                            } else {
-                                quote! { crate::protocol::read_magic(reader, sub, xor)? as usize }
-                            };
-                            let write_len = if let Some(size) = &set.len_size {
-                                match size {
-                                    Size::U8 => {
-                                        quote! { writer.write_u8(self.#name.len() as u8).unwrap() }
-                                    }
-                                    Size::U16 => {
-                                        quote! { writer.write_u16::<LittleEndian>(self.#name.len() as u16).unwrap() }
-                                    }
-                                    Size::U32 => {
-                                        quote! { writer.write_u32::<LittleEndian>(self.#name.len() as u32).unwrap() }
-                                    }
-                                    Size::U64 => {
-                                        quote! { writer.write_u64::<LittleEndian>(self.#name.len() as u64).unwrap() }
-                                    }
-                                }
-                            } else {
-                                quote! { writer.write_u32::<LittleEndian>(crate::protocol::write_magic(self.#name.len() as u32, sub, xor)).unwrap() }
-                            };
-
-                            if set.fixed_len == 0 {
-                                read.extend(quote! {
-                                    let len = #read_len;
-                                    let mut #name = vec![];
-                                    let seek1 = reader.seek(std::io::SeekFrom::Current(0))?;
-                                    for _ in 0..len {
-                                        #tmp_read;
-                                        #name.push(#tmp_name);
-                                    }
-                                    let seek2 = reader.seek(std::io::SeekFrom::Current(0))?;
-                                    let len = (seek2 - seek1) as usize;
-                                    #seek_pad;
-                                });
-                                write.extend(quote! {
-                                    #write_len;
-                                    let mut tmp_buf = vec![];
-                                    {
-                                        let writer = &mut tmp_buf;
-                                        for #tmp_name in &self.#name {
-                                            #tmp_write;
-                                        }
-                                    };
-                                    writer.write_all(&tmp_buf).unwrap();
-                                    let len = tmp_buf.len();
-                                    #write_pad;
-                                });
-                            } else {
-                                let len = set.fixed_len;
-                                read.extend(quote! {
-                                    let mut #name = vec![];
-                                    let seek1 = reader.seek(std::io::SeekFrom::Current(0))?;
-                                    let len = #len as usize;
-                                    for _ in 0..len {
-                                        #tmp_read
-                                        #name.push(#tmp_name);
-                                    }
-                                    let seek2 = reader.seek(std::io::SeekFrom::Current(0))?;
-                                    let len = (seek2 - seek1) as usize;
-                                    #seek_pad
-                                });
-                                write.extend(quote! {
-                                    let len = #len as usize;
-                                    let def_thing = vec![Default::default()];
-                                    let mut tmp_buf = vec![];
-                                    {
-                                        let writer = &mut tmp_buf;
-                                        for #tmp_name in self.#name.iter().chain(def_thing.iter().cycle()).take(len) {
-                                            #tmp_write
-                                        }
-                                    };
-                                    writer.write_all(&tmp_buf).unwrap();
-                                    let len = tmp_buf.len();
-                                    #write_pad
-                                });
-                            }
+                let read_len = if let Some(size) = &set.len_size {
+                    match size {
+                        Size::U8 => quote! { reader.read_u8()? },
+                        Size::U16 => quote! { reader.read_u16::<LittleEndian>()? },
+                        Size::U32 => quote! { reader.read_u32::<LittleEndian>()? },
+                        Size::U64 => quote! { reader.read_u64::<LittleEndian>()? },
+                    }
+                } else {
+                    quote! { crate::protocol::read_magic(reader, sub, xor)? as usize }
+                };
+                let write_len = if let Some(size) = &set.len_size {
+                    match size {
+                        Size::U8 => {
+                            quote! { writer.write_u8(self.#name.len() as u8).unwrap() }
+                        }
+                        Size::U16 => {
+                            quote! { writer.write_u16::<LittleEndian>(self.#name.len() as u16).unwrap() }
+                        }
+                        Size::U32 => {
+                            quote! { writer.write_u32::<LittleEndian>(self.#name.len() as u32).unwrap() }
+                        }
+                        Size::U64 => {
+                            quote! { writer.write_u64::<LittleEndian>(self.#name.len() as u64).unwrap() }
                         }
                     }
+                } else {
+                    quote! { writer.write_u32::<LittleEndian>(crate::protocol::write_magic(self.#name.len() as u32, sub, xor)).unwrap() }
+                };
+
+                if set.fixed_len == 0 {
+                    read.extend(quote! {
+                        let len = #read_len;
+                        let mut #name = vec![];
+                        let seek1 = reader.seek(std::io::SeekFrom::Current(0))?;
+                        for _ in 0..len {
+                            #tmp_read;
+                            #name.push(#tmp_name);
+                        }
+                        let seek2 = reader.seek(std::io::SeekFrom::Current(0))?;
+                        let len = (seek2 - seek1) as usize;
+                        #seek_pad;
+                    });
+                    write.extend(quote! {
+                        #write_len;
+                        let mut tmp_buf = vec![];
+                        {
+                            let writer = &mut tmp_buf;
+                            for #tmp_name in &self.#name {
+                                #tmp_write;
+                            }
+                        };
+                        writer.write_all(&tmp_buf).unwrap();
+                        let len = tmp_buf.len();
+                        #write_pad;
+                    });
+                } else {
+                    let len = set.fixed_len;
+                    read.extend(quote! {
+                        let mut #name = vec![];
+                        let seek1 = reader.seek(std::io::SeekFrom::Current(0))?;
+                        let len = #len as usize;
+                        for _ in 0..len {
+                            #tmp_read
+                            #name.push(#tmp_name);
+                        }
+                        let seek2 = reader.seek(std::io::SeekFrom::Current(0))?;
+                        let len = (seek2 - seek1) as usize;
+                        #seek_pad
+                    });
+                    write.extend(quote! {
+                        let len = #len as usize;
+                        let def_thing = vec![Default::default()];
+                        let mut tmp_buf = vec![];
+                        {
+                            let writer = &mut tmp_buf;
+                            for #tmp_name in self.#name.iter().chain(def_thing.iter().cycle()).take(len) {
+                                #tmp_write
+                            }
+                        };
+                        writer.write_all(&tmp_buf).unwrap();
+                        let len = tmp_buf.len();
+                        #write_pad
+                    });
                 }
             }
         },
@@ -541,7 +546,16 @@ fn check_syn_type(
                 false,
                 no_seek,
             )?;
-            if tmp_read.to_string().contains("read_u8()") {
+            if set.manual_rw.is_some() {
+                read.extend(quote! {
+                    #tmp_read
+                    let #name = #tmp_name;
+                });
+                write.extend(quote! {
+                    let #tmp_name = &self.#name;
+                    #tmp_write
+                });
+            } else if tmp_read.to_string().contains("read_u8()") {
                 read.extend(quote! {
                     let mut #name = [Default::default(); #len];
                     reader.read_exact(&mut #name)?;
@@ -584,6 +598,12 @@ fn check_code_type(
     } else {
         quote! {#name}
     };
+
+    if let Some((read_fn, write_fn)) = &set.manual_rw {
+        read.extend(quote! { let #name = #read_fn(reader, packet_type, xor, sub)?; });
+        write.extend(quote! {#write_fn(&#write_name, writer, packet_type, xor, sub).unwrap();});
+        return Ok((read, write));
+    }
 
     match string.as_str() {
         "u8" => {
@@ -711,24 +731,21 @@ fn get_packet_id(attrs: &Vec<Attribute>) -> syn::Result<(u8, u16)> {
         if !attr.path().is_ident("Id") {
             continue;
         }
-        match &attr.meta {
-            syn::Meta::NameValue(_) => {}
-            syn::Meta::Path(_) => {
-                return Err(syn::Error::new(
-                    attr.span(),
-                    "Invalid syntax \nPerhaps you ment Id(id, subid)?",
-                ));
-            }
-            syn::Meta::List(list) => {
-                let attrs: AttributeList = list.parse_args()?;
-                if attrs.fields.len() != 2 {
-                    return Err(syn::Error::new(attr.span(), "Invalid number of arguments"));
-                }
-                let id = attrs.fields[0].base10_parse()?;
-                let subid = attrs.fields[1].base10_parse()?;
-                return Ok((id, subid));
-            }
+
+        let syn::Meta::List(list) = &attr.meta else {
+            return Err(syn::Error::new(
+                attr.span(),
+                "Invalid syntax \nPerhaps you ment Id(id, subid)?",
+            ));
+        };
+
+        let attrs: AttributeList = list.parse_args()?;
+        if attrs.fields.len() != 2 {
+            return Err(syn::Error::new(attr.span(), "Invalid number of arguments"));
         }
+        let id = attrs.fields[0].base10_parse()?;
+        let subid = attrs.fields[1].base10_parse()?;
+        return Ok((id, subid));
     }
     return Err(syn::Error::new(
         proc_macro2::Span::call_site(),
@@ -741,19 +758,16 @@ fn get_flags(attrs: &Vec<Attribute>) -> syn::Result<TS2> {
         if !attr.path().is_ident("Flags") {
             continue;
         }
-        match &attr.meta {
-            syn::Meta::NameValue(_) => {}
-            syn::Meta::Path(_) => {
-                return Err(syn::Error::new(
-                    attr.span(),
-                    "Invalid syntax \nPerhaps you ment Flags(..)?",
-                ));
-            }
-            syn::Meta::List(list) => {
-                let attrs = &list.tokens;
-                return Ok(quote! {#attrs});
-            }
-        }
+
+        let syn::Meta::List(list) = &attr.meta else {
+            return Err(syn::Error::new(
+                attr.span(),
+                "Invalid syntax \nPerhaps you ment Flags(..)?",
+            ));
+        };
+
+        let attrs = &list.tokens;
+        return Ok(quote! {#attrs});
     }
     return Ok(quote! {Flags::default()});
 }
@@ -785,24 +799,21 @@ fn get_magic(attrs: &Vec<Attribute>) -> syn::Result<Option<(u32, u32)>> {
         if !attr.path().is_ident("Magic") {
             continue;
         }
-        match &attr.meta {
-            syn::Meta::NameValue(_) => {}
-            syn::Meta::Path(_) => {
-                return Err(syn::Error::new(
-                    attr.span(),
-                    "Invalid syntax \nPerhaps you ment Magic(xor, sub)?",
-                ));
-            }
-            syn::Meta::List(list) => {
-                let attrs: AttributeList = list.parse_args()?;
-                if attrs.fields.len() != 2 {
-                    return Err(syn::Error::new(attr.span(), "Invalid number of arguments"));
-                }
-                let xor = attrs.fields[0].base10_parse()?;
-                let sub = attrs.fields[1].base10_parse()?;
-                return Ok(Some((xor, sub)));
-            }
+
+        let syn::Meta::List(list) = &attr.meta else {
+            return Err(syn::Error::new(
+                attr.span(),
+                "Invalid syntax \nPerhaps you ment Magic(xor, sub)?",
+            ));
+        };
+
+        let attrs: AttributeList = list.parse_args()?;
+        if attrs.fields.len() != 2 {
+            return Err(syn::Error::new(attr.span(), "Invalid number of arguments"));
         }
+        let xor = attrs.fields[0].base10_parse()?;
+        let sub = attrs.fields[1].base10_parse()?;
+        return Ok(Some((xor, sub)));
     }
     Ok(None)
 }
@@ -865,6 +876,17 @@ struct AttributeList {
     fields: Punctuated<LitInt, Token![,]>,
 }
 impl Parse for AttributeList {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        Ok(Self {
+            fields: Punctuated::parse_separated_nonempty(input)?,
+        })
+    }
+}
+
+struct FnList {
+    fields: Punctuated<Ident, Token![,]>,
+}
+impl Parse for FnList {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         Ok(Self {
             fields: Punctuated::parse_separated_nonempty(input)?,

@@ -262,7 +262,8 @@ pub struct GetPartyDetailsPacket {
 #[Magic(0x7921, 0xE0)]
 pub struct PartyDetailsPacket {
     pub num_of_details: u32,
-    pub details: [PartyDetails; 0xC],
+    #[FixedLen(0x0C)]
+    pub details: Vec<PartyDetails>,
 }
 
 // 0x0E, 0x21

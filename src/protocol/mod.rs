@@ -852,7 +852,7 @@ pub enum PacketCategory {
     DailyOrders,
     /// Palette related packets. See [`palette`]
     Palette,
-    /// Unknown 0x23 packets. See [`unk23`]
+    /// Flag packets. See [`flag`]
     Flag,
     /// Unknown 0x2A packets. See [`unk2a`]
     Unk2A,

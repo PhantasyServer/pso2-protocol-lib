@@ -1,3 +1,5 @@
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+
 use crate::protocol::{HelperReadWrite, PacketType};
 
 use super::character::ClassFlags;
@@ -11,7 +13,7 @@ pub enum ItemAttributes {
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[NoPadding]
 pub struct ItemAttributesPC {
     pub unk1: u32,
@@ -27,7 +29,7 @@ pub struct ItemAttributesPC {
     #[Len_u16]
     pub data5: Vec<Data5>,
     #[Len_u16]
-    pub data6: Vec<Data6>,
+    pub data6: Vec<Unit>,
     #[Len_u16]
     pub data7: Vec<Data7>,
     #[Len_u16]
@@ -62,7 +64,7 @@ pub struct ItemAttributesPC {
 // maybe someday i'll merge them
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[NoPadding]
 pub struct ItemAttributesVita {
     pub unk1: u32,
@@ -78,7 +80,7 @@ pub struct ItemAttributesVita {
     #[Len_u16]
     pub data5: Vec<Data5>,
     #[Len_u16]
-    pub data6: Vec<Data6>,
+    pub data6: Vec<Unit>,
     #[Len_u16]
     pub data7: Vec<Data7>,
     #[Len_u16]
@@ -131,13 +133,14 @@ pub struct WeaponAttrs {
     pub melee_dmg: u16,
     pub unk5: u8,
     pub unk6: u32,
-    pub gender_force_dmg: u16,
+    #[cfg_attr(feature = "serde", serde(flatten))]
+    pub gender_force_dmg: GenderDmg,
     pub unk8: [u8; 4],
-    pub race: u8,
+    pub race: RaceFlags,
     pub flags2: u8,
     pub class: ClassFlags,
     pub req_stat: u16,
-    pub req_stat_type: u8,
+    pub req_stat_type: StatType,
     pub unk9: u8,
     pub model: u16,
     pub unk10: u32,
@@ -160,9 +163,9 @@ pub struct HumanCostume {
     pub unk3: u8,
     pub icon_list: u16,
     pub icon_index: u16,
-    pub gender_flags: u8,
+    pub gender_flags: GenderFlags,
     pub color_flags: u8,
-    pub race_flags: u8,
+    pub race_flags: RaceFlags,
     pub unk4: u8,
     pub model: u16,
     pub unk5: [u16; 3],
@@ -232,7 +235,7 @@ pub struct Data5 {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[NoPadding]
-pub struct Data6 {
+pub struct Unit {
     pub id: u16,
     pub subid: u16,
     pub unk1: u16,
@@ -242,8 +245,24 @@ pub struct Data6 {
     pub unk3: u8,
     pub icon_list: u16,
     pub icon_index: u16,
-    #[FixedLen(0x30)]
-    pub unk: Vec<u8>,
+    #[cfg_attr(feature = "serde", serde(flatten))]
+    pub stats: UnitRes,
+    pub req_stat_type: StatType,
+    pub unk4: u8,
+    pub unk5: u8,
+    pub unk6: u16,
+    pub unk7: u16,
+    pub unk8: u16,
+    pub unk9: u16,
+    pub req_stat: u16,
+    #[cfg_attr(feature = "serde", serde(flatten))]
+    pub atk: UnitAtk,
+    pub unk10: u8,
+    pub unk11: u8,
+    pub unk12: u8,
+    pub unk13: u16,
+    pub unk14: u32,
+    pub unk15: u32,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -390,6 +409,84 @@ pub struct Data20 {
     pub unk: Vec<u8>,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct GenderDmg {
+    pub force_dmg: u16,
+    pub gender: GenderFlags,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct UnitRes {
+    pub tec_res: u8,
+    pub tec_def: u16,
+    pub rng_def: u16,
+    pub mel_def: u16,
+    pub hp: u16,
+    pub pp: u8,
+    pub dark_res: u8,
+    pub light_res: u8,
+    pub wind_res: u8,
+    pub lightning_res: u8,
+    pub ice_res: u8,
+    pub fire_res: u8,
+    pub rng_res: u8,
+    pub mel_res: u8,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct UnitAtk {
+    pub mel_atk: u16,
+    pub rng_atk: u16,
+    pub tec_atk: u16,
+    pub dex: u16,
+    pub unk_atk: u8,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+#[Flags(u8)]
+pub struct GenderFlags {
+    pub male: bool,
+    pub female: bool,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+#[Flags(u8)]
+pub struct RaceFlags {
+    pub human: bool,
+    pub newman: bool,
+    pub cast: bool,
+    pub deuman: bool,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
+#[repr(u8)]
+pub enum StatType {
+    #[default]
+    #[Read_default]
+    MELPwr,
+    RNGPwr,
+    TECPwr,
+    DEX,
+    MELDef,
+    RNGDef,
+    TECDef,
+}
+
+// ----------------------------------------------------------------
+// Read/Write implementations
+// ----------------------------------------------------------------
+
 impl ItemAttributes {
     pub fn read_attrs(
         reader: &mut (impl std::io::Read + std::io::Seek),
@@ -431,61 +528,190 @@ impl ItemAttributesVita {
     }
 }
 
-impl Default for ItemAttributesPC {
-    fn default() -> Self {
-        Self {
-            unk1: 0,
-            unk2: 0,
-            weapons: vec![Default::default()],
-            human_costumes: vec![Default::default()],
-            cast_parts: vec![Default::default()],
-            consumables: vec![Default::default()],
-            data5: vec![Default::default()],
-            data6: vec![Default::default()],
-            data7: vec![Default::default()],
-            data8: vec![Default::default()],
-            data9: vec![Default::default()],
-            data10: vec![Default::default()],
-            data11: vec![Default::default()],
-            data12: vec![Default::default()],
-            data13: vec![Default::default()],
-            data14: vec![Default::default()],
-            data15: vec![Default::default()],
-            data16: vec![Default::default()],
-            data17: vec![Default::default()],
-            data18: vec![Default::default()],
-            data19: vec![Default::default()],
-            data20: vec![Default::default()],
-        }
+impl HelperReadWrite for GenderDmg {
+    fn read(
+        reader: &mut (impl std::io::Read + std::io::Seek),
+        pt: PacketType,
+        _: u32,
+        _: u32,
+    ) -> std::io::Result<Self> {
+        let bits = reader.read_u16::<LittleEndian>()?;
+        // 14 bits
+        let force_dmg = bits & 0x3FFF;
+        // hacky solution but it works
+        let gender_bits = (bits >> 14) as u8;
+        let mut gender_slice = std::io::Cursor::new(std::slice::from_ref(&gender_bits));
+        let gender = GenderFlags::read(&mut gender_slice, pt, 0, 0)?;
+        Ok(Self { force_dmg, gender })
+    }
+
+    fn write(
+        &self,
+        writer: &mut impl std::io::Write,
+        pt: PacketType,
+        _: u32,
+        _: u32,
+    ) -> std::io::Result<()> {
+        let mut gender = [0u8];
+        self.gender.write(&mut gender.as_mut_slice(), pt, 0, 0)?;
+        let mut bits = 0u16;
+        bits |= self.force_dmg & 0x3FFF;
+        bits |= (gender[0] as u16) << 14;
+        writer.write_u16::<LittleEndian>(bits)?;
+        Ok(())
     }
 }
 
-impl Default for ItemAttributesVita {
-    fn default() -> Self {
-        Self {
-            unk1: 0,
-            unk2: 0,
-            weapons: vec![Default::default()],
-            human_costumes: vec![Default::default()],
-            cast_parts: vec![Default::default()],
-            consumables: vec![Default::default()],
-            data5: vec![Default::default()],
-            data6: vec![Default::default()],
-            data7: vec![Default::default()],
-            data8: vec![Default::default()],
-            data9: vec![Default::default()],
-            data10: vec![Default::default()],
-            data11: vec![Default::default()],
-            data12: vec![Default::default()],
-            data13: vec![Default::default()],
-            data14: vec![Default::default()],
-            data15: vec![Default::default()],
-            data16: vec![Default::default()],
-            data17: vec![Default::default()],
-            data18: vec![Default::default()],
-            data19: vec![Default::default()],
-            data20: vec![Default::default()],
-        }
+impl HelperReadWrite for UnitRes {
+    fn read(
+        reader: &mut (impl std::io::Read + std::io::Seek),
+        _: PacketType,
+        _: u32,
+        _: u32,
+    ) -> std::io::Result<Self> {
+        let mut bytes = [0u8; 16];
+        reader.read_exact(&mut bytes[..0xF])?;
+        let mut bits = u128::from_le_bytes(bytes);
+        // 7 bits
+        let tec_res = (bits & 0x7F) as u8;
+        bits >>= 7;
+        // 13 bits
+        let tec_def = (bits & 0x1FFF) as u16;
+        bits >>= 13;
+        let rng_def = (bits & 0x1FFF) as u16;
+        bits >>= 13;
+        let mel_def = (bits & 0x1FFF) as u16;
+        bits >>= 13;
+        // 10 bits
+        let hp = (bits & 0x3FF) as u16;
+        bits >>= 10;
+        // 8 bits
+        let pp = (bits & 0xFF) as u8;
+        bits >>= 8;
+        // 7 bits
+        let dark_res = (bits & 0x7F) as u8;
+        bits >>= 7;
+        let light_res = (bits & 0x7F) as u8;
+        bits >>= 7;
+        let wind_res = (bits & 0x7F) as u8;
+        bits >>= 7;
+        let lightning_res = (bits & 0x7F) as u8;
+        bits >>= 7;
+        let ice_res = (bits & 0x7F) as u8;
+        bits >>= 7;
+        let fire_res = (bits & 0x7F) as u8;
+        bits >>= 7;
+        let rng_res = (bits & 0x7F) as u8;
+        bits >>= 7;
+        let mel_res = (bits & 0x7F) as u8;
+        Ok(Self {
+            tec_res,
+            tec_def,
+            rng_def,
+            mel_def,
+            hp,
+            pp,
+            dark_res,
+            light_res,
+            wind_res,
+            lightning_res,
+            ice_res,
+            fire_res,
+            rng_res,
+            mel_res,
+        })
+    }
+
+    fn write(
+        &self,
+        writer: &mut impl std::io::Write,
+        _: PacketType,
+        _: u32,
+        _: u32,
+    ) -> std::io::Result<()> {
+        let mut bits = 0u128;
+        bits |= (self.mel_res as u128) & 0x7F;
+        bits <<= 7;
+        bits |= (self.rng_res as u128) & 0x7F;
+        bits <<= 7;
+        bits |= (self.fire_res as u128) & 0x7F;
+        bits <<= 7;
+        bits |= (self.ice_res as u128) & 0x7F;
+        bits <<= 7;
+        bits |= (self.lightning_res as u128) & 0x7F;
+        bits <<= 7;
+        bits |= (self.wind_res as u128) & 0x7F;
+        bits <<= 7;
+        bits |= (self.light_res as u128) & 0x7F;
+        bits <<= 7;
+        bits |= (self.dark_res as u128) & 0x7F;
+        bits <<= 8;
+        bits |= (self.pp as u128) & 0xFF;
+        bits <<= 10;
+        bits |= (self.hp as u128) & 0x3FF;
+        bits <<= 13;
+        bits |= (self.mel_def as u128) & 0x1FFF;
+        bits <<= 13;
+        bits |= (self.rng_def as u128) & 0x1FFF;
+        bits <<= 13;
+        bits |= (self.tec_def as u128) & 0x1FFF;
+        bits <<= 7;
+        bits |= (self.tec_res as u128) & 0x7F;
+        let bytes = bits.to_le_bytes();
+        writer.write_all(&bytes[..0xF])?;
+        Ok(())
+    }
+}
+
+impl HelperReadWrite for UnitAtk {
+    fn read(
+        reader: &mut (impl std::io::Read + std::io::Seek),
+        _: PacketType,
+        _: u32,
+        _: u32,
+    ) -> std::io::Result<Self> {
+        let mut bytes = [0u8; 8];
+        reader.read_exact(&mut bytes[..0x7])?;
+        let mut bits = u64::from_le_bytes(bytes);
+        // 13 bits
+        let mel_atk = (bits & 0x1FFF) as u16;
+        bits >>= 13;
+        let rng_atk = (bits & 0x1FFF) as u16;
+        bits >>= 13;
+        let tec_atk = (bits & 0x1FFF) as u16;
+        bits >>= 13;
+        let dex = (bits & 0x1FFF) as u16;
+        bits >>= 13;
+        let unk_atk = (bits & 0xF) as u8;
+        Ok(Self {
+            mel_atk,
+            rng_atk,
+            tec_atk,
+            dex,
+            unk_atk,
+        })
+    }
+
+    fn write(
+        &self,
+        writer: &mut impl std::io::Write,
+        _: PacketType,
+        _: u32,
+        _: u32,
+    ) -> std::io::Result<()> {
+        let mut bits = 0u64;
+        bits |= (self.unk_atk as u64) & 0xF;
+        bits <<= 13;
+        bits |= (self.dex as u64) & 0x1FFF;
+        bits <<= 13;
+        bits |= (self.tec_atk as u64) & 0x1FFF;
+        bits <<= 13;
+        bits |= (self.rng_atk as u64) & 0x1FFF;
+        bits <<= 13;
+        bits |= (self.mel_atk as u64) & 0x1FFF;
+        let bytes = bits.to_le_bytes();
+        writer.write_all(&bytes[..0x7])?;
+        Ok(())
     }
 }
 

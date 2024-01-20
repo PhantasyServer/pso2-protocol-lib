@@ -40,7 +40,8 @@ pub fn packet_read_write_derive(input: TokenStream) -> TokenStream {
         OnlyOn,
         FixedLen,
         NoPadding,
-        NotOn
+        NotOn,
+        ManualRW,
     )
 )]
 pub fn helper_read_write_derive(input: TokenStream) -> TokenStream {
