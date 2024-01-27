@@ -50,11 +50,11 @@ namespace packetlib
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool serde_supported(SerializedFormat serde_format);
 
-        /// <summary>Parses raw packet data and returns a [`Packet`] type or a null pointer if an error occured.</summary>
+        /// <summary>Parses raw packet data and returns a [`Packet`] type or a null pointer if an error occured.  # Safety `data_ptr' must point to valid packet data up to `size` bytes.</summary>
         [DllImport(__DllName, EntryPoint = "raw_to_packet", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern Packet* raw_to_packet(PacketWorker* worker, byte* data_ptr, nuint size);
 
-        /// <summary>Parses serialized packet data and returns a [`Packet`] type or a null pointer if an error occurred.</summary>
+        /// <summary>Parses serialized packet data and returns a [`Packet`] type or a null pointer if an error occurred.  # Safety `data_ptr' must point to valid serialied data up to `size` bytes.</summary>
         [DllImport(__DllName, EntryPoint = "ser_to_packet", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern Packet* ser_to_packet(PacketWorker* worker, byte* data_ptr, nuint size);
 
@@ -66,11 +66,11 @@ namespace packetlib
         [DllImport(__DllName, EntryPoint = "packet_to_ser", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern DataBuffer packet_to_ser(PacketWorker* worker, Packet* packet);
 
-        /// <summary>Parses packet data and returns a fat pointer to the serialized packet or a null pointer if an error occurred.  # Safety The returned pointer is only valid until the next data-returning function call. If the returned array is empty, the pointer might be non-null but still invalid. This is not considered an error.</summary>
+        /// <summary>Parses packet data and returns a fat pointer to the serialized packet or a null pointer if an error occurred.  # Safety `data_ptr' must point to valid packet data up to `size` bytes.  The returned pointer is only valid until the next data-returning function call. If the returned array is empty, the pointer might be non-null but still invalid. This is not considered an error.</summary>
         [DllImport(__DllName, EntryPoint = "parse_packet", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern DataBuffer parse_packet(PacketWorker* worker, byte* data_ptr, nuint size);
 
-        /// <summary>Deserializes packet and returns a fat pointer to the packet data or a null pointer if an error occured.  # Safety The returned pointer is only valid until the next data-returning function call. If the returned array is empty, the pointer might be non-null but still invalid. This is not considered an error.</summary>
+        /// <summary>Deserializes packet and returns a fat pointer to the packet data or a null pointer if an error occured.  # Safety `data_ptr' must point to valid packet data up to `size` bytes.  The returned pointer is only valid until the next data-returning function call. If the returned array is empty, the pointer might be non-null but still invalid. This is not considered an error.</summary>
         [DllImport(__DllName, EntryPoint = "create_packet", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern DataBuffer create_packet(PacketWorker* worker, byte* data_ptr, nuint size);
 
@@ -128,11 +128,11 @@ namespace packetlib
         [DllImport(__DllName, EntryPoint = "get_stream_ip", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern uint get_stream_ip(SocketFactory* factory);
 
-        /// <summary>Creates a new connection from incoming connection.</summary>
+        /// <summary>Creates a new connection from incoming connection.  # Safety 'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated path to a PKCS#8 file.</summary>
         [DllImport(__DllName, EntryPoint = "get_connection", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern Connection* get_connection(SocketFactory* factory, PacketType packet_type, sbyte* in_key, sbyte* out_key);
+        public static extern Connection* get_connection(SocketFactory* factory, PacketType packet_type, sbyte* in_key);
 
-        /// <summary>Returns an incoming connection descriptor. Caller is responsible for closing the returned descriptor.</summary>
+        /// <summary>Returns an incoming connection descriptor. Caller is responsible for closing the returned descriptor. If no stream was opened, returns -1.</summary>
         [DllImport(__DllName, EntryPoint = "stream_into_fd", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern long stream_into_fd(SocketFactory* factory);
 
@@ -144,7 +144,7 @@ namespace packetlib
         [DllImport(__DllName, EntryPoint = "close_fd", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void close_fd(long fd);
 
-        /// <summary>Returns an owned socket descriptor. Caller is responsible for closing the returned descriptor.</summary>
+        /// <summary>Returns an owned socket descriptor. Caller is responsible for closing the returned descriptor. If no listener was opened, returns -1.</summary>
         [DllImport(__DllName, EntryPoint = "listener_into_fd", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern long listener_into_fd(SocketFactory* factory);
 
@@ -157,9 +157,9 @@ namespace packetlib
         [DllImport(__DllName, EntryPoint = "get_sf_error", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern byte* get_sf_error(SocketFactory* factory);
 
-        /// <summary>Creates a new connection from owned socket descriptor.  # Safety `fd` must be a valid descriptor.</summary>
+        /// <summary>Creates a new connection from owned socket descriptor.  # Safety `fd` must be a valid descriptor.  'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated path to a PKCS#8 file.</summary>
         [DllImport(__DllName, EntryPoint = "new_connection", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern Connection* new_connection(long fd, PacketType packet_type, sbyte* in_key, sbyte* out_key);
+        public static extern Connection* new_connection(long fd, PacketType packet_type, sbyte* in_key);
 
         /// <summary>Destroys a connection.</summary>
         [DllImport(__DllName, EntryPoint = "free_connection", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]

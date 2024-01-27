@@ -102,7 +102,7 @@ void socket_demo() {
   }
 
   // get received connection
-  Connection *conn = get_connection(sf, Classic, NULL, NULL);
+  Connection *conn = get_connection(sf, Classic, NULL);
 
   int ip = get_conn_ip(conn);
   printf("Ip: ");
@@ -140,7 +140,7 @@ void socket_demo() {
     free_worker(worker);
     return;
   }
-  conn = get_connection(sf, NGS, NULL, NULL);
+  conn = get_connection(sf, NGS, NULL);
 
   ip = get_conn_ip(conn);
   printf("Ip: ");

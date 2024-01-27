@@ -8,9 +8,9 @@ cdef extern from *:
 
 cdef extern from *:
 
-  const uint32_t API_VERSION # = 3
+  const uint32_t API_VERSION # = 4
 
-  const uint32_t PROTOCOL_VERSION # = 1
+  const uint32_t PROTOCOL_VERSION # = 3
 
   cdef enum Direction:
     ToServer,
@@ -119,10 +119,16 @@ cdef extern from *:
   bool serde_supported(SerializedFormat serde_format);
 
   # Parses raw packet data and returns a [`Packet`] type or a null pointer if an error occured.
+  #
+  # # Safety
+  # `data_ptr' must point to valid packet data up to `size` bytes.
   Packet *raw_to_packet(PacketWorker *worker, const uint8_t *data_ptr, size_t size);
 
   # Parses serialized packet data and returns a [`Packet`] type or a null pointer if an error
   # occurred.
+  #
+  # # Safety
+  # `data_ptr' must point to valid serialied data up to `size` bytes.
   Packet *ser_to_packet(PacketWorker *worker, const uint8_t *data_ptr, size_t size);
 
   # Parses [`Packet`] and returns raw packet data.
@@ -145,6 +151,8 @@ cdef extern from *:
   # an error occurred.
   #
   # # Safety
+  # `data_ptr' must point to valid packet data up to `size` bytes.
+  #
   # The returned pointer is only valid until the next data-returning function call.
   # If the returned array is empty, the pointer might be non-null but still invalid. This is not
   # considered an error.
@@ -154,6 +162,8 @@ cdef extern from *:
   # occured.
   #
   # # Safety
+  # `data_ptr' must point to valid packet data up to `size` bytes.
+  #
   # The returned pointer is only valid until the next data-returning function call.
   # If the returned array is empty, the pointer might be non-null but still invalid. This is not
   # considered an error.
@@ -193,12 +203,14 @@ cdef extern from *:
   uint32_t get_stream_ip(const SocketFactory *factory);
 
   # Creates a new connection from incoming connection.
-  Connection *get_connection(SocketFactory *factory,
-                             PacketType packet_type,
-                             const int8_t *in_key,
-                             const int8_t *out_key);
+  #
+  # # Safety
+  # 'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
+  # path to a PKCS#8 file.
+  Connection *get_connection(SocketFactory *factory, PacketType packet_type, const int8_t *in_key);
 
   # Returns an incoming connection descriptor. Caller is responsible for closing the returned descriptor.
+  # If no stream was opened, returns -1.
   int64_t stream_into_fd(SocketFactory *factory);
 
   # Clones the descriptor. Returns the cloned descriptor or -1 if an error occurred.
@@ -208,6 +220,7 @@ cdef extern from *:
   void close_fd(int64_t fd);
 
   # Returns an owned socket descriptor. Caller is responsible for closing the returned descriptor.
+  # If no listener was opened, returns -1.
   int64_t listener_into_fd(SocketFactory *factory);
 
   # Installs the provided listener. This function takes ownership of the descriptor.
@@ -227,10 +240,10 @@ cdef extern from *:
   #
   # # Safety
   # `fd` must be a valid descriptor.
-  Connection *new_connection(int64_t fd,
-                             PacketType packet_type,
-                             const int8_t *in_key,
-                             const int8_t *out_key);
+  #
+  # 'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
+  # path to a PKCS#8 file.
+  Connection *new_connection(int64_t fd, PacketType packet_type, const int8_t *in_key);
 
   # Destroys a connection.
   void free_connection(Connection *_conn);

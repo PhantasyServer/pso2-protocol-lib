@@ -211,10 +211,64 @@ pub struct ClientPongPacket {
 // 0x11, 0x10
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x10)]
 pub struct BlockListPacket {
+    #[FixedLen(200)]
     pub blocks: Vec<BlockInfo>,
     pub unk: u32,
+}
+
+// 0x11, 0x11
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Default, Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x11)]
+pub struct BlockSwitchRequestPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u16,
+    pub block_id: u16,
+    pub unk4: u32,
+}
+
+// 0x11, 0x13
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x13)]
+pub struct BlockSwitchResponsePacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u16,
+    pub block_id: u16,
+    pub ip: Ipv4Addr,
+    pub port: u16,
+    pub unk4: u16,
+    pub challenge: u32,
+    pub user_id: u32,
+}
+
+// 0x11, 0x14
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, PartialEq, Default, PacketReadWrite)]
+#[Id(0x11, 0x14)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x78B8, 0x49)]
+pub struct BlockLoginPacket {
+    pub player_id: u64,
+    pub unk1: u8,
+    pub unk2: u8,
+    pub unk3: u16,
+    pub unk4: u32,
+    pub unk5: u32,
+    pub ver_id: [u8; 0x20],
+    pub interfaces: Vec<NetInterface>,
+    pub challenge: u32,
+    #[FixedLen(0xC4)]
+    pub unk6: Vec<u8>,
+    pub unk7: [u8; 0x10],
 }
 
 // 0x11, 0x1B
@@ -353,6 +407,7 @@ pub struct SystemInformationPacket {
 pub struct ShipListPacket {
     pub ships: Vec<ShipEntry>,
     pub timestamp: Duration,
+    pub unk: u32,
 }
 
 // 0x11, 0x42
@@ -425,6 +480,17 @@ pub struct VitaLoginPacket {
     pub unk16: AsciiString,
     pub unk17: Vec<u8>,
     pub unk18: [u8; 0x10],
+}
+
+// 0x11, 0x65
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x65)]
+pub struct AllBlocksListPacket {
+    #[FixedLen(200)]
+    pub blocks: Vec<BlockInfo>,
+    pub unk: u32,
 }
 
 // 0x11, 0x67
@@ -896,7 +962,7 @@ pub enum NewNameStatus {
 impl PacketReadWrite for CharacterListPacket {
     fn read(
         reader: &mut (impl Read + Seek),
-        _: Flags,
+        _: &Flags,
         packet_type: PacketType,
     ) -> std::io::Result<Self> {
         let char_amount = reader.read_u32::<LittleEndian>()?.clamp(0, 30);
@@ -941,11 +1007,10 @@ impl PacketReadWrite for CharacterListPacket {
             ad,
         })
     }
-    fn write(&self, packet_type: PacketType) -> Vec<u8> {
+    fn write(&self, packet_type: PacketType) -> std::io::Result<Vec<u8>> {
         let mut buf = PacketHeader::new(0x11, 0x03, Flags::default()).write(packet_type);
-        buf.write_u32::<LittleEndian>((self.characters.len() as u32).clamp(0, 30))
-            .unwrap();
-        buf.write_u32::<LittleEndian>(0).unwrap();
+        buf.write_u32::<LittleEndian>((self.characters.len() as u32).clamp(0, 30))?;
+        buf.write_u32::<LittleEndian>(0)?;
 
         let mut characters = &self.characters;
         let default_character = vec![Character::default()];
@@ -954,52 +1019,47 @@ impl PacketReadWrite for CharacterListPacket {
         }
 
         for character in characters.iter().cycle().take(30) {
-            buf.write_u32::<LittleEndian>(0).unwrap();
-            character.write(&mut buf, packet_type, 0, 0).unwrap();
+            buf.write_u32::<LittleEndian>(0)?;
+            character.write(&mut buf, packet_type, 0, 0)?;
         }
         // ???
         for _ in 0..0x41A4 {
-            buf.write_u8(0).unwrap();
+            buf.write_u8(0)?;
         }
         for i in 0..30 {
-            buf.write_u32::<LittleEndian>(self.play_times[i]).unwrap();
+            buf.write_u32::<LittleEndian>(self.play_times[i])?;
         }
         // ???
         for _ in 0..32 {
-            buf.write_u8(0).unwrap();
+            buf.write_u8(0)?;
         }
         for i in 0..30 {
             // deletion flag
-            buf.write_u32::<LittleEndian>(self.deletion_flags[i].0)
-                .unwrap();
+            buf.write_u32::<LittleEndian>(self.deletion_flags[i].0)?;
             // timestamp
-            buf.write_u32::<LittleEndian>(self.deletion_flags[i].1)
-                .unwrap();
+            buf.write_u32::<LittleEndian>(self.deletion_flags[i].1)?;
         }
         for i in 0..30 {
             // transfer flag
-            buf.write_u32::<LittleEndian>(self.transfer_flags[i].0)
-                .unwrap();
+            buf.write_u32::<LittleEndian>(self.transfer_flags[i].0)?;
             // ??? prob target ship
-            buf.write_u32::<LittleEndian>(self.transfer_flags[i].1)
-                .unwrap();
+            buf.write_u32::<LittleEndian>(self.transfer_flags[i].1)?;
         }
-        buf.write_u16::<LittleEndian>(self.account_accessory)
-            .unwrap();
+        buf.write_u16::<LittleEndian>(self.account_accessory)?;
         // ???
-        buf.write_all(&[0u8; 6]).unwrap();
-        buf.write_u32::<LittleEndian>(self.login_survey).unwrap();
-        buf.write_u32::<LittleEndian>(self.ad).unwrap();
+        buf.write_all(&[0u8; 6])?;
+        buf.write_u32::<LittleEndian>(self.login_survey)?;
+        buf.write_u32::<LittleEndian>(self.ad)?;
         // ???
-        buf.write_u32::<LittleEndian>(0x00_00_00_00).unwrap();
+        buf.write_u32::<LittleEndian>(0x00_00_00_00)?;
         // ???
-        buf.write_u32::<LittleEndian>(0x00_00_00_00).unwrap();
-        buf
+        buf.write_u32::<LittleEndian>(0x00_00_00_00)?;
+        Ok(buf)
     }
 }
 
 impl PacketReadWrite for EncryptionRequestPacket {
-    fn read(reader: &mut impl Read, _: Flags, _: PacketType) -> std::io::Result<Self> {
+    fn read(reader: &mut impl Read, _: &Flags, _: PacketType) -> std::io::Result<Self> {
         let mut rsa_data = vec![];
         reader.read_to_end(&mut rsa_data)?;
         let mut tmp_data = vec![];
@@ -1010,53 +1070,27 @@ impl PacketReadWrite for EncryptionRequestPacket {
         }
         Ok(Self { rsa_data: tmp_data })
     }
-    fn write(&self, packet_type: PacketType) -> Vec<u8> {
+    fn write(&self, packet_type: PacketType) -> std::io::Result<Vec<u8>> {
         let mut buf = PacketHeader::new(0x11, 0x0B, Flags::default()).write(packet_type);
         let mut data = self.rsa_data.clone();
         data.reverse();
         data.resize(0x104, 0);
         buf.extend(data);
-        buf
+        Ok(buf)
     }
 }
 
 impl PacketReadWrite for EncryptionResponsePacket {
-    fn read(reader: &mut impl Read, _: Flags, _: PacketType) -> std::io::Result<Self> {
+    fn read(reader: &mut impl Read, _: &Flags, _: PacketType) -> std::io::Result<Self> {
         let mut data = vec![];
         reader.read_to_end(&mut data)?;
 
         Ok(Self { data })
     }
-    fn write(&self, packet_type: PacketType) -> Vec<u8> {
+    fn write(&self, packet_type: PacketType) -> std::io::Result<Vec<u8>> {
         let mut buf = PacketHeader::new(0x11, 0x0C, Flags::default()).write(packet_type);
         buf.extend(self.data.iter());
-        buf
-    }
-}
-
-impl PacketReadWrite for BlockListPacket {
-    fn read(
-        reader: &mut (impl Read + Seek),
-        _: Flags,
-        packet_type: PacketType,
-    ) -> std::io::Result<Self> {
-        let mut blocks = vec![];
-        for _ in 0..200 {
-            let block = BlockInfo::read(reader, packet_type, 0, 0)?;
-            blocks.push(block);
-        }
-        let unk = reader.read_u32::<LittleEndian>()?;
-        Ok(Self { blocks, unk })
-    }
-
-    fn write(&self, packet_type: PacketType) -> Vec<u8> {
-        let mut buf = PacketHeader::new(0x11, 0x10, Flags::default()).write(packet_type);
-        let default = vec![BlockInfo::default()];
-        for i in self.blocks.iter().chain(default.iter().cycle()).take(200) {
-            i.write(&mut buf, packet_type, 0, 0).unwrap();
-        }
-        buf.write_u32::<LittleEndian>(self.unk).unwrap();
-        buf
+        Ok(buf)
     }
 }
 
@@ -1174,6 +1208,7 @@ impl Default for ShipListPacket {
         Self {
             ships: vec![],
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap(),
+            unk: 0,
         }
     }
 }
@@ -1281,6 +1316,21 @@ impl Default for BlockInfo {
             unk11: 0,
             unk12: [0; 3],
             cur_capacity: 0.0,
+        }
+    }
+}
+impl Default for BlockSwitchResponsePacket {
+    fn default() -> Self {
+        Self {
+            unk1: 0,
+            unk2: 0,
+            unk3: 0,
+            block_id: 0,
+            ip: Ipv4Addr::UNSPECIFIED,
+            port: 0,
+            unk4: 0,
+            challenge: 0,
+            user_id: 0,
         }
     }
 }

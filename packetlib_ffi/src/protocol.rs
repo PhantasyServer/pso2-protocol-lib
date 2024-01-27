@@ -70,7 +70,7 @@ pub extern "C" fn free_packet(_packet: Option<Box<Packet>>) {}
 /// Clones the packet.
 #[no_mangle]
 pub extern "C" fn clone_packet(packet: Option<&Packet>) -> Option<Box<Packet>> {
-    packet.cloned().and_then(|p| Some(Box::new(p)))
+    packet.cloned().map(Box::new)
 }
 
 /// Checks if the packet is empty.
@@ -104,8 +104,11 @@ pub extern "C" fn serde_supported(serde_format: SerializedFormat) -> bool {
 }
 
 /// Parses raw packet data and returns a [`Packet`] type or a null pointer if an error occured.
+///
+/// # Safety
+/// `data_ptr' must point to valid packet data up to `size` bytes.
 #[no_mangle]
-pub extern "C" fn raw_to_packet(
+pub unsafe extern "C" fn raw_to_packet(
     worker: Option<&mut PacketWorker>,
     data_ptr: *const u8,
     size: usize,
@@ -118,6 +121,7 @@ pub extern "C" fn raw_to_packet(
         return Some(Box::new(packet.into()));
     }
     if data_ptr.is_null() {
+        worker.err_str = Some(CString::new("No data provided").unwrap_or_default());
         return None;
     }
     let data = unsafe { std::slice::from_raw_parts(data_ptr, size) };
@@ -132,8 +136,11 @@ pub extern "C" fn raw_to_packet(
 
 /// Parses serialized packet data and returns a [`Packet`] type or a null pointer if an error
 /// occurred.
+///
+/// # Safety
+/// `data_ptr' must point to valid serialied data up to `size` bytes.
 #[no_mangle]
-pub extern "C" fn ser_to_packet(
+pub unsafe extern "C" fn ser_to_packet(
     worker: Option<&mut PacketWorker>,
     data_ptr: *const u8,
     size: usize,
@@ -143,6 +150,7 @@ pub extern "C" fn ser_to_packet(
     };
     worker.err_str = None;
     if data_ptr.is_null() {
+        worker.err_str = Some(CString::new("No data provided").unwrap_or_default());
         return None;
     }
     let data = unsafe { std::slice::from_raw_parts(data_ptr, size) };
@@ -172,6 +180,7 @@ pub extern "C" fn packet_to_raw(
     };
     worker.err_str = None;
     let Some(packet) = packet else {
+        worker.err_str = Some(CString::new("No packet provided").unwrap_or_default());
         return null;
     };
     worker.data = packet.write(worker.packet_type);
@@ -198,6 +207,7 @@ pub extern "C" fn packet_to_ser(
     };
     worker.err_str = None;
     let Some(packet) = packet else {
+        worker.err_str = Some(CString::new("No packet provided").unwrap_or_default());
         return null;
     };
     match worker.serde_format.serialize(packet) {
@@ -219,11 +229,13 @@ pub extern "C" fn packet_to_ser(
 /// an error occurred.
 ///
 /// # Safety
+/// `data_ptr' must point to valid packet data up to `size` bytes.
+///
 /// The returned pointer is only valid until the next data-returning function call.
 /// If the returned array is empty, the pointer might be non-null but still invalid. This is not
 /// considered an error.
 #[no_mangle]
-pub extern "C" fn parse_packet(
+pub unsafe extern "C" fn parse_packet(
     worker: Option<&mut PacketWorker>,
     data_ptr: *const u8,
     size: usize,
@@ -232,7 +244,7 @@ pub extern "C" fn parse_packet(
     let Some(worker) = worker else {
         return null;
     };
-    let packet = raw_to_packet(Some(worker), data_ptr, size);
+    let packet = unsafe { raw_to_packet(Some(worker), data_ptr, size) };
     if packet.is_none() {
         return null;
     }
@@ -244,11 +256,13 @@ pub extern "C" fn parse_packet(
 /// occured.
 ///
 /// # Safety
+/// `data_ptr' must point to valid packet data up to `size` bytes.
+///
 /// The returned pointer is only valid until the next data-returning function call.
 /// If the returned array is empty, the pointer might be non-null but still invalid. This is not
 /// considered an error.
 #[no_mangle]
-pub extern "C" fn create_packet(
+pub unsafe extern "C" fn create_packet(
     worker: Option<&mut PacketWorker>,
     data_ptr: *const u8,
     size: usize,
@@ -257,7 +271,7 @@ pub extern "C" fn create_packet(
     let Some(worker) = worker else {
         return null;
     };
-    let packet = ser_to_packet(Some(worker), data_ptr, size);
+    let packet = unsafe { ser_to_packet(Some(worker), data_ptr, size) };
     if packet.is_none() {
         return null;
     }

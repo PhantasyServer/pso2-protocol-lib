@@ -1,4 +1,4 @@
-use super::{HelperReadWrite, PacketReadWrite, PacketType};
+use super::{HelperReadWrite, PacketReadWrite};
 
 // ----------------------------------------------------------------
 // Unknown 0x2A packets
@@ -37,7 +37,7 @@ pub struct Unk2A08_1 {
     pub unk1: Vec<u8>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(PacketType::NGS)]
+    #[OnlyOn(super::PacketType::NGS)]
     #[FixedLen(0x04)]
     pub unk2: Vec<u8>,
 }

@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 pub mod protocol;
 
 #[cfg(feature = "connection")]
@@ -5,8 +7,8 @@ pub mod connection;
 #[cfg(feature = "ppac")]
 pub mod ppac;
 
-pub const API_VERSION: u32 = 3;
-pub const PROTOCOL_VERSION: u32 = 2;
+pub const API_VERSION: u32 = 5;
+pub const PROTOCOL_VERSION: u32 = 4;
 
 #[no_mangle]
 pub extern "C" fn get_api_version() -> u32 {

@@ -13,26 +13,29 @@ pub fn protocol_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
     let mut write = quote! {};
     let mut category = quote! {};
 
-    if let Data::Enum(data) = &ast.data {
-        parse_enum_field(&mut read, &mut write, &mut category, data)?
-    }
+    let Data::Enum(data) = &ast.data else {
+        return Err(syn::Error::new(
+            ast.span(),
+            "ProtocolRW is only defined for enums",
+        ));
+    };
+    parse_enum_field(&mut read, &mut write, &mut category, data)?;
 
     let gen = quote! {
         #[automatically_derived]
         impl ProtocolRW for #name {
             fn write(&self, packet_type: PacketType) -> Vec<u8> {
-                let mut buf = vec![];
-                buf.write_u32::<LittleEndian>(0).unwrap();
+                let mut buf = vec![0,0,0,0];
                 buf.extend(match self {
                     #write
-                    Self::Raw(data) => data[4..].to_vec(),
+                    Self::Raw(data) => Ok(data[4..].to_vec()),
                     Self::Unknown(data) => {
                         let mut out_data = data.0.write(packet_type);
                         out_data.extend_from_slice(&data.1);
-                        out_data
+                        Ok(out_data)
                     }
-                });
-                let len = (buf.len() + 3) & (usize::MAX ^ 3);
+                }.expect("Writing to a Vec shouldn't fail"));
+                let len = buf.len().next_multiple_of(4);
                 buf.resize(len, 0);
                 let len = (len as u32).to_le_bytes();
                 buf[..4].copy_from_slice(&len);
@@ -62,9 +65,7 @@ pub fn protocol_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
                     }
                     let mut buf_tmp = Cursor::new(&input[pointer..pointer + len]);
                     let header = PacketHeader::read(&mut buf_tmp, packet_type)?;
-                    let flags = header.flag.clone();
-
-                    let tmp_header = header.clone();
+                    let flags = &header.flag;
 
                     pointer += len;
                     match (header.id, header.subid, packet_type) {
@@ -77,11 +78,6 @@ pub fn protocol_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
                             }));
                         }
                     }
-                    // let cur_pos = buf_tmp.stream_position()?;
-                    // let diff = len - cur_pos as usize;
-                    // if diff >= 4 {
-                    //     println!("id: {}, subid: {} - diff: {}", tmp_header.id, tmp_header.subid, diff);
-                    // }
                 }
 
                 Ok(packets)
@@ -118,7 +114,7 @@ fn parse_enum_field(
                 }
                 syn::Meta::List(list) => {
                     let string = list.path.get_ident().unwrap().to_string();
-                    get_attrs(&mut settings, &string, Some(&list), list.span())?;
+                    get_attrs(&mut settings, &string, Some(list), list.span())?;
                 }
             }
         }
@@ -139,11 +135,9 @@ fn parse_enum_field(
             })
         }
         let mut push_string = quote! {};
-        category_stream = if settings.category.is_empty() {
-            category_stream
-        } else {
-            settings.category
-        };
+        if !settings.category.is_empty() {
+            category_stream = settings.category
+        }
         match &variant.fields {
             Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
                 if let Type::Path(TypePath { path, .. }) = &unnamed.first().unwrap().ty {
@@ -160,7 +154,7 @@ fn parse_enum_field(
             Fields::Unit => {
                 push_string = quote! {packets.push(Self::#name)};
                 write.extend(quote! {
-                    Self::#name => PacketHeader::new(#id, #subid, Flags::default()).write(packet_type),
+                    Self::#name => Ok(PacketHeader::new(#id, #subid, Flags::default()).write(packet_type)),
                 });
                 category.extend(quote! {
                     Self::#name => {#category_stream},
@@ -175,16 +169,16 @@ fn parse_enum_field(
             PacketType::Classic => read.extend(quote! {
                 (#id, #subid, PacketType::Classic | PacketType::NA | PacketType::JP | PacketType::Vita) => {#push_string},
             }),
-            PacketType::NA => read.extend(quote! {
+            PacketType::Na => read.extend(quote! {
                 (#id, #subid, PacketType::NA) => {#push_string},
             }),
-            PacketType::JP => read.extend(quote! {
+            PacketType::Jp => read.extend(quote! {
                 (#id, #subid, PacketType::JP) => {#push_string},
             }),
             PacketType::Vita => read.extend(quote! {
                 (#id, #subid, PacketType::Vita) => {#push_string},
             }),
-            PacketType::NGS => read.extend(quote! {
+            PacketType::Ngs => read.extend(quote! {
                 (#id, #subid, PacketType::NGS) => {#push_string},
             }),
             PacketType::Empty => {}
@@ -204,21 +198,20 @@ fn get_attrs(
         "Unknown" => {
             set.skip = true;
         }
-        "NGS" => set.packet_type = PacketType::NGS,
+        "NGS" => set.packet_type = PacketType::Ngs,
         "Classic" => set.packet_type = PacketType::Classic,
-        "NA" => set.packet_type = PacketType::NA,
-        "JP" => set.packet_type = PacketType::JP,
+        "NA" => set.packet_type = PacketType::Na,
+        "JP" => set.packet_type = PacketType::Jp,
         "Vita" => set.packet_type = PacketType::Vita,
         "Id" => {
-            let attrs: AttributeList = match list {
-                Some(x) => x.parse_args()?,
-                None => {
-                    return Err(syn::Error::new(
-                        span,
-                        "Invalid syntax \nPerhaps you ment Id(..)?",
-                    ))
-                }
+            let Some(list) = list else {
+                return Err(syn::Error::new(
+                    span,
+                    "Invalid syntax \nPerhaps you ment Id(..)?",
+                ));
             };
+            let attrs: AttributeList = list.parse_args()?;
+
             if attrs.fields.len() != 2 {
                 return Err(syn::Error::new(span, "Invalid number of arguments"));
             }
@@ -226,14 +219,11 @@ fn get_attrs(
             set.subid = attrs.fields[1].base10_parse()?;
         }
         "Category" => {
-            let attrs = match list {
-                Some(x) => &x.tokens,
-                None => {
-                    return Err(syn::Error::new(
-                        span,
-                        "Invalid syntax \nPerhaps you ment Category(..)?",
-                    ))
-                }
+            let Some(attrs) = list.map(|l| &l.tokens) else {
+                return Err(syn::Error::new(
+                    span,
+                    "Invalid syntax \nPerhaps you ment Category(..)?",
+                ));
             };
             set.category = attrs.clone();
         }
@@ -256,9 +246,9 @@ enum PacketType {
     #[default]
     Both,
     Classic,
-    NGS,
-    NA,
-    JP,
+    Ngs,
+    Na,
+    Jp,
     Vita,
     Empty,
 }

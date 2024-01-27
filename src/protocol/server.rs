@@ -53,6 +53,30 @@ pub struct MapLoadedPacket {
     pub unk: [u8; 0x20],
 }
 
+// 0x03, 0x12
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x12)]
+pub struct ToCampshipPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+    pub unk4: u32,
+}
+
+// 0x03, 0x16
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x16)]
+pub struct CampshipDownPacket {
+    pub zone_id: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+    pub unk4: u32,
+}
+
 // 0x03, 0x24
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -115,6 +139,77 @@ pub struct LoadLevelPacket {
     pub unk49: [u8; 0x14],
     pub unk50: [u8; 0x14],
     pub unk51: u32,
+}
+
+// 0x03, 0x34
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x34)]
+pub struct CasinoToLobbyPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+    pub unk4: u32,
+}
+
+// 0x03, 0x35
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x35)]
+pub struct CasinoTransportPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+}
+
+// 0x03, 0x38
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x38)]
+pub struct BridgeToLobbyPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+    pub zone_id: u32,
+    pub unk4: u32,
+}
+
+// 0x03, 0x39
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x39)]
+pub struct BridgeTransportPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+}
+
+// 0x03, 0x3B
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x3B)]
+pub struct CafeToLobbyPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+    pub zone_id: u32,
+    pub unk4: u32,
+}
+
+// 0x03, 0x3C
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x3C)]
+pub struct CafeTransportPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
 }
 
 // ----------------------------------------------------------------

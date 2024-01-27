@@ -1,3 +1,5 @@
+//! Packet storage file format.
+
 use crate::protocol::{Packet, PacketType, ProtocolRW};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::{
@@ -418,11 +420,8 @@ impl<W: Write + Seek> PPACWriter<W> {
 
 impl<W: Write> Drop for PPACWriter<W> {
     fn drop(&mut self) {
-        match self.writer.take() {
-            Some(w) => {
-                let _ = w.into_inner();
-            }
-            None => {}
+        if let Some(w) = self.writer.take() {
+            let _ = w.into_inner();
         }
     }
 }

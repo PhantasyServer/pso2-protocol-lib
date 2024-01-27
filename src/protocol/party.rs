@@ -5,6 +5,8 @@ use crate::{
     AsciiString,
 };
 
+use super::questlist::{Quest, QuestDifficulty, QuestType};
+
 // ----------------------------------------------------------------
 // Party packets
 // ----------------------------------------------------------------
@@ -18,7 +20,8 @@ use crate::{
 #[Magic(0xCCE7, 0x13)]
 pub struct AddMemberPacket {
     pub new_member: ObjectHeader,
-    pub unk1: u32,
+    pub color: Color,
+    #[Seek(3)]
     pub level: u32,
     pub sublevel: u32,
     #[SeekAfter(3)]
@@ -259,7 +262,8 @@ pub struct GetPartyDetailsPacket {
 #[Magic(0x7921, 0xE0)]
 pub struct PartyDetailsPacket {
     pub num_of_details: u32,
-    pub details: [PartyDetails; 0xC],
+    #[FixedLen(0x0C)]
+    pub details: Vec<PartyDetails>,
 }
 
 // 0x0E, 0x21
@@ -272,6 +276,26 @@ pub struct PartyDetailsPacket {
 pub struct Unk0E21Packet {
     pub people_amount: u32,
     pub entries: [PartyEntry; 4],
+}
+
+// 0x0E, 0x25
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0E, 0x25)]
+pub struct SetQuestInfoPacket {
+    pub name: u32,
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u16,
+    pub unk4: u16,
+    pub player: ObjectHeader,
+    pub unk5: [u32; 5],
+    pub unk6: u8,
+    pub unk7: u8,
+    pub unk8: u8,
+    pub diff: u8,
+    pub quest_type: QuestType,
 }
 
 // 0x0E, 0x2B
@@ -304,6 +328,23 @@ pub struct GetPartyInfoPacket {
     pub parties: Vec<ObjectHeader>,
 }
 
+// 0x0E, 0x31
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0E, 0x31)]
+pub struct SetPartyQuestPacket {
+    pub name: u32,
+    pub difficulty: u32,
+    #[SeekAfter(3)]
+    pub quest_type: QuestType,
+    pub quest_def: Quest,
+    pub quest_diffs: QuestDifficulty,
+    pub player: ObjectHeader,
+    pub unk1: u16,
+    pub unk2: u16,
+}
+
 // 0x0E, 0x4F
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -313,6 +354,16 @@ pub struct SetPartyColorPacket {
     pub target: ObjectHeader,
     pub unk: [u32; 3],
     pub in_party: u32,
+}
+
+// 0x0E, 0x52
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0E, 0x52)]
+pub struct Unk0E52Packet {
+    pub unk1: u32,
+    pub unk2: u32,
 }
 
 // 0x0E, 0x67

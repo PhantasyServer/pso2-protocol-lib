@@ -13,7 +13,7 @@ use half::f16;
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Copy, Clone, PartialEq, HelperReadWrite)]
+#[derive(Debug, Copy, Clone, PartialEq, HelperReadWrite)]
 pub struct Position {
     pub rot_x: f16,
     pub rot_y: f16,
@@ -222,4 +222,48 @@ fn euler_to_quat(roll: f32, pitch: f32, yaw: f32) -> (f32, f32, f32, f32) {
     let qw = cr * cp * cy + sr * sp * sy;
 
     (qx, qy, qz, qw)
+}
+
+// ----------------------------------------------------------------
+// Other implementations
+// ----------------------------------------------------------------
+
+impl Position {
+    pub fn dist(&self, o: &Self) -> f64 {
+        let (x, y, z): (f64, f64, f64) = (self.pos_x.into(), self.pos_y.into(), self.pos_z.into());
+        let (ox, oy, oz): (f64, f64, f64) = (o.pos_x.into(), o.pos_y.into(), o.pos_z.into());
+        f64::sqrt((ox - x).powi(2) + (oy - y).powi(2) + (oz - z).powi(2))
+    }
+    pub fn dist_2d(&self, o: &Self) -> f64 {
+        let (x, z): (f64, f64) = (self.pos_x.into(), self.pos_z.into());
+        let (ox, oz): (f64, f64) = (o.pos_x.into(), o.pos_z.into());
+        f64::sqrt((ox - x).powi(2) + (oz - z).powi(2))
+    }
+}
+
+impl EulerPosition {
+    pub fn dist(&self, o: &Self) -> f64 {
+        let (x, y, z): (f64, f64, f64) = (self.x.into(), self.y.into(), self.z.into());
+        let (ox, oy, oz): (f64, f64, f64) = (o.x.into(), o.y.into(), o.z.into());
+        f64::sqrt((ox - x).powi(2) + (oy - y).powi(2) + (oz - z).powi(2))
+    }
+    pub fn dist_2d(&self, o: &Self) -> f64 {
+        let (x, z): (f64, f64) = (self.x.into(), self.z.into());
+        let (ox, oz): (f64, f64) = (o.x.into(), o.z.into());
+        f64::sqrt((ox - x).powi(2) + (oz - z).powi(2))
+    }
+}
+
+impl Default for Position {
+    fn default() -> Self {
+        Self {
+            rot_x: f16::from_f32(0.0),
+            rot_y: f16::from_f32(0.0),
+            rot_z: f16::from_f32(0.0),
+            rot_w: f16::from_f32(1.0),
+            pos_x: f16::from_f32(0.0),
+            pos_y: f16::from_f32(0.0),
+            pos_z: f16::from_f32(0.0),
+        }
+    }
 }

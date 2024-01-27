@@ -222,4 +222,8 @@ impl AsciiString {
     pub fn from_string_unchecked(other: String) -> Self {
         Self(other)
     }
+
+    pub fn as_str(&self) -> &str {
+        self
+    }
 }

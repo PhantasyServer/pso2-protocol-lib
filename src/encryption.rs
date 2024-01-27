@@ -1,3 +1,9 @@
+use crate::PrivateKey;
+#[cfg(all(
+    any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"),
+    feature = "proxy"
+))]
+use crate::PublicKey;
 #[cfg(any(feature = "base_enc", feature = "ngs_enc"))]
 use aes::cipher::{block_padding::Pkcs7, BlockDecryptMut, BlockEncryptMut, KeyIvInit};
 #[cfg(any(feature = "base_enc", feature = "ngs_enc"))]
@@ -5,10 +11,7 @@ use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 #[cfg(feature = "vita_enc")]
 use rc4::{consts::U16, Rc4};
 #[cfg(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"))]
-use rsa::{
-    pkcs8::{DecodePrivateKey, DecodePublicKey},
-    Pkcs1v15Encrypt, RsaPrivateKey, RsaPublicKey,
-};
+use rsa::Pkcs1v15Encrypt;
 #[cfg(any(feature = "base_enc", feature = "ngs_enc"))]
 use sha2::Sha256;
 use std::{
@@ -29,14 +32,13 @@ pub enum Encryption {
 }
 
 impl Encryption {
-    pub fn from_rsa_data(
-        packet: &[u8],
-        is_ngs: bool,
-        keyfile: &std::path::Path,
-    ) -> std::io::Result<Self> {
+    pub fn from_rsa_data(packet: &[u8], is_ngs: bool, key: &PrivateKey) -> std::io::Result<Self> {
         #[cfg(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"))]
-        let private_key = match RsaPrivateKey::read_pkcs8_pem_file(keyfile) {
-            Ok(x) => x,
+        let private_key = match key.into_key() {
+            Ok(Some(x)) => x,
+            Ok(None) => {
+                return Err(Error::new(ErrorKind::Other, "No key provided".to_string()));
+            }
             Err(x) => {
                 return Err(Error::new(ErrorKind::Other, format!("{x}")));
             }
@@ -298,14 +300,20 @@ impl Debug for Rc4Enc {
     }
 }
 
-#[cfg(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"))]
+#[cfg(all(
+    any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"),
+    feature = "proxy"
+))]
 pub fn reencrypt(
     packet: &[u8],
-    in_keyfile: &std::path::Path,
-    out_keyfile: &std::path::Path,
+    in_key: &PrivateKey,
+    out_key: &PublicKey,
 ) -> std::io::Result<Vec<u8>> {
-    let private_key = match RsaPrivateKey::read_pkcs8_pem_file(in_keyfile) {
-        Ok(x) => x,
+    let private_key = match in_key.into_key() {
+        Ok(Some(x)) => x,
+        Ok(None) => {
+            return Err(Error::new(ErrorKind::Other, "No key provided".to_string()));
+        }
         Err(x) => {
             return Err(Error::new(ErrorKind::Other, format!("{x}")));
         }
@@ -316,8 +324,11 @@ pub fn reencrypt(
             return Err(Error::new(ErrorKind::Other, format!("{x}")));
         }
     };
-    let out_key = match RsaPublicKey::read_public_key_pem_file(out_keyfile) {
-        Ok(x) => x,
+    let out_key = match out_key.into_key() {
+        Ok(Some(x)) => x,
+        Ok(None) => {
+            return Err(Error::new(ErrorKind::Other, "No key provided".to_string()));
+        }
         Err(x) => {
             return Err(Error::new(ErrorKind::Other, format!("{x}")));
         }
@@ -331,11 +342,10 @@ pub fn reencrypt(
     Ok(enc_data)
 }
 
-#[cfg(not(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc")))]
-pub fn reencrypt(
-    packet: &[u8],
-    _: &std::path::Path,
-    _: &std::path::Path,
-) -> std::io::Result<Vec<u8>> {
+#[cfg(all(
+    not(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc")),
+    feature = "proxy"
+))]
+pub fn reencrypt(packet: &[u8], _: &PrivateKey, _: &PublicKey) -> std::io::Result<Vec<u8>> {
     Ok(packet.to_vec())
 }

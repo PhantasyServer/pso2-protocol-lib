@@ -719,8 +719,8 @@ pub struct UnitItem {
     pub enh_level: u8,
     pub enh_percent: u8,
     pub unk1: u8,
-    // indirection go brr
-    pub affixes: PackedAffixes,
+    #[ManualRW(read_packed_affixes, write_packed_affixes)]
+    pub affixes: [u16; 8],
     #[SeekAfter(0x7)]
     pub potential: u32,
     pub unk2: [u8; 4],
@@ -729,11 +729,6 @@ pub struct UnitItem {
     pub unk4: u16,
     pub unk5: u16,
 }
-
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(transparent))]
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct PackedAffixes(pub [u16; 8]);
 
 #[cfg(feature = "ngs_packets")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
@@ -934,7 +929,7 @@ pub enum MesetaDirection {
 impl PacketReadWrite for LoadItemPacket {
     fn read(
         reader: &mut (impl std::io::Read + std::io::Seek),
-        flags: super::Flags,
+        flags: &super::Flags,
         packet_type: PacketType,
     ) -> std::io::Result<Self> {
         let packet = LoadItemInternal::read(reader, flags, packet_type)?;
@@ -947,7 +942,7 @@ impl PacketReadWrite for LoadItemPacket {
         Ok(Self { items })
     }
 
-    fn write(&self, packet_type: PacketType) -> Vec<u8> {
+    fn write(&self, packet_type: PacketType) -> std::io::Result<Vec<u8>> {
         let mut names = String::new();
         let mut name_length = vec![];
         let mut ids = vec![];
@@ -1005,13 +1000,10 @@ impl HelperReadWrite for Item {
         self.id.write(writer, packet_type, xor, sub)?;
         self.data.write(writer, packet_type)?;
         #[cfg(feature = "ngs_packets")]
-        match packet_type {
-            PacketType::NGS => {
-                for byte in self.unk {
-                    writer.write_u16::<LittleEndian>(byte)?;
-                }
+        if packet_type == PacketType::NGS {
+            for byte in self.unk {
+                writer.write_u16::<LittleEndian>(byte)?;
             }
-            _ => {}
         }
         Ok(())
     }
@@ -1033,11 +1025,11 @@ impl ItemType {
                 Self::ClothingNGS(ClothingNGSItem::read(reader, packet_type, 0, 0)?)
             }
             #[cfg(feature = "ngs_packets")]
-            (5, PacketType::NGS) => Self::UnitNGS(UnitItemNGS::read(reader, packet_type, 0, 0)?),
-            #[cfg(feature = "ngs_packets")]
             (3, PacketType::NGS) => {
                 Self::ConsumableNGS(ConsumableNGSItem::read(reader, packet_type, 0, 0)?)
             }
+            #[cfg(feature = "ngs_packets")]
+            (5, PacketType::NGS) => Self::UnitNGS(UnitItemNGS::read(reader, packet_type, 0, 0)?),
             #[cfg(feature = "ngs_packets")]
             (10, PacketType::NGS) => Self::CamoNGS(CamoNGSItem::read(reader, packet_type, 0, 0)?),
             #[cfg(feature = "ngs_packets")]
@@ -1095,45 +1087,42 @@ impl ItemType {
     }
 }
 
-impl HelperReadWrite for PackedAffixes {
-    fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
-        _: PacketType,
-        _: u32,
-        _: u32,
-    ) -> std::io::Result<Self> {
-        let mut packed = [0u8; 12];
-        let mut affixes = vec![];
-        reader.read_exact(&mut packed)?;
-        for i in 0..4 {
-            let affix_1 = u16::from_le_bytes([packed[i * 3], (packed[i * 3 + 2] & 0xF0) >> 4]);
-            let affix_2 = u16::from_le_bytes([packed[i * 3 + 1], (packed[i * 3 + 2] & 0xF)]);
-            affixes.push(affix_1);
-            affixes.push(affix_2);
-        }
-        Ok(Self(affixes.try_into().unwrap()))
+fn read_packed_affixes(
+    reader: &mut (impl std::io::Read + std::io::Seek),
+    _: PacketType,
+    _: u32,
+    _: u32,
+) -> std::io::Result<[u16; 8]> {
+    let mut packed = [0u8; 12];
+    let mut affixes = vec![];
+    reader.read_exact(&mut packed)?;
+    for i in 0..4 {
+        let affix_1 = u16::from_le_bytes([packed[i * 3], (packed[i * 3 + 2] & 0xF0) >> 4]);
+        let affix_2 = u16::from_le_bytes([packed[i * 3 + 1], (packed[i * 3 + 2] & 0xF)]);
+        affixes.push(affix_1);
+        affixes.push(affix_2);
     }
+    Ok(affixes.try_into().unwrap())
+}
 
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        _: PacketType,
-        _: u32,
-        _: u32,
-    ) -> std::io::Result<()> {
-        let mut packed = vec![];
-        let affixes = self.0;
-        for i in 0..4 {
-            let affix_1 = affixes[i * 2].to_le_bytes();
-            let affix_2 = affixes[i * 2 + 1].to_le_bytes();
-            packed.push(affix_1[0]);
-            packed.push(affix_2[0]);
-            let packed_int = (affix_1[1] << 4 & 0xF0) | (affix_2[1] & 0xF);
-            packed.push(packed_int);
-        }
-        writer.write_all(&packed)?;
-        Ok(())
+fn write_packed_affixes(
+    affixes: &[u16; 8],
+    writer: &mut impl std::io::Write,
+    _: PacketType,
+    _: u32,
+    _: u32,
+) -> std::io::Result<()> {
+    let mut packed = vec![];
+    for i in 0..4 {
+        let affix_1 = affixes[i * 2].to_le_bytes();
+        let affix_2 = affixes[i * 2 + 1].to_le_bytes();
+        packed.push(affix_1[0]);
+        packed.push(affix_2[0]);
+        let packed_int = (affix_1[1] << 4 & 0xF0) | (affix_2[1] & 0xF);
+        packed.push(packed_int);
     }
+    writer.write_all(&packed)?;
+    Ok(())
 }
 
 // ----------------------------------------------------------------
@@ -1143,35 +1132,5 @@ impl HelperReadWrite for PackedAffixes {
 impl Default for ItemType {
     fn default() -> Self {
         Self::Weapon(Default::default())
-    }
-}
-
-// ----------------------------------------------------------------
-// Transformation implementations
-// ----------------------------------------------------------------
-
-impl From<[u16; 8]> for PackedAffixes {
-    fn from(value: [u16; 8]) -> Self {
-        Self(value)
-    }
-}
-
-impl From<PackedAffixes> for [u16; 8] {
-    fn from(value: PackedAffixes) -> Self {
-        value.0
-    }
-}
-
-impl std::ops::Deref for PackedAffixes {
-    type Target = [u16; 8];
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl std::ops::DerefMut for PackedAffixes {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }
