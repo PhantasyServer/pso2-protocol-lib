@@ -286,13 +286,12 @@ uint32_t get_stream_ip(const struct SocketFactory *factory);
  * Creates a new connection from incoming connection.
  *
  * # Safety
- * 'in_key' and `out_key` must either be null or must point to a UTF-8-encoded, zero-terminated
+ * 'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
  * path to a PKCS#8 file.
  */
 struct Connection *get_connection(struct SocketFactory *factory,
                                   enum PacketType packet_type,
-                                  const int8_t *in_key,
-                                  const int8_t *out_key);
+                                  const int8_t *in_key);
 
 /**
  * Returns an incoming connection descriptor. Caller is responsible for closing the returned descriptor.
@@ -339,13 +338,10 @@ const uint8_t *get_sf_error(const struct SocketFactory *factory);
  * # Safety
  * `fd` must be a valid descriptor.
  *
- * 'in_key' and `out_key` must either be null or must point to a UTF-8-encoded, zero-terminated
+ * 'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
  * path to a PKCS#8 file.
  */
-struct Connection *new_connection(int64_t fd,
-                                  enum PacketType packet_type,
-                                  const int8_t *in_key,
-                                  const int8_t *out_key);
+struct Connection *new_connection(int64_t fd, enum PacketType packet_type, const int8_t *in_key);
 
 /**
  * Destroys a connection.

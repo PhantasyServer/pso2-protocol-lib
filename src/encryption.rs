@@ -1,4 +1,9 @@
-use crate::{PrivateKey, PublicKey};
+use crate::PrivateKey;
+#[cfg(all(
+    any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"),
+    feature = "proxy"
+))]
+use crate::PublicKey;
 #[cfg(any(feature = "base_enc", feature = "ngs_enc"))]
 use aes::cipher::{block_padding::Pkcs7, BlockDecryptMut, BlockEncryptMut, KeyIvInit};
 #[cfg(any(feature = "base_enc", feature = "ngs_enc"))]
@@ -295,7 +300,10 @@ impl Debug for Rc4Enc {
     }
 }
 
-#[cfg(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"))]
+#[cfg(all(
+    any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"),
+    feature = "proxy"
+))]
 pub fn reencrypt(
     packet: &[u8],
     in_key: &PrivateKey,
@@ -334,7 +342,10 @@ pub fn reencrypt(
     Ok(enc_data)
 }
 
-#[cfg(not(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc")))]
+#[cfg(all(
+    not(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc")),
+    feature = "proxy"
+))]
 pub fn reencrypt(packet: &[u8], _: &PrivateKey, _: &PublicKey) -> std::io::Result<Vec<u8>> {
     Ok(packet.to_vec())
 }

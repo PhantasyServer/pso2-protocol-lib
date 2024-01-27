@@ -128,9 +128,9 @@ namespace packetlib
         [DllImport(__DllName, EntryPoint = "get_stream_ip", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern uint get_stream_ip(SocketFactory* factory);
 
-        /// <summary>Creates a new connection from incoming connection.  # Safety 'in_key' and `out_key` must either be null or must point to a UTF-8-encoded, zero-terminated path to a PKCS#8 file.</summary>
+        /// <summary>Creates a new connection from incoming connection.  # Safety 'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated path to a PKCS#8 file.</summary>
         [DllImport(__DllName, EntryPoint = "get_connection", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern Connection* get_connection(SocketFactory* factory, PacketType packet_type, sbyte* in_key, sbyte* out_key);
+        public static extern Connection* get_connection(SocketFactory* factory, PacketType packet_type, sbyte* in_key);
 
         /// <summary>Returns an incoming connection descriptor. Caller is responsible for closing the returned descriptor. If no stream was opened, returns -1.</summary>
         [DllImport(__DllName, EntryPoint = "stream_into_fd", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
@@ -157,9 +157,9 @@ namespace packetlib
         [DllImport(__DllName, EntryPoint = "get_sf_error", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern byte* get_sf_error(SocketFactory* factory);
 
-        /// <summary>Creates a new connection from owned socket descriptor.  # Safety `fd` must be a valid descriptor.  'in_key' and `out_key` must either be null or must point to a UTF-8-encoded, zero-terminated path to a PKCS#8 file.</summary>
+        /// <summary>Creates a new connection from owned socket descriptor.  # Safety `fd` must be a valid descriptor.  'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated path to a PKCS#8 file.</summary>
         [DllImport(__DllName, EntryPoint = "new_connection", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern Connection* new_connection(long fd, PacketType packet_type, sbyte* in_key, sbyte* out_key);
+        public static extern Connection* new_connection(long fd, PacketType packet_type, sbyte* in_key);
 
         /// <summary>Destroys a connection.</summary>
         [DllImport(__DllName, EntryPoint = "free_connection", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]

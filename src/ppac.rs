@@ -1,3 +1,5 @@
+//! Packet storage file format.
+
 use crate::protocol::{Packet, PacketType, ProtocolRW};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::{

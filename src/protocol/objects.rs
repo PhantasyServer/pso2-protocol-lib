@@ -418,7 +418,11 @@ pub struct Unk04EAPacket {
 // ----------------------------------------------------------------
 
 impl PacketReadWrite for MovementPacket {
-    fn read(reader: &mut (impl Read + Seek), flags: Flags, _: PacketType) -> std::io::Result<Self> {
+    fn read(
+        reader: &mut (impl Read + Seek),
+        flags: &Flags,
+        _: PacketType,
+    ) -> std::io::Result<Self> {
         let mut packet = Self::default();
         reader.read_exact(&mut packet.unk)?;
         if flags.full_movement {
@@ -515,92 +519,90 @@ impl PacketReadWrite for MovementPacket {
         }
         Ok(packet)
     }
-    fn write(&self, packet_type: PacketType) -> Vec<u8> {
+    fn write(&self, packet_type: PacketType) -> std::io::Result<Vec<u8>> {
         let mut tmp_buf = vec![];
         let mut flags = 0u32;
         if let Some(n) = self.ent1_id {
-            tmp_buf.write_u64::<LittleEndian>(n).unwrap();
+            tmp_buf.write_u64::<LittleEndian>(n)?;
             flags += 0x1;
         }
         if let Some(n) = self.ent1_type {
-            tmp_buf.write_u16::<LittleEndian>(n).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n)?;
             flags += 0x2;
         }
         if let Some(n) = self.ent1_unk {
-            tmp_buf.write_u16::<LittleEndian>(n).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n)?;
             flags += 0x4;
         }
         if let Some(n) = self.ent2_id {
-            tmp_buf.write_u64::<LittleEndian>(n).unwrap();
+            tmp_buf.write_u64::<LittleEndian>(n)?;
             flags += 0x8;
         }
         if let Some(n) = self.ent2_type {
-            tmp_buf.write_u16::<LittleEndian>(n).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n)?;
             flags += 0x10;
         }
         if let Some(n) = self.ent2_unk {
-            tmp_buf.write_u16::<LittleEndian>(n).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n)?;
             flags += 0x20;
         }
         if let Some(x) = self.timestamp {
-            tmp_buf
-                .write_u32::<LittleEndian>(x.as_secs() as u32)
-                .unwrap();
+            tmp_buf.write_u32::<LittleEndian>(x.as_secs() as u32)?;
             flags += 0x40;
         }
         if let Some(n) = self.rot_x {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits()).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
             flags += 0x80;
         }
         if let Some(n) = self.rot_y {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits()).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
             flags += 0x100;
         }
         if let Some(n) = self.rot_z {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits()).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
             flags += 0x200;
         }
         if let Some(n) = self.rot_w {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits()).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
             flags += 0x400;
         }
         if let Some(n) = self.cur_x {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits()).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
             flags += 0x800;
         }
         if let Some(n) = self.cur_y {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits()).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
             flags += 0x1000;
         }
         if let Some(n) = self.cur_z {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits()).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
             flags += 0x2000;
         }
         if let Some(n) = self.unk1 {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits()).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
             flags += 0x4000;
         }
         if let Some(n) = self.unk_x {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits()).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
             flags += 0x8000;
         }
         if let Some(n) = self.unk_y {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits()).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
             flags += 0x10000;
         }
         if let Some(n) = self.unk_z {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits()).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
             flags += 0x20000;
         }
         if let Some(n) = self.unk2 {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits()).unwrap();
+            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
             flags += 0x40000;
         }
         if let Some(n) = self.unk4 {
-            tmp_buf.write_u8(n).unwrap();
+            tmp_buf.write_u8(n)?;
             flags += 0x180000;
         } else if let Some(n) = self.unk3 {
-            tmp_buf.write_u32::<LittleEndian>(n).unwrap();
+            tmp_buf.write_u32::<LittleEndian>(n)?;
             flags += 0x80000;
         }
         let mut buf = if flags == 0xFFFFF {
@@ -627,11 +629,11 @@ impl PacketReadWrite for MovementPacket {
             )
             .write(packet_type)
         };
-        buf.write_all(&self.unk).unwrap();
+        buf.write_all(&self.unk)?;
         if flags != 0xFFFFF {
-            buf.write_u24::<LittleEndian>(flags).unwrap();
+            buf.write_u24::<LittleEndian>(flags)?;
         }
         buf.append(&mut tmp_buf);
-        buf
+        Ok(buf)
     }
 }

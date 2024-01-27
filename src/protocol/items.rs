@@ -929,7 +929,7 @@ pub enum MesetaDirection {
 impl PacketReadWrite for LoadItemPacket {
     fn read(
         reader: &mut (impl std::io::Read + std::io::Seek),
-        flags: super::Flags,
+        flags: &super::Flags,
         packet_type: PacketType,
     ) -> std::io::Result<Self> {
         let packet = LoadItemInternal::read(reader, flags, packet_type)?;
@@ -942,7 +942,7 @@ impl PacketReadWrite for LoadItemPacket {
         Ok(Self { items })
     }
 
-    fn write(&self, packet_type: PacketType) -> Vec<u8> {
+    fn write(&self, packet_type: PacketType) -> std::io::Result<Vec<u8>> {
         let mut names = String::new();
         let mut name_length = vec![];
         let mut ids = vec![];

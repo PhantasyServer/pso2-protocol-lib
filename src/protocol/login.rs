@@ -962,7 +962,7 @@ pub enum NewNameStatus {
 impl PacketReadWrite for CharacterListPacket {
     fn read(
         reader: &mut (impl Read + Seek),
-        _: Flags,
+        _: &Flags,
         packet_type: PacketType,
     ) -> std::io::Result<Self> {
         let char_amount = reader.read_u32::<LittleEndian>()?.clamp(0, 30);
@@ -1007,11 +1007,10 @@ impl PacketReadWrite for CharacterListPacket {
             ad,
         })
     }
-    fn write(&self, packet_type: PacketType) -> Vec<u8> {
+    fn write(&self, packet_type: PacketType) -> std::io::Result<Vec<u8>> {
         let mut buf = PacketHeader::new(0x11, 0x03, Flags::default()).write(packet_type);
-        buf.write_u32::<LittleEndian>((self.characters.len() as u32).clamp(0, 30))
-            .unwrap();
-        buf.write_u32::<LittleEndian>(0).unwrap();
+        buf.write_u32::<LittleEndian>((self.characters.len() as u32).clamp(0, 30))?;
+        buf.write_u32::<LittleEndian>(0)?;
 
         let mut characters = &self.characters;
         let default_character = vec![Character::default()];
@@ -1020,52 +1019,47 @@ impl PacketReadWrite for CharacterListPacket {
         }
 
         for character in characters.iter().cycle().take(30) {
-            buf.write_u32::<LittleEndian>(0).unwrap();
-            character.write(&mut buf, packet_type, 0, 0).unwrap();
+            buf.write_u32::<LittleEndian>(0)?;
+            character.write(&mut buf, packet_type, 0, 0)?;
         }
         // ???
         for _ in 0..0x41A4 {
-            buf.write_u8(0).unwrap();
+            buf.write_u8(0)?;
         }
         for i in 0..30 {
-            buf.write_u32::<LittleEndian>(self.play_times[i]).unwrap();
+            buf.write_u32::<LittleEndian>(self.play_times[i])?;
         }
         // ???
         for _ in 0..32 {
-            buf.write_u8(0).unwrap();
+            buf.write_u8(0)?;
         }
         for i in 0..30 {
             // deletion flag
-            buf.write_u32::<LittleEndian>(self.deletion_flags[i].0)
-                .unwrap();
+            buf.write_u32::<LittleEndian>(self.deletion_flags[i].0)?;
             // timestamp
-            buf.write_u32::<LittleEndian>(self.deletion_flags[i].1)
-                .unwrap();
+            buf.write_u32::<LittleEndian>(self.deletion_flags[i].1)?;
         }
         for i in 0..30 {
             // transfer flag
-            buf.write_u32::<LittleEndian>(self.transfer_flags[i].0)
-                .unwrap();
+            buf.write_u32::<LittleEndian>(self.transfer_flags[i].0)?;
             // ??? prob target ship
-            buf.write_u32::<LittleEndian>(self.transfer_flags[i].1)
-                .unwrap();
+            buf.write_u32::<LittleEndian>(self.transfer_flags[i].1)?;
         }
-        buf.write_u16::<LittleEndian>(self.account_accessory)
-            .unwrap();
+        buf.write_u16::<LittleEndian>(self.account_accessory)?;
         // ???
-        buf.write_all(&[0u8; 6]).unwrap();
-        buf.write_u32::<LittleEndian>(self.login_survey).unwrap();
-        buf.write_u32::<LittleEndian>(self.ad).unwrap();
+        buf.write_all(&[0u8; 6])?;
+        buf.write_u32::<LittleEndian>(self.login_survey)?;
+        buf.write_u32::<LittleEndian>(self.ad)?;
         // ???
-        buf.write_u32::<LittleEndian>(0x00_00_00_00).unwrap();
+        buf.write_u32::<LittleEndian>(0x00_00_00_00)?;
         // ???
-        buf.write_u32::<LittleEndian>(0x00_00_00_00).unwrap();
-        buf
+        buf.write_u32::<LittleEndian>(0x00_00_00_00)?;
+        Ok(buf)
     }
 }
 
 impl PacketReadWrite for EncryptionRequestPacket {
-    fn read(reader: &mut impl Read, _: Flags, _: PacketType) -> std::io::Result<Self> {
+    fn read(reader: &mut impl Read, _: &Flags, _: PacketType) -> std::io::Result<Self> {
         let mut rsa_data = vec![];
         reader.read_to_end(&mut rsa_data)?;
         let mut tmp_data = vec![];
@@ -1076,27 +1070,27 @@ impl PacketReadWrite for EncryptionRequestPacket {
         }
         Ok(Self { rsa_data: tmp_data })
     }
-    fn write(&self, packet_type: PacketType) -> Vec<u8> {
+    fn write(&self, packet_type: PacketType) -> std::io::Result<Vec<u8>> {
         let mut buf = PacketHeader::new(0x11, 0x0B, Flags::default()).write(packet_type);
         let mut data = self.rsa_data.clone();
         data.reverse();
         data.resize(0x104, 0);
         buf.extend(data);
-        buf
+        Ok(buf)
     }
 }
 
 impl PacketReadWrite for EncryptionResponsePacket {
-    fn read(reader: &mut impl Read, _: Flags, _: PacketType) -> std::io::Result<Self> {
+    fn read(reader: &mut impl Read, _: &Flags, _: PacketType) -> std::io::Result<Self> {
         let mut data = vec![];
         reader.read_to_end(&mut data)?;
 
         Ok(Self { data })
     }
-    fn write(&self, packet_type: PacketType) -> Vec<u8> {
+    fn write(&self, packet_type: PacketType) -> std::io::Result<Vec<u8>> {
         let mut buf = PacketHeader::new(0x11, 0x0C, Flags::default()).write(packet_type);
         buf.extend(self.data.iter());
-        buf
+        Ok(buf)
     }
 }
 

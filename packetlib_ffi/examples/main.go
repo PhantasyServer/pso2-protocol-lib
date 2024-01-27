@@ -170,7 +170,7 @@ func (sf *SocketFactory) accept_connection() (Connection, error) {
 		}
 	}
 	return Connection{
-		conn: C.get_connection(sf.sf, C.Classic, nil, nil),
+		conn: C.get_connection(sf.sf, C.Classic, nil),
 	}, nil
 }
 
@@ -191,7 +191,7 @@ func connection_from_net(go_conn net.Conn) (Connection, error) {
 		return Connection{}, errors.New(err_str)
 	}
 	file.Close()
-	conn := C.new_connection(fd_clone, C.NGS, nil, nil)
+	conn := C.new_connection(fd_clone, C.NGS, nil)
 	return Connection{conn: conn}, nil
 }
 

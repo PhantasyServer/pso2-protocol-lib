@@ -39,6 +39,39 @@ pub struct CharacterSpawnPacket {
     pub unk12_2: [u8; 0x20],
 }
 
+// #[cfg(feature = "ngs_packets")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, PartialEq, PacketReadWrite, Default)]
+#[Id(0x08, 0x04)]
+pub struct CharacterSpawnNGSPacket {
+    // unsure about real structure
+    pub player_obj: ObjectHeader,
+    pub position: Position,
+    pub unk1: u16, // padding?
+    #[FixedStr(0x20)]
+    pub unk2: AsciiString,
+    pub unk3: u16,
+    pub unk4: u16,
+    pub unk5: u32,
+    pub unk6: u32,
+    pub unk7: u32,
+    pub unk8: u32,
+    pub is_me: CharacterSpawnType,
+    pub unk9: u8,
+    pub unk10: u16,
+    #[FixedLen(0x63C)]
+    pub character: Vec<u8>,
+    pub unk11: u32,
+    pub gm_flag: u32,
+    #[FixedStr(0x10)]
+    pub nickname: String,
+    pub unk12_1: [u8; 0x20],
+    #[SeekAfter(0x60)]
+    pub unk12_2: [u8; 0x20],
+}
+
 // 0x08, 0x05
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]

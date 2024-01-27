@@ -1,3 +1,5 @@
+//! PSO2 packet definitions and protocol information.
+
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use packetlib_impl::{HelperReadWrite, PacketReadWrite, ProtocolReadWrite};
 use std::{
@@ -59,6 +61,8 @@ use unk34::*;
 mod private {
     pub trait Sealed: Sized {}
     impl Sealed for super::Packet {}
+    #[cfg(feature = "proxy")]
+    impl Sealed for super::ProxyPacket {}
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -90,11 +94,11 @@ pub(crate) trait PacketReadWrite: Sized {
     /// Read a packet from stream.
     fn read(
         reader: &mut (impl Read + Seek),
-        flags: Flags,
+        flags: &Flags,
         packet_type: PacketType,
     ) -> std::io::Result<Self>;
     /// Write a packet to a Vec.
-    fn write(&self, packet_type: PacketType) -> Vec<u8>;
+    fn write(&self, packet_type: PacketType) -> std::io::Result<Vec<u8>>;
 }
 
 pub(crate) trait HelperReadWrite: Sized {
@@ -115,7 +119,6 @@ pub(crate) trait HelperReadWrite: Sized {
 
 /// All known packets
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg(not(feature = "proxy"))]
 #[derive(Debug, Default, Clone, PartialEq, ProtocolReadWrite)]
 #[non_exhaustive]
 pub enum Packet {
@@ -236,8 +239,14 @@ pub enum Packet {
     // Spawn packets [0x08]
     #[Category(PacketCategory::Spawning)]
     #[Id(0x08, 0x04)]
-    // #[Classic]
+    #[Classic]
     CharacterSpawn(CharacterSpawnPacket),
+    // temporarily commented out for the server
+    // #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[Id(0x08, 0x04)]
+    #[NGS]
+    CharacterSpawnNGS(CharacterSpawnNGSPacket),
     #[Id(0x08, 0x05)]
     TransporterSpawn(TransporterSpawnPacket),
     #[cfg(not(test))]
@@ -794,9 +803,10 @@ pub enum Packet {
 }
 
 #[cfg(feature = "proxy")]
+#[cfg_attr(docsrs, doc(cfg(feature = "proxy")))]
 #[derive(Debug, Default, Clone, PartialEq, ProtocolReadWrite)]
-// bare minimum specifically for proxies
-pub enum Packet {
+/// Minimal packet definitions for proxies
+pub enum ProxyPacket {
     #[default]
     #[Empty]
     None,

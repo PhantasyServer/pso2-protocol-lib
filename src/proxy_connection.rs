@@ -1,23 +1,25 @@
-use rsa::{pkcs8::DecodePrivateKey, BigUint, RsaPrivateKey};
+use rsa::{pkcs8::DecodePublicKey, BigUint, RsaPublicKey};
 
 #[cfg(feature = "ppac")]
 use crate::ppac::{Direction, PPACWriter};
 use crate::{
-    encryption::Encryption,
-    protocol::{Packet, PacketType, ProtocolRW},
+    connection::PrivateKey,
+    encryption::{reencrypt, Encryption},
+    protocol::{login::EncryptionRequestPacket, PacketType, ProtocolRW, ProxyPacket},
 };
 use std::io::{Read, Write};
 
-/// Represents a connection between a client and a server.
+/// Represents a proxy connection between a client and a server.
 #[derive(Debug)]
-pub struct Connection {
+pub struct ProxyConnection {
     stream: std::net::TcpStream,
     encryption: Encryption,
     read_buffer: Vec<u8>,
-    read_packets: Vec<Packet>,
+    read_packets: Vec<ProxyPacket>,
     write_buffer: Vec<u8>,
     packet_length: usize,
     in_keyfile: PrivateKey,
+    out_keyfile: PublicKey,
     packet_type: PacketType,
     #[cfg(feature = "ppac")]
     ppac: Option<PPACWriter<std::fs::File>>,
@@ -25,11 +27,10 @@ pub struct Connection {
     direction: Direction,
 }
 
-/// Possible RSA private key formats.
-#[allow(clippy::large_enum_variant)]
+/// Possible RSA public key formats.
 #[derive(Debug, Clone)]
-pub enum PrivateKey {
-    /// No private key provided.
+pub enum PublicKey {
+    /// No public key provided.
     None,
     /// Path to the RSA key in the PEM-encoded PKCS#8 file.
     Path(std::path::PathBuf),
@@ -39,23 +40,19 @@ pub enum PrivateKey {
         n: Vec<u8>,
         /// Public exponent 'e'.
         e: Vec<u8>,
-        /// Private exponent 'd'.
-        d: Vec<u8>,
-        /// First prime 'p'.
-        p: Vec<u8>,
-        /// Second prime 'q'.
-        q: Vec<u8>,
     },
-    Key(RsaPrivateKey),
+    Key(RsaPublicKey),
 }
 
-impl Connection {
-    /// Creates a new connection.
+impl ProxyConnection {
+    /// Creates a new proxy connection.
     /// `in_keyfile` is the RSA key to decrypt client's encryption request.
+    /// `out_keyfile` is the RSA key to reencrypt client's encryption request.
     pub fn new(
         stream: std::net::TcpStream,
         packet_type: PacketType,
         in_keyfile: PrivateKey,
+        out_keyfile: PublicKey,
     ) -> Self {
         Self {
             stream,
@@ -65,6 +62,7 @@ impl Connection {
             write_buffer: Vec::new(),
             packet_length: 0,
             in_keyfile,
+            out_keyfile,
             packet_type,
             #[cfg(feature = "ppac")]
             ppac: None,
@@ -90,7 +88,7 @@ impl Connection {
         self.packet_type = packet_type;
     }
     /// Reads a packet from stream.
-    pub fn read_packet(&mut self) -> std::io::Result<Packet> {
+    pub fn read_packet(&mut self) -> std::io::Result<ProxyPacket> {
         if !self.read_packets.is_empty() {
             return Ok(self.get_one_packet());
         }
@@ -132,7 +130,7 @@ impl Connection {
         Ok(())
     }
 
-    fn get_packet(&mut self) -> std::io::Result<Option<Packet>> {
+    fn get_packet(&mut self) -> std::io::Result<Option<ProxyPacket>> {
         let mut output_data = vec![0u8; 0];
         if self.packet_length == 0 {
             self.get_length();
@@ -153,10 +151,10 @@ impl Connection {
                 };
                 writer.write_data(crate::ppac::get_now(), direction, &output_data)?;
             }
-            let mut packets = Packet::read(&output_data, self.packet_type)?;
+            let mut packets = ProxyPacket::read(&output_data, self.packet_type)?;
             self.read_packets.append(&mut packets);
             let packet = self.get_one_packet();
-            if let Packet::EncryptionRequest(data) = &packet {
+            if let ProxyPacket::EncryptionRequest(data) = &packet {
                 if !matches!(&self.in_keyfile, PrivateKey::None) {
                     self.encryption = Encryption::from_rsa_data(
                         &data.rsa_data,
@@ -171,16 +169,39 @@ impl Connection {
     }
 
     /// Sends a packet and returns bytes written.
-    pub fn write_packet(&mut self, packet: &Packet) -> std::io::Result<usize> {
-        self.write_buffer
-            .extend_from_slice(&self.encryption.encrypt(&{
-                let packet = packet.write(self.packet_type);
-                #[cfg(feature = "ppac")]
-                if let Some(writer) = &mut self.ppac {
-                    writer.write_data(crate::ppac::get_now(), self.direction, &packet)?;
-                }
-                packet
-            })?);
+    pub fn write_packet(&mut self, packet: &ProxyPacket) -> std::io::Result<usize> {
+        if let ProxyPacket::EncryptionRequest(data) = packet {
+            if !matches!(&self.out_keyfile, PublicKey::None)
+                && !matches!(&self.in_keyfile, PrivateKey::None)
+            {
+                let mut new_packet = EncryptionRequestPacket::default();
+                self.encryption = Encryption::from_rsa_data(
+                    &data.rsa_data,
+                    matches!(self.packet_type, PacketType::NGS),
+                    &self.in_keyfile,
+                )?;
+                new_packet.rsa_data =
+                    reencrypt(&data.rsa_data, &self.in_keyfile, &self.out_keyfile)?;
+                self.write_buffer.extend_from_slice(&{
+                    let packet = ProxyPacket::EncryptionRequest(new_packet).write(self.packet_type);
+                    #[cfg(feature = "ppac")]
+                    if let Some(writer) = &mut self.ppac {
+                        writer.write_data(crate::ppac::get_now(), self.direction, &packet)?;
+                    }
+                    packet
+                });
+            }
+        } else {
+            self.write_buffer
+                .extend_from_slice(&self.encryption.encrypt(&{
+                    let packet = packet.write(self.packet_type);
+                    #[cfg(feature = "ppac")]
+                    if let Some(writer) = &mut self.ppac {
+                        writer.write_data(crate::ppac::get_now(), self.direction, &packet)?;
+                    }
+                    packet
+                })?);
+        }
         if self.write_buffer.is_empty() {
             return Ok(0);
         }
@@ -188,7 +209,8 @@ impl Connection {
         self.write_buffer.drain(..wrote_bytes).count();
         Ok(wrote_bytes)
     }
-    /// Returns the encryption key (for [`Packet::EncryptionResponse`]).
+
+    /// Returns the encryption key (for [`ProxyPacket::EncryptionResponse`]).
     pub fn get_key(&mut self) -> Vec<u8> {
         self.encryption.get_key()
     }
@@ -197,9 +219,9 @@ impl Connection {
         if self.write_buffer.is_empty() {
             return Ok(0);
         }
-        self.write_packet(&Packet::None)
+        self.write_packet(&ProxyPacket::None)
     }
-    fn get_one_packet(&mut self) -> Packet {
+    fn get_one_packet(&mut self) -> ProxyPacket {
         self.read_packets.remove(0)
     }
     fn get_length(&mut self) {
@@ -244,16 +266,17 @@ fn check_disconnect(to_check: std::io::Result<usize>) -> std::io::Result<usize> 
     }
 }
 
-impl PrivateKey {
-    pub fn into_key(&self) -> rsa::errors::Result<Option<RsaPrivateKey>> {
+impl PublicKey {
+    pub fn into_key(&self) -> rsa::errors::Result<Option<RsaPublicKey>> {
         match self {
             Self::None => Ok(None),
-            Self::Path(p) => Ok(Some(RsaPrivateKey::read_pkcs8_pem_file(p)?)),
-            Self::Params { n, e, d, p, q } => Ok(Some(RsaPrivateKey::from_components(
+            Self::Path(p) => Ok(Some(
+                RsaPublicKey::read_public_key_pem_file(p)
+                    .map_err(|e| rsa::Error::Pkcs8(rsa::pkcs8::Error::PublicKey(e)))?,
+            )),
+            Self::Params { n, e } => Ok(Some(RsaPublicKey::new(
                 BigUint::from_bytes_le(n),
                 BigUint::from_bytes_le(e),
-                BigUint::from_bytes_le(d),
-                vec![BigUint::from_bytes_le(p), BigUint::from_bytes_le(q)],
             )?)),
             Self::Key(k) => Ok(Some(k.clone())),
         }
