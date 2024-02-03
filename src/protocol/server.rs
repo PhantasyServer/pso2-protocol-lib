@@ -1,3 +1,4 @@
+//! Server related packets.
 use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
 use crate::AsciiString;
 
@@ -5,18 +6,27 @@ use crate::AsciiString;
 // Server packets
 // ----------------------------------------------------------------
 
-// 0x03, 0x00
+/// (0x03, 0x00) Map Transfer.
+///
+/// (S -> C) Sent when the client is being moved between zones (e.g. arks lobby <-> casino).
+///
+/// Respond with: [`crate::protocol::Packet::MapLoaded`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x03, 0x00)]
 pub struct MapTransferPacket {
+    /// Target zone object.
     pub map: ObjectHeader,
+    /// Receiving player object.
     pub target: ObjectHeader,
+    /// Target zone settings.
     pub settings: ZoneSettings,
 }
 
-// 0x03, 0x06
+/// (0x03, 0x06) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
@@ -27,9 +37,9 @@ pub struct Unk0306Packet {
 
 /// (0x03, 0x08) Server Hello.
 ///
-/// (S -> C) Sent by the server when the client connects to the block server.
+/// (S -> C) Sent when the client connects to the block server.
 ///
-/// Respond with: [`crate::protocol::login::EncryptionRequestPacket`].
+/// Respond with: [`crate::protocol::Packet::EncryptionRequest`].
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
@@ -43,17 +53,29 @@ pub struct ServerHelloPacket {
     pub unk2: u32,
 }
 
-// 0x03, 0x10
+/// (0x03, 0x10) Map Loading Finished.
+///
+/// (C -> S) Sent when the client has finished loading the map.
+///
+/// Response to: [`MapTransferPacket`] or [`LoadLevelPacket`].
+///
+/// Respond with: user data, [`crate::protocol::Packet::UnlockControls`] and
+/// [`crate::protocol::Packet::FinishLoading`].
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x03, 0x10)]
 pub struct MapLoadedPacket {
+    /// Loaded zone object.
     pub map_object: ObjectHeader,
     pub unk: [u8; 0x20],
 }
 
-// 0x03, 0x12
+/// (0x03, 0x12) Move Lobby -> Campship.
+///
+/// (C -> S) Sent when the client wants to move to campship.
+///
+/// Respond with: load campship map.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
@@ -65,7 +87,11 @@ pub struct ToCampshipPacket {
     pub unk4: u32,
 }
 
-// 0x03, 0x16
+/// (0x03, 0x16) Move Campship -> Quest Level.
+///
+/// (C -> S) Sent when the client wants to move to the quest level.
+///
+/// Respond with: load quest map.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
@@ -77,7 +103,11 @@ pub struct CampshipDownPacket {
     pub unk4: u32,
 }
 
-// 0x03, 0x24
+/// (0x03, 0x24) Load Level.
+///
+/// (S -> C) Sent when the client is moved to a new map. (e.g. lobby <-> campship)
+///
+/// Respond with: [`crate::protocol::Packet::MapLoaded`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
@@ -85,14 +115,18 @@ pub struct CampshipDownPacket {
 #[Flags(Flags {packed: true, ..Default::default()})]
 #[Magic(0x7542, 0x5E)]
 pub struct LoadLevelPacket {
+    /// Initial zone object.
     pub map_object: ObjectHeader,
+    /// Receiving player.
     #[cfg_attr(feature = "serde", serde(skip))]
     pub receiver: ObjectHeader,
+    /// Settings for the initial zone (i.e. first zone that the player will appear in).
     pub settings: ZoneSettings,
     pub unk4: [u8; 0xC],
     pub unk5: [u8; 0xC],
     pub unk6: [u8; 0xC],
     pub unk7: AsciiString,
+    /// Settings for other zones.
     pub other_settings: Vec<ZoneSettings>,
     pub warps: Vec<WarpInfo>,
     pub unk10: Vec<LoadLevelThing3>,
@@ -141,7 +175,11 @@ pub struct LoadLevelPacket {
     pub unk51: u32,
 }
 
-// 0x03, 0x34
+/// (0x03, 0x34) Move Casino -> Lobby.
+///
+/// (C -> S) Sent when the client wants to move from casino to lobby.
+///
+/// Respond with: load lobby map.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
@@ -153,7 +191,11 @@ pub struct CasinoToLobbyPacket {
     pub unk4: u32,
 }
 
-// 0x03, 0x35
+/// (0x03, 0x35) Move Lobby -> Casino.
+///
+/// (C -> S) Sent when the client wants to move from lobby to casino.
+///
+/// Respond with: load casino map.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
@@ -164,7 +206,11 @@ pub struct CasinoTransportPacket {
     pub unk3: u32,
 }
 
-// 0x03, 0x38
+/// (0x03, 0x38) Move Bridge -> Lobby.
+///
+/// (C -> S) Sent when the client wants to move from bridge to lobby.
+///
+/// Respond with: load lobby map.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
@@ -177,7 +223,11 @@ pub struct BridgeToLobbyPacket {
     pub unk4: u32,
 }
 
-// 0x03, 0x39
+/// (0x03, 0x39) Move Lobby -> Bridge.
+///
+/// (C -> S) Sent when the client wants to move from lobby to bridge.
+///
+/// Respond with: load bridge map.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
@@ -188,7 +238,11 @@ pub struct BridgeTransportPacket {
     pub unk3: u32,
 }
 
-// 0x03, 0x3B
+/// (0x03, 0x3B) Move Cafe -> Lobby.
+///
+/// (C -> S) Sent when the client wants to move from cafe to lobby.
+///
+/// Respond with: load lobby map.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
@@ -201,7 +255,11 @@ pub struct CafeToLobbyPacket {
     pub unk4: u32,
 }
 
-// 0x03, 0x3C
+/// (0x03, 0x3C) Move Lobby -> Cafe.
+///
+/// (C -> S) Sent when the client wants to move from lobby to cafe.
+///
+/// Respond with: load cafe map.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]

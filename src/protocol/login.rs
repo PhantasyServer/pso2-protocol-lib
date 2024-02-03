@@ -3,7 +3,7 @@ use super::models::FunValue;
 use super::{
     items::ItemId,
     models::{character::Character, SGValue},
-    EntityType, Flags, HelperReadWrite, ObjectHeader, PacketHeader, PacketReadWrite, PacketType,
+    Flags, HelperReadWrite, ObjectHeader, ObjectType, PacketHeader, PacketReadWrite, PacketType,
 };
 use crate::AsciiString;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
@@ -1135,7 +1135,7 @@ impl Default for LoginResponsePacket {
                 id: 0,
                 unk: 0,
                 map_id: 0,
-                entity_type: EntityType::Player,
+                entity_type: ObjectType::Player,
             },
             blockname: String::new(),
             unk1: 70.0,

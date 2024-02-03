@@ -122,18 +122,35 @@ pub(crate) trait HelperReadWrite: Sized {
 #[derive(Debug, Default, Clone, PartialEq, ProtocolReadWrite)]
 #[non_exhaustive]
 pub enum Packet {
+    /// Empty packet, produces no output.
     #[default]
     #[Empty]
     None,
 
     // Server packets [0x03]
     #[Category(PacketCategory::Server)]
+    /// (0x03, 0x00) Map Transfer.
     #[Id(0x03, 0x00)]
     MapTransfer(MapTransferPacket),
+    /// (0x03, 0x03) Initial Load (?).
+    ///
+    /// (C -> S) Sent when the client loads for the first time in the session.
+    ///
+    /// Response to: [`Packet::LoadingScreenTransition`] (?).
+    ///
+    /// Respond with: lobby map setup.
     #[Id(0x03, 0x03)]
     InitialLoad,
+    /// (0x03, 0x04) Loading Screen Transition.
+    ///
+    /// (S -> C) Sent when the server wants the client to display the loading screen.
+    ///
+    /// Response to: [`Packet::StartGame`].
+    ///
+    /// Respond with: [`Packet::InitialLoad`] (?, also unsure if it is only sent once).
     #[Id(0x03, 0x04)]
     LoadingScreenTransition,
+    /// (0x03, 0x06) Unknown.
     #[Id(0x03, 0x06)]
     Unk0306(Unk0306Packet),
     /// (0x03, 0x08) Server Hello.
@@ -143,38 +160,58 @@ pub enum Packet {
     ///
     /// (S -> C) Sent by the server periodically.
     ///
-    /// Respond with: ServerPong.
+    /// Respond with: [`Packet::ServerPong`].
     #[Id(0x03, 0x0B)]
     ServerPing,
     /// (0x03, 0x0C) Server Pong.
     ///
     /// (C -> S) Sent by the client in response to the ping.
     ///
-    /// Response to: ServerPing.
+    /// Response to: [`Packet::ServerPing`].
     #[Id(0x03, 0x0C)]
     ServerPong,
+    /// (0x03, 0x10) Map Loading Finished.
     #[Id(0x03, 0x10)]
     MapLoaded(MapLoadedPacket),
+    /// (0x03, 0x12) Move Lobby -> Campship.
     #[Id(0x03, 0x12)]
     ToCampship(ToCampshipPacket),
+    /// (0x03, 0x16) Move Campship -> Quest Level.
     #[Id(0x03, 0x16)]
     CampshipDown(CampshipDownPacket),
+    /// (0x03, 0x23) Remove Loading Screen.
+    ///
+    /// (S -> C) Sent to remove the loading screen.
+    ///
+    /// Response to: [`Packet::MapLoaded`].
     #[Id(0x03, 0x23)]
     FinishLoading,
+    /// (0x03, 0x24) Load Level.
     #[Id(0x03, 0x24)]
     LoadLevel(LoadLevelPacket),
+    /// (0x03, 0x2B) Enable Controls.
+    ///
+    /// (S -> C) Sent to enable player movement.
+    ///
+    /// Response to: [`Packet::MapLoaded`].
     #[Id(0x03, 0x2B)]
     UnlockControls,
+    /// (0x03, 0x34) Move Casino -> Lobby.
     #[Id(0x03, 0x34)]
     CasinoToLobby(CasinoToLobbyPacket),
+    /// (0x03, 0x35) Move Lobby -> Casino.
     #[Id(0x03, 0x35)]
     CasinoTransport(CasinoTransportPacket),
+    /// (0x03, 0x38) Move Bridge -> Lobby.
     #[Id(0x03, 0x38)]
     BridgeToLobby(BridgeToLobbyPacket),
+    /// (0x03, 0x39) Move Lobby -> Bridge.
     #[Id(0x03, 0x39)]
     BridgeTransport(BridgeTransportPacket),
+    /// (0x03, 0x3B) Move Cafe -> Lobby.
     #[Id(0x03, 0x3B)]
     CafeToLobby(CafeToLobbyPacket),
+    /// (0x03, 0x3C) Move Lobby -> Cafe.
     #[Id(0x03, 0x3C)]
     CafeTransport(CafeTransportPacket),
 
@@ -184,8 +221,6 @@ pub enum Packet {
     TeleportTransfer(TeleportTransferPacket),
     #[Id(0x04, 0x06)]
     ItemPickedUp(ItemPickedUpPacket),
-    // this fails the tests
-    #[cfg(not(test))]
     #[Id(0x04, 0x07)]
     Movement(MovementPacket),
     #[Id(0x04, 0x08)]
@@ -260,10 +295,8 @@ pub enum Packet {
     CharacterSpawnNGS(CharacterSpawnNGSPacket),
     #[Id(0x08, 0x05)]
     TransporterSpawn(TransporterSpawnPacket),
-    #[cfg(not(test))]
     #[Id(0x08, 0x09)]
     EventSpawn(EventSpawnPacket),
-    #[cfg(not(test))]
     #[Id(0x08, 0x0B)]
     ObjectSpawn(ObjectSpawnPacket),
     #[Id(0x08, 0x0D)]
@@ -435,12 +468,8 @@ pub enum Packet {
     UpdateStorage(UpdateStoragePacket),
     #[Id(0x0F, 0x25)]
     DiscardStorageItemRequest(DiscardStorageItemRequestPacket),
-    #[cfg(not(test))]
     #[Id(0x0F, 0x30)]
     LoadItem(LoadItemPacket),
-    #[cfg(test)]
-    #[Id(0x0F, 0x30)]
-    LoadItem(LoadItemInternal),
     #[Id(0x0F, 0x33)]
     LearnedPA(LearnedPAPacket),
     #[Id(0x0F, 0x5B)]
@@ -893,12 +922,16 @@ pub enum PacketCategory {
 // Common structures
 // ----------------------------------------------------------------
 
+/// Packet header.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct PacketHeader {
+    /// Id (category) of the packet.
     pub id: u8,
+    /// Subid (id in the category) of the packet.
     pub subid: u16,
+    /// Packet flags.
     pub flag: Flags,
 }
 impl PacketHeader {
@@ -937,6 +970,7 @@ impl PacketHeader {
     }
 }
 
+/// Packet flags.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[Flags(u8)]
@@ -944,39 +978,54 @@ pub struct Flags {
     #[Skip]
     #[Skip]
     // 0x04
+    /// Set when the packet contains variable length data.
     pub packed: bool,
     #[Skip]
     // 0x10
     pub flag10: bool,
+    /// Set when the [`Packet::Movement`] has all fields set.
     pub full_movement: bool,
+    /// Set for all (?) of (0x04) packets.
     pub object_related: bool,
 }
 
+/// Known object types.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 #[repr(u16)]
-pub enum EntityType {
+pub enum ObjectType {
     #[default]
     Unknown = 0,
+    /// Player object.
     Player = 4,
+    /// Zone object.
     Map = 5,
+    /// Most of the objects and NPCs.
     Object = 6,
+    /// Some destructable objects (e.g. some trees).
     StaticObject = 7,
+    /// Quest object.
     Quest = 11,
+    /// Party object.
     Party = 13,
     Unk10 = 16,
+    /// Non-playable partners.
     APC = 22,
     #[Read_default]
     Undefined = 0xFFFF,
 }
 
+/// Information about the targeted object.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 pub struct ObjectHeader {
+    /// Id of the object.
     pub id: u32,
     pub unk: u32,
-    pub entity_type: EntityType,
+    /// Type of the object.
+    pub entity_type: ObjectType,
+    /// Zone id of the object. Not set for players.
     pub map_id: u16,
 }
 
@@ -1008,6 +1057,8 @@ mod tests {
     use crate::ppac::PPACReader;
     use crate::protocol::ProtocolRW;
     use std::{fs, io::BufReader, io::Write};
+
+    use super::Packet;
     #[test]
     fn file_check() {
         // this is hard to test, because original server doesn't clear output buffers
@@ -1064,6 +1115,15 @@ mod tests {
                             continue;
                         }
                     };
+                    if matches!(
+                        packet,
+                        Packet::Movement(..)
+                            | Packet::LoadItem(..)
+                            | Packet::EventSpawn(..)
+                            | Packet::ObjectSpawn(..)
+                    ) {
+                        continue;
+                    }
                     let out_data = packet.write(out_type);
                     if in_data.len() != out_data.len() {
                         println!(

@@ -1,6 +1,6 @@
 use super::{
     models::{character::Character, Position},
-    EntityType, HelperReadWrite, ObjectHeader, PacketReadWrite,
+    HelperReadWrite, ObjectHeader, ObjectType, PacketReadWrite,
 };
 use crate::AsciiString;
 
@@ -220,7 +220,7 @@ impl Default for CharacterSpawnPacket {
                 id: 0,
                 unk: 0,
                 map_id: 0,
-                entity_type: EntityType::Player,
+                entity_type: ObjectType::Player,
             },
             position: Position {
                 rot_x: half::f16::from_bits(0),
