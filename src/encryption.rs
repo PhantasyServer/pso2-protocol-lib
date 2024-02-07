@@ -1,8 +1,7 @@
+#![allow(unused_variables)]
+#![allow(unused_imports)]
 use crate::PrivateKey;
-#[cfg(all(
-    any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"),
-    feature = "proxy"
-))]
+#[cfg(feature = "proxy")]
 use crate::PublicKey;
 #[cfg(any(feature = "base_enc", feature = "ngs_enc"))]
 use aes::cipher::{block_padding::Pkcs7, BlockDecryptMut, BlockEncryptMut, KeyIvInit};
@@ -31,6 +30,7 @@ pub enum Encryption {
     Rc4((Rc4Dec, Rc4Enc)),
 }
 
+#[cfg(feature = "tokio")]
 #[derive(Debug, Default)]
 pub enum Encryptor {
     #[default]
@@ -43,6 +43,7 @@ pub enum Encryptor {
     Rc4(Rc4Enc),
 }
 
+#[cfg(feature = "tokio")]
 #[derive(Debug, Default)]
 pub enum Decryptor {
     #[default]
@@ -74,6 +75,8 @@ impl Encryption {
                 return Err(Error::new(ErrorKind::Other, format!("{x}")));
             }
         };
+        #[cfg(not(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc")))]
+        let dec_data = packet;
         Self::from_dec_data(&dec_data, is_ngs)
     }
     fn from_dec_data(data: &[u8], is_ngs: bool) -> Result<Self, Error> {
@@ -96,6 +99,7 @@ impl Encryption {
             }
             iv.copy_from_slice(&key_d[0x00..0x10]);
             if is_ngs {
+                #[cfg(feature = "ngs_enc")]
                 return Ok(Self::AesNgs(AesNgs {
                     iv_in: iv,
                     iv_out: iv,
@@ -103,6 +107,7 @@ impl Encryption {
                     secret: key_d.to_vec(),
                 }));
             } else {
+                #[cfg(feature = "base_enc")]
                 return Ok(Self::Aes(Aes {
                     key,
                     secret: key_d.to_vec(),
@@ -131,11 +136,15 @@ impl Encryption {
         }
         Ok(Self::None)
     }
+    #[cfg(feature = "tokio")]
     pub fn into_split(self) -> (Encryptor, Decryptor) {
         match self {
             Encryption::None => (Encryptor::None, Decryptor::None),
+            #[cfg(feature = "base_enc")]
             Encryption::Aes(x) => (Encryptor::Aes(x.clone()), Decryptor::Aes(x)),
+            #[cfg(feature = "ngs_enc")]
             Encryption::AesNgs(x) => (Encryptor::AesNgs(x.clone()), Decryptor::AesNgs(x)),
+            #[cfg(feature = "vita_enc")]
             Encryption::Rc4((dec, enc)) => (Encryptor::Rc4(enc), Decryptor::Rc4(dec)),
         }
     }
@@ -186,6 +195,7 @@ impl Encryption {
     }
 }
 
+#[cfg(feature = "tokio")]
 impl Encryptor {
     pub fn get_key(&self) -> Vec<u8> {
         match self {
@@ -214,6 +224,7 @@ impl Encryptor {
     }
 }
 
+#[cfg(feature = "tokio")]
 impl Decryptor {
     pub fn get_key(&self) -> Vec<u8> {
         match self {

@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["ngs_packets", "item_attrs", "connection", "base_enc", "tokio", "proxy", "ngs_enc", "vita_enc", "ppac"]
+default = ["ngs_packets", "item_attrs", "connection", "base_enc"]
 connection = ["dep:rsa"]
 proxy = []
 ppac = ["dep:zstd"]

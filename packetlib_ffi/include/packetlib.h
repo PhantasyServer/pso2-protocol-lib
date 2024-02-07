@@ -9,9 +9,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define API_VERSION 4
+#define API_VERSION 5
 
-#define PROTOCOL_VERSION 3
+#define PROTOCOL_VERSION 4
 
 typedef enum Direction {
   ToServer,

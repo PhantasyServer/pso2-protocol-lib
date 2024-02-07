@@ -8,9 +8,9 @@ cdef extern from *:
 
 cdef extern from *:
 
-  const uint32_t API_VERSION # = 4
+  const uint32_t API_VERSION # = 5
 
-  const uint32_t PROTOCOL_VERSION # = 3
+  const uint32_t PROTOCOL_VERSION # = 4
 
   cdef enum Direction:
     ToServer,
