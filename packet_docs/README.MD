@@ -93,6 +93,8 @@ TODO: Move all information to here.
 
 ## Packets
 
+NOTICE: Information here is being moved to the code docs.
+
 ### (0x03, 0x08) Server Hello
 
 (Server -> Client) Sent by the server when the client connects to the block server.
