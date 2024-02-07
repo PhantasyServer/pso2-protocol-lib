@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["ngs_packets", "item_attrs", "connection", "base_enc"]
+default = ["ngs_packets", "item_attrs", "connection", "base_enc", "tokio", "proxy", "ngs_enc", "vita_enc", "ppac"]
 connection = ["dep:rsa"]
 proxy = []
 ppac = ["dep:zstd"]
@@ -16,6 +16,7 @@ vita_enc = ["dep:rc4", "dep:rand"]
 base_enc = ["dep:rand", "dep:aes", "dep:cbc", "dep:sha2", "dep:hmac"]
 ngs_enc = ["dep:rand", "dep:aes", "dep:cbc", "dep:sha2", "dep:zstd"]
 serde = ["dep:serde", "half/serde"]
+tokio = ["dep:tokio"]
 
 [dependencies]
 aes = { version = "0.8.3", optional = true }
@@ -25,11 +26,12 @@ hmac = { version = "0.12.1", optional = true }
 rand = { version = "0.8.5", optional = true }
 rc4 = { version = "0.1.0", optional = true }
 rsa = { version = "0.9.6", optional = true }
-serde = { version = "1.0.195", optional = true, features = ["derive"] }
+serde = { version = "1.0.196", optional = true, features = ["derive"] }
 sha2 = { version = "0.10.8", optional = true }
 zstd = { version = "0.13.0", optional = true }
 packetlib_impl = { path = "packetlib_impl" }
 half = "2.3.1"
+tokio = { version = "1.36.0", optional = true, features = ["net", "sync", "io-util"] }
 
 [package.metadata.docs.rs]
 all-features = true

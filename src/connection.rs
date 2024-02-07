@@ -8,6 +8,9 @@ use crate::{
 };
 use std::io::{Read, Write};
 
+//TODO: this code currently only functions as a server.
+//make it work as a client also.
+
 /// Represents a connection between a client and a server.
 #[derive(Debug)]
 pub struct Connection {

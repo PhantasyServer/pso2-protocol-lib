@@ -19,5 +19,11 @@ pub use connection::{Connection, PrivateKey};
 #[cfg(all(feature = "connection", feature = "proxy"))]
 #[cfg_attr(docsrs, doc(cfg(all(feature = "connection", feature = "proxy"))))]
 pub use proxy_connection::{ProxyConnection, PublicKey};
+#[cfg(all(feature = "connection", feature = "proxy", feature = "tokio"))]
+#[cfg_attr(
+    docsrs,
+    doc(cfg(all(feature = "connection", feature = "proxy", feature = "tokio")))
+)]
+pub use proxy_connection::{ProxyRead, ProxyWrite};
 
 pub use asciistring::AsciiString;

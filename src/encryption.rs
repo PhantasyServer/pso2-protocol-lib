@@ -28,7 +28,31 @@ pub enum Encryption {
     #[cfg(feature = "ngs_enc")]
     AesNgs(AesNgs),
     #[cfg(feature = "vita_enc")]
+    Rc4((Rc4Dec, Rc4Enc)),
+}
+
+#[derive(Debug, Default)]
+pub enum Encryptor {
+    #[default]
+    None,
+    #[cfg(feature = "base_enc")]
+    Aes(Aes),
+    #[cfg(feature = "ngs_enc")]
+    AesNgs(AesNgs),
+    #[cfg(feature = "vita_enc")]
     Rc4(Rc4Enc),
+}
+
+#[derive(Debug, Default)]
+pub enum Decryptor {
+    #[default]
+    None,
+    #[cfg(feature = "base_enc")]
+    Aes(Aes),
+    #[cfg(feature = "ngs_enc")]
+    AesNgs(AesNgs),
+    #[cfg(feature = "vita_enc")]
+    Rc4(Rc4Dec),
 }
 
 impl Encryption {
@@ -50,16 +74,19 @@ impl Encryption {
                 return Err(Error::new(ErrorKind::Other, format!("{x}")));
             }
         };
+        Self::from_dec_data(&dec_data, is_ngs)
+    }
+    fn from_dec_data(data: &[u8], is_ngs: bool) -> Result<Self, Error> {
         #[cfg(any(feature = "base_enc", feature = "ngs_enc"))]
-        if dec_data.len() > 0x30 {
+        if data.len() > 0x30 {
             let mut iv: [u8; 0x10] = [
                 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D,
                 0x0E, 0x0F,
             ];
             let mut key = [0u8; 32];
             let mut key_d = [0u8; 0x30];
-            key_d.copy_from_slice(&dec_data[0x0..0x30]);
-            key.copy_from_slice(&dec_data[0x30..0x50]);
+            key_d.copy_from_slice(&data[0x0..0x30]);
+            key.copy_from_slice(&data[0x30..0x50]);
             let aes = cbc::Decryptor::<aes::Aes256>::new(&key.into(), &iv.into());
             match aes.decrypt_padded_mut::<Pkcs7>(&mut key_d) {
                 Ok(_) => {}
@@ -69,7 +96,6 @@ impl Encryption {
             }
             iv.copy_from_slice(&key_d[0x00..0x10]);
             if is_ngs {
-                #[cfg(feature = "ngs_enc")]
                 return Ok(Self::AesNgs(AesNgs {
                     iv_in: iv,
                     iv_out: iv,
@@ -77,7 +103,6 @@ impl Encryption {
                     secret: key_d.to_vec(),
                 }));
             } else {
-                #[cfg(feature = "base_enc")]
                 return Ok(Self::Aes(Aes {
                     key,
                     secret: key_d.to_vec(),
@@ -85,22 +110,111 @@ impl Encryption {
             }
         }
         #[cfg(feature = "vita_enc")]
-        if dec_data.len() <= 0x30 {
+        if data.len() <= 0x30 {
             use rc4::{KeyInit, StreamCipher};
             let mut rc4_key = [0u8; 0x10];
             let mut secret = [0u8; 0x10];
-            rc4_key.clone_from_slice(&dec_data[0x10..0x20]);
-            secret.clone_from_slice(&dec_data[0x00..0x10]);
+            rc4_key.clone_from_slice(&data[0x10..0x20]);
+            secret.clone_from_slice(&data[0x00..0x10]);
             let mut tmp_dec = Rc4::new(&rc4_key.into());
             tmp_dec.apply_keystream(&mut secret);
-            return Ok(Self::Rc4(Rc4Enc {
-                decryptor: Box::new(Rc4::new(&rc4_key.into())),
-                encryptor: Box::new(Rc4::new(&rc4_key.into())),
-                secret,
-            }));
+            return Ok(Self::Rc4((
+                Rc4Dec {
+                    decryptor: Box::new(Rc4::new(&rc4_key.into())),
+                    secret,
+                },
+                Rc4Enc {
+                    encryptor: Box::new(Rc4::new(&rc4_key.into())),
+                    secret,
+                },
+            )));
         }
         Ok(Self::None)
     }
+    pub fn into_split(self) -> (Encryptor, Decryptor) {
+        match self {
+            Encryption::None => (Encryptor::None, Decryptor::None),
+            Encryption::Aes(x) => (Encryptor::Aes(x.clone()), Decryptor::Aes(x)),
+            Encryption::AesNgs(x) => (Encryptor::AesNgs(x.clone()), Decryptor::AesNgs(x)),
+            Encryption::Rc4((dec, enc)) => (Encryptor::Rc4(enc), Decryptor::Rc4(dec)),
+        }
+    }
+    pub fn get_key(&self) -> Vec<u8> {
+        match self {
+            Self::None => Vec::new(),
+            #[cfg(feature = "base_enc")]
+            Self::Aes(x) => x.secret.clone(),
+            #[cfg(feature = "ngs_enc")]
+            Self::AesNgs(x) => x.secret.clone(),
+            #[cfg(feature = "vita_enc")]
+            Self::Rc4((x, _)) => x.secret.to_vec(),
+        }
+    }
+    pub fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+        if data.is_empty() {
+            return Ok(vec![]);
+        }
+        match self {
+            #[cfg(feature = "base_enc")]
+            Self::Aes(x) => x.decrypt(data),
+            #[cfg(feature = "ngs_enc")]
+            Self::AesNgs(x) => x.decrypt(data),
+            #[cfg(feature = "vita_enc")]
+            Self::Rc4((x, _)) => x.decrypt(data),
+            Self::None => Ok(data.to_vec()),
+        }
+    }
+    pub fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+        if data.is_empty() {
+            return Ok(vec![]);
+        }
+        match self {
+            #[cfg(feature = "base_enc")]
+            Self::Aes(x) => x.encrypt(data),
+            #[cfg(feature = "ngs_enc")]
+            Self::AesNgs(x) => x.encrypt(data),
+            #[cfg(feature = "vita_enc")]
+            Self::Rc4((_, x)) => x.encrypt(data),
+            Self::None => Ok(data.to_vec()),
+        }
+    }
+    pub fn is_rc4(&self) -> bool {
+        #[cfg(feature = "vita_enc")]
+        return matches!(self, Self::Rc4(_));
+        #[cfg(not(feature = "vita_enc"))]
+        false
+    }
+}
+
+impl Encryptor {
+    pub fn get_key(&self) -> Vec<u8> {
+        match self {
+            Self::None => Vec::new(),
+            #[cfg(feature = "base_enc")]
+            Self::Aes(x) => x.secret.clone(),
+            #[cfg(feature = "ngs_enc")]
+            Self::AesNgs(x) => x.secret.clone(),
+            #[cfg(feature = "vita_enc")]
+            Self::Rc4(x) => x.secret.to_vec(),
+        }
+    }
+    pub fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+        if data.is_empty() {
+            return Ok(vec![]);
+        }
+        match self {
+            #[cfg(feature = "base_enc")]
+            Self::Aes(x) => x.encrypt(data),
+            #[cfg(feature = "ngs_enc")]
+            Self::AesNgs(x) => x.encrypt(data),
+            #[cfg(feature = "vita_enc")]
+            Self::Rc4(x) => x.encrypt(data),
+            Self::None => Ok(data.to_vec()),
+        }
+    }
+}
+
+impl Decryptor {
     pub fn get_key(&self) -> Vec<u8> {
         match self {
             Self::None => Vec::new(),
@@ -126,20 +240,6 @@ impl Encryption {
             Self::None => Ok(data.to_vec()),
         }
     }
-    pub fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
-        if data.is_empty() {
-            return Ok(vec![]);
-        }
-        match self {
-            #[cfg(feature = "base_enc")]
-            Self::Aes(x) => x.encrypt(data),
-            #[cfg(feature = "ngs_enc")]
-            Self::AesNgs(x) => x.encrypt(data),
-            #[cfg(feature = "vita_enc")]
-            Self::Rc4(x) => x.encrypt(data),
-            Self::None => Ok(data.to_vec()),
-        }
-    }
     pub fn is_rc4(&self) -> bool {
         #[cfg(feature = "vita_enc")]
         return matches!(self, Self::Rc4(_));
@@ -149,7 +249,7 @@ impl Encryption {
 }
 
 #[cfg(feature = "base_enc")]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Aes {
     key: [u8; 0x20],
     secret: Vec<u8>,
@@ -202,7 +302,7 @@ impl Aes {
 }
 
 #[cfg(feature = "ngs_enc")]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AesNgs {
     iv_in: [u8; 0x10],
     iv_out: [u8; 0x10],
@@ -274,18 +374,11 @@ impl AesNgs {
 
 #[cfg(feature = "vita_enc")]
 pub struct Rc4Enc {
-    decryptor: Box<Rc4<U16>>,
     encryptor: Box<Rc4<U16>>,
     secret: [u8; 0x10],
 }
 #[cfg(feature = "vita_enc")]
 impl Rc4Enc {
-    fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
-        use rc4::StreamCipher;
-        let mut data = data.to_vec();
-        self.decryptor.apply_keystream(&mut data);
-        Ok(data)
-    }
     fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
         use rc4::StreamCipher;
         let mut data = data.to_vec();
@@ -297,6 +390,27 @@ impl Rc4Enc {
 impl Debug for Rc4Enc {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Rc4_Enc")
+    }
+}
+
+#[cfg(feature = "vita_enc")]
+pub struct Rc4Dec {
+    decryptor: Box<Rc4<U16>>,
+    secret: [u8; 0x10],
+}
+#[cfg(feature = "vita_enc")]
+impl Rc4Dec {
+    fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+        use rc4::StreamCipher;
+        let mut data = data.to_vec();
+        self.decryptor.apply_keystream(&mut data);
+        Ok(data)
+    }
+}
+#[cfg(feature = "vita_enc")]
+impl Debug for Rc4Dec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Rc4_Dec")
     }
 }
 
