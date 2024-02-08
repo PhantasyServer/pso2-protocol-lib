@@ -992,7 +992,7 @@ fn duration_to_psotime(time: Duration) -> u64 {
 // Tests
 // ----------------------------------------------------------------
 
-#[cfg(test)]
+#[cfg(all(feature = "ppac", test))]
 mod tests {
     use crate::ppac::PPACReader;
     use crate::protocol::ProtocolRW;

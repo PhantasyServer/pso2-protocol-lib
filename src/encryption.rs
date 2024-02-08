@@ -1,6 +1,6 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
-use crate::PrivateKey;
+use crate::connection::PrivateKey;
 #[cfg(feature = "proxy")]
 use crate::PublicKey;
 #[cfg(any(feature = "base_enc", feature = "ngs_enc"))]
@@ -18,6 +18,17 @@ use std::{
     io::{Error, ErrorKind},
 };
 
+pub trait Encryptor {
+    fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>>;
+}
+pub trait Decryptor {
+    fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>>;
+    fn is_rc4(&self) -> bool {
+        false
+    }
+    fn get_len_type(&self) -> LengthType;
+}
+
 #[derive(Debug, Default)]
 pub enum Encryption {
     #[default]
@@ -30,9 +41,14 @@ pub enum Encryption {
     Rc4((Rc4Dec, Rc4Enc)),
 }
 
-#[cfg(feature = "tokio")]
+pub enum LengthType {
+    Default,
+    Aes,
+}
+
+#[cfg(feature = "split_connection")]
 #[derive(Debug, Default)]
-pub enum Encryptor {
+pub enum EncryptorType {
     #[default]
     None,
     #[cfg(feature = "base_enc")]
@@ -43,9 +59,9 @@ pub enum Encryptor {
     Rc4(Rc4Enc),
 }
 
-#[cfg(feature = "tokio")]
+#[cfg(feature = "split_connection")]
 #[derive(Debug, Default)]
-pub enum Decryptor {
+pub enum DecryptorType {
     #[default]
     None,
     #[cfg(feature = "base_enc")]
@@ -57,7 +73,7 @@ pub enum Decryptor {
 }
 
 impl Encryption {
-    pub fn from_rsa_data(packet: &[u8], is_ngs: bool, key: &PrivateKey) -> std::io::Result<Self> {
+    pub fn decrypt_rsa_data(packet: &[u8], key: &PrivateKey) -> std::io::Result<Vec<u8>> {
         #[cfg(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"))]
         let private_key = match key.into_key() {
             Ok(Some(x)) => x,
@@ -76,10 +92,10 @@ impl Encryption {
             }
         };
         #[cfg(not(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc")))]
-        let dec_data = packet;
-        Self::from_dec_data(&dec_data, is_ngs)
+        let dec_data = packet.to_vec();
+        Ok(dec_data)
     }
-    fn from_dec_data(data: &[u8], is_ngs: bool) -> Result<Self, Error> {
+    pub fn from_dec_data(data: &[u8], is_ngs: bool) -> std::io::Result<Self> {
         #[cfg(any(feature = "base_enc", feature = "ngs_enc"))]
         if data.len() > 0x30 {
             let mut iv: [u8; 0x10] = [
@@ -136,16 +152,16 @@ impl Encryption {
         }
         Ok(Self::None)
     }
-    #[cfg(feature = "tokio")]
-    pub fn into_split(self) -> (Encryptor, Decryptor) {
+    #[cfg(feature = "split_connection")]
+    pub fn into_split(self) -> (EncryptorType, DecryptorType) {
         match self {
-            Encryption::None => (Encryptor::None, Decryptor::None),
+            Encryption::None => (EncryptorType::None, DecryptorType::None),
             #[cfg(feature = "base_enc")]
-            Encryption::Aes(x) => (Encryptor::Aes(x.clone()), Decryptor::Aes(x)),
+            Encryption::Aes(x) => (EncryptorType::Aes(x.clone()), DecryptorType::Aes(x)),
             #[cfg(feature = "ngs_enc")]
-            Encryption::AesNgs(x) => (Encryptor::AesNgs(x.clone()), Decryptor::AesNgs(x)),
+            Encryption::AesNgs(x) => (EncryptorType::AesNgs(x.clone()), DecryptorType::AesNgs(x)),
             #[cfg(feature = "vita_enc")]
-            Encryption::Rc4((dec, enc)) => (Encryptor::Rc4(enc), Decryptor::Rc4(dec)),
+            Encryption::Rc4((dec, enc)) => (EncryptorType::Rc4(enc), DecryptorType::Rc4(dec)),
         }
     }
     pub fn get_key(&self) -> Vec<u8> {
@@ -159,21 +175,10 @@ impl Encryption {
             Self::Rc4((x, _)) => x.secret.to_vec(),
         }
     }
-    pub fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
-        if data.is_empty() {
-            return Ok(vec![]);
-        }
-        match self {
-            #[cfg(feature = "base_enc")]
-            Self::Aes(x) => x.decrypt(data),
-            #[cfg(feature = "ngs_enc")]
-            Self::AesNgs(x) => x.decrypt(data),
-            #[cfg(feature = "vita_enc")]
-            Self::Rc4((x, _)) => x.decrypt(data),
-            Self::None => Ok(data.to_vec()),
-        }
-    }
-    pub fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+}
+
+impl Encryptor for Encryption {
+    fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
         if data.is_empty() {
             return Ok(vec![]);
         }
@@ -187,16 +192,48 @@ impl Encryption {
             Self::None => Ok(data.to_vec()),
         }
     }
-    pub fn is_rc4(&self) -> bool {
-        #[cfg(feature = "vita_enc")]
-        return matches!(self, Self::Rc4(_));
-        #[cfg(not(feature = "vita_enc"))]
-        false
+}
+impl Decryptor for Encryption {
+    fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+        if data.is_empty() {
+            return Ok(vec![]);
+        }
+        match self {
+            #[cfg(feature = "base_enc")]
+            Self::Aes(x) => x.decrypt(data),
+            #[cfg(feature = "ngs_enc")]
+            Self::AesNgs(x) => x.decrypt(data),
+            #[cfg(feature = "vita_enc")]
+            Self::Rc4((x, _)) => x.decrypt(data),
+            Self::None => Ok(data.to_vec()),
+        }
+    }
+    fn is_rc4(&self) -> bool {
+        match self {
+            #[cfg(feature = "base_enc")]
+            Self::Aes(x) => x.is_rc4(),
+            #[cfg(feature = "ngs_enc")]
+            Self::AesNgs(x) => x.is_rc4(),
+            #[cfg(feature = "vita_enc")]
+            Self::Rc4((x, _)) => x.is_rc4(),
+            Self::None => false,
+        }
+    }
+    fn get_len_type(&self) -> LengthType {
+        match self {
+            #[cfg(feature = "base_enc")]
+            Self::Aes(_) => LengthType::Aes,
+            #[cfg(feature = "ngs_enc")]
+            Self::AesNgs(_) => LengthType::Aes,
+            #[cfg(feature = "vita_enc")]
+            Self::Rc4(_) => LengthType::Default,
+            Self::None => LengthType::Default,
+        }
     }
 }
 
-#[cfg(feature = "tokio")]
-impl Encryptor {
+#[cfg(feature = "split_connection")]
+impl EncryptorType {
     pub fn get_key(&self) -> Vec<u8> {
         match self {
             Self::None => Vec::new(),
@@ -208,7 +245,10 @@ impl Encryptor {
             Self::Rc4(x) => x.secret.to_vec(),
         }
     }
-    pub fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+}
+#[cfg(feature = "split_connection")]
+impl Encryptor for EncryptorType {
+    fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
         if data.is_empty() {
             return Ok(vec![]);
         }
@@ -224,8 +264,8 @@ impl Encryptor {
     }
 }
 
-#[cfg(feature = "tokio")]
-impl Decryptor {
+#[cfg(feature = "split_connection")]
+impl DecryptorType {
     pub fn get_key(&self) -> Vec<u8> {
         match self {
             Self::None => Vec::new(),
@@ -237,7 +277,11 @@ impl Decryptor {
             Self::Rc4(x) => x.secret.to_vec(),
         }
     }
-    pub fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+}
+
+#[cfg(feature = "split_connection")]
+impl Decryptor for DecryptorType {
+    fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
         if data.is_empty() {
             return Ok(vec![]);
         }
@@ -251,11 +295,27 @@ impl Decryptor {
             Self::None => Ok(data.to_vec()),
         }
     }
-    pub fn is_rc4(&self) -> bool {
-        #[cfg(feature = "vita_enc")]
-        return matches!(self, Self::Rc4(_));
-        #[cfg(not(feature = "vita_enc"))]
-        false
+    fn is_rc4(&self) -> bool {
+        match self {
+            #[cfg(feature = "base_enc")]
+            Self::Aes(x) => x.is_rc4(),
+            #[cfg(feature = "ngs_enc")]
+            Self::AesNgs(x) => x.is_rc4(),
+            #[cfg(feature = "vita_enc")]
+            Self::Rc4(x) => x.is_rc4(),
+            Self::None => false,
+        }
+    }
+    fn get_len_type(&self) -> LengthType {
+        match self {
+            #[cfg(feature = "base_enc")]
+            Self::Aes(_) => LengthType::Aes,
+            #[cfg(feature = "ngs_enc")]
+            Self::AesNgs(_) => LengthType::Aes,
+            #[cfg(feature = "vita_enc")]
+            Self::Rc4(_) => LengthType::Default,
+            Self::None => LengthType::Default,
+        }
     }
 }
 
@@ -266,7 +326,7 @@ pub struct Aes {
     secret: Vec<u8>,
 }
 #[cfg(feature = "base_enc")]
-impl Aes {
+impl Decryptor for Aes {
     fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
         let mut iv = [0u8; 0x10];
         iv.copy_from_slice(&data[0x48..0x58]);
@@ -280,6 +340,12 @@ impl Aes {
         };
         Ok(plain_data.to_vec())
     }
+    fn get_len_type(&self) -> LengthType {
+        LengthType::Aes
+    }
+}
+#[cfg(feature = "base_enc")]
+impl Encryptor for Aes {
     fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
         use hmac::Hmac;
         use hmac::Mac;
@@ -321,7 +387,7 @@ pub struct AesNgs {
     secret: Vec<u8>,
 }
 #[cfg(feature = "ngs_enc")]
-impl AesNgs {
+impl Decryptor for AesNgs {
     fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
         let mut next_iv = [0u8; 0x10];
         next_iv.copy_from_slice(&data[data.len() - 0x10..]);
@@ -345,6 +411,12 @@ impl AesNgs {
         self.iv_in = next_iv;
         Ok(ready_data)
     }
+    fn get_len_type(&self) -> LengthType {
+        LengthType::Aes
+    }
+}
+#[cfg(feature = "ngs_enc")]
+impl Encryptor for AesNgs {
     fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
         use sha2::Digest;
         let mut tmp_data = vec![];
@@ -389,7 +461,7 @@ pub struct Rc4Enc {
     secret: [u8; 0x10],
 }
 #[cfg(feature = "vita_enc")]
-impl Rc4Enc {
+impl Encryptor for Rc4Enc {
     fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
         use rc4::StreamCipher;
         let mut data = data.to_vec();
@@ -410,12 +482,18 @@ pub struct Rc4Dec {
     secret: [u8; 0x10],
 }
 #[cfg(feature = "vita_enc")]
-impl Rc4Dec {
+impl Decryptor for Rc4Dec {
     fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
         use rc4::StreamCipher;
         let mut data = data.to_vec();
         self.decryptor.apply_keystream(&mut data);
         Ok(data)
+    }
+    fn is_rc4(&self) -> bool {
+        true
+    }
+    fn get_len_type(&self) -> LengthType {
+        LengthType::Default
     }
 }
 #[cfg(feature = "vita_enc")]
@@ -429,26 +507,7 @@ impl Debug for Rc4Dec {
     any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"),
     feature = "proxy"
 ))]
-pub fn reencrypt(
-    packet: &[u8],
-    in_key: &PrivateKey,
-    out_key: &PublicKey,
-) -> std::io::Result<Vec<u8>> {
-    let private_key = match in_key.into_key() {
-        Ok(Some(x)) => x,
-        Ok(None) => {
-            return Err(Error::new(ErrorKind::Other, "No key provided".to_string()));
-        }
-        Err(x) => {
-            return Err(Error::new(ErrorKind::Other, format!("{x}")));
-        }
-    };
-    let dec_data = match private_key.decrypt(Pkcs1v15Encrypt, packet) {
-        Ok(x) => x,
-        Err(x) => {
-            return Err(Error::new(ErrorKind::Other, format!("{x}")));
-        }
-    };
+pub fn encrypt(packet: &[u8], out_key: &PublicKey) -> std::io::Result<Vec<u8>> {
     let out_key = match out_key.into_key() {
         Ok(Some(x)) => x,
         Ok(None) => {
@@ -458,7 +517,7 @@ pub fn reencrypt(
             return Err(Error::new(ErrorKind::Other, format!("{x}")));
         }
     };
-    let enc_data = match out_key.encrypt(&mut rand::thread_rng(), Pkcs1v15Encrypt, &dec_data) {
+    let enc_data = match out_key.encrypt(&mut rand::thread_rng(), Pkcs1v15Encrypt, &packet) {
         Ok(x) => x,
         Err(x) => {
             return Err(Error::new(ErrorKind::Other, format!("{x}")));
@@ -471,6 +530,6 @@ pub fn reencrypt(
     not(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc")),
     feature = "proxy"
 ))]
-pub fn reencrypt(packet: &[u8], _: &PrivateKey, _: &PublicKey) -> std::io::Result<Vec<u8>> {
+pub fn encrypt(packet: &[u8], _: &PublicKey) -> std::io::Result<Vec<u8>> {
     Ok(packet.to_vec())
 }

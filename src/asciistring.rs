@@ -1,3 +1,4 @@
+//! Ascii only string.
 use crate::protocol::{read_magic, write_magic};
 use byteorder::{LittleEndian, WriteBytesExt};
 use std::io::{Read, Seek, SeekFrom, Write};
