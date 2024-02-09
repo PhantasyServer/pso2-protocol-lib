@@ -512,7 +512,7 @@ pub fn encrypt(packet: &[u8], out_key: &PublicKey) -> std::io::Result<Vec<u8>> {
             return Err(Error::new(ErrorKind::Other, format!("{x}")));
         }
     };
-    let enc_data = match out_key.encrypt(&mut rand::thread_rng(), Pkcs1v15Encrypt, &packet) {
+    let enc_data = match out_key.encrypt(&mut rand::thread_rng(), Pkcs1v15Encrypt, packet) {
         Ok(x) => x,
         Err(x) => {
             return Err(Error::new(ErrorKind::Other, format!("{x}")));

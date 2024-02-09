@@ -24,7 +24,7 @@ use tokio::{
 
 /// Represents a connection between a client and a server.
 #[derive(Debug)]
-pub struct Connection<P: ProtocolRW> {
+pub struct Connection<P: ProtocolRW + Send> {
     // this is probably not the best way to do this
     #[cfg(not(feature = "tokio"))]
     stream: std::net::TcpStream,
@@ -84,7 +84,7 @@ pub enum PrivateKey {
     Key(RsaPrivateKey),
 }
 
-impl<P: ProtocolRW> Connection<P> {
+impl<P: ProtocolRW + Send> Connection<P> {
     /// Creates a new connection.
     /// `in_keyfile` is the RSA key to decrypt encryption request.
     /// `out_keyfile` is the RSA key to encrypt encryption request.
@@ -282,7 +282,7 @@ impl<P: ProtocolRW> Connection<P> {
         self.read_packets.append(&mut packets);
         if let Some(data) = packet.mut_enc_data() {
             if !matches!(&self.in_keyfile, PrivateKey::None) {
-                let dec_data = Encryption::decrypt_rsa_data(&data, &self.in_keyfile)?;
+                let dec_data = Encryption::decrypt_rsa_data(data, &self.in_keyfile)?;
                 self.encryption = Encryption::from_dec_data(
                     &dec_data,
                     matches!(self.packet_type, PacketType::NGS),
@@ -325,7 +325,10 @@ impl<P: ProtocolRW> Connection<P> {
     /// Sends a packet.
     #[cfg(feature = "tokio")]
     #[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
-    pub async fn write_packet_async(&mut self, packet: &impl ProtocolRW) -> std::io::Result<()> {
+    pub async fn write_packet_async(
+        &mut self,
+        packet: &(impl ProtocolRW + Sync),
+    ) -> std::io::Result<()> {
         self.prepare_data(packet)?;
         self.write.flush_async(&mut self.stream).await?;
         Ok(())
@@ -340,7 +343,7 @@ impl<P: ProtocolRW> Connection<P> {
             let enc =
                 Encryption::from_dec_data(rsa_data, matches!(self.packet_type, PacketType::NGS))?;
             self.encryption = enc;
-            new_packet.rsa_data = encrypt(&rsa_data, &self.out_keyfile)?;
+            new_packet.rsa_data = encrypt(rsa_data, &self.out_keyfile)?;
             let packet = Packet::EncryptionRequest(new_packet).write(self.packet_type);
             self.write.prepare_data(&packet, &mut Encryption::None)?;
             packet
@@ -376,7 +379,7 @@ impl<P: ProtocolRW> Connection<P> {
 #[cfg(feature = "split_connection")]
 #[cfg_attr(docsrs, doc(cfg(feature = "split_connection")))]
 #[derive(Debug)]
-pub struct ConnectionRead<P: ProtocolRW> {
+pub struct ConnectionRead<P: ProtocolRW + Send> {
     #[cfg(not(feature = "tokio"))]
     stream: std::net::TcpStream,
     #[cfg(feature = "tokio")]
@@ -417,7 +420,7 @@ pub struct ConnectionWrite {
 
 #[cfg(feature = "split_connection")]
 #[cfg_attr(docsrs, doc(cfg(feature = "split_connection")))]
-impl<P: ProtocolRW> ConnectionRead<P> {
+impl<P: ProtocolRW + Send> ConnectionRead<P> {
     /// Returns the ip address of the client.
     pub fn get_ip(&self) -> std::io::Result<std::net::Ipv4Addr> {
         let ip = self.stream.peer_addr()?.ip();
@@ -536,7 +539,7 @@ impl<P: ProtocolRW> ConnectionRead<P> {
         if let Some(data) = packet.mut_enc_data() {
             println!("got enc data");
             if !matches!(&self.in_keyfile, PrivateKey::None) {
-                let dec_data = Encryption::decrypt_rsa_data(&data, &self.in_keyfile)?;
+                let dec_data = Encryption::decrypt_rsa_data(data, &self.in_keyfile)?;
                 let (enc, dec) = Encryption::from_dec_data(
                     &dec_data,
                     matches!(self.packet_type, PacketType::NGS),
@@ -625,7 +628,10 @@ impl ConnectionWrite {
     /// Sends a packet.
     #[cfg(feature = "tokio")]
     #[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
-    pub async fn write_packet_async(&mut self, packet: &impl ProtocolRW) -> std::io::Result<()> {
+    pub async fn write_packet_async(
+        &mut self,
+        packet: &(impl ProtocolRW + Sync),
+    ) -> std::io::Result<()> {
         self.prepare_data(packet)?;
         self.write.flush_async(&mut self.stream).await?;
         Ok(())
@@ -649,7 +655,7 @@ impl ConnectionWrite {
                     .into_split();
             let _ = self.enc_channel.0.send(dec);
             self.encryption = enc;
-            new_packet.rsa_data = encrypt(&rsa_data, &self.out_keyfile)?;
+            new_packet.rsa_data = encrypt(rsa_data, &self.out_keyfile)?;
             let packet = Packet::EncryptionRequest(new_packet).write(self.packet_type);
             self.write.prepare_data(&packet, &mut EncryptorType::None)?;
             packet
