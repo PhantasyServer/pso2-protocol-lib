@@ -1,16 +1,17 @@
 pub(crate) mod conn_impl;
-#[cfg(feature = "proxy")]
-pub mod proxy;
 #[cfg(feature = "split_connection")]
 use crate::encryption::{DecryptorType, EncryptorType};
 #[cfg(feature = "ppac")]
 use crate::ppac::{Direction, PPACWriter};
 use crate::{
-    encryption::Encryption,
-    protocol::{Packet, PacketType, ProtocolRW},
+    encryption::{encrypt, Encryption},
+    protocol::{login::EncryptionRequestPacket, Packet, PacketType, ProtocolRW},
 };
 use conn_impl::{ConnectionReader, ConnectionWriter};
-use rsa::{pkcs8::DecodePrivateKey, BigUint, RsaPrivateKey};
+use rsa::{
+    pkcs8::{DecodePrivateKey, DecodePublicKey},
+    BigUint, RsaPrivateKey, RsaPublicKey,
+};
 #[cfg(all(feature = "split_connection", not(feature = "tokio")))]
 use std::sync::mpsc::{Receiver, Sender};
 #[cfg(all(feature = "split_connection", feature = "ppac"))]
@@ -21,12 +22,9 @@ use tokio::{
     sync::mpsc::{UnboundedReceiver as Receiver, UnboundedSender as Sender},
 };
 
-//TODO: this code currently only functions as a server.
-//make it work as a client also.
-
 /// Represents a connection between a client and a server.
 #[derive(Debug)]
-pub struct Connection {
+pub struct Connection<P: ProtocolRW> {
     // this is probably not the best way to do this
     #[cfg(not(feature = "tokio"))]
     stream: std::net::TcpStream,
@@ -35,13 +33,31 @@ pub struct Connection {
     encryption: Encryption,
     read: ConnectionReader,
     write: ConnectionWriter,
-    read_packets: Vec<Packet>,
+    read_packets: Vec<P>,
     in_keyfile: PrivateKey,
+    out_keyfile: PublicKey,
     packet_type: PacketType,
     #[cfg(feature = "ppac")]
     ppac: Option<PPACWriter<std::fs::File>>,
     #[cfg(feature = "ppac")]
     direction: Direction,
+}
+
+/// Possible RSA public key formats.
+#[derive(Debug, Clone)]
+pub enum PublicKey {
+    /// No public key provided.
+    None,
+    /// Path to the RSA key in the PEM-encoded PKCS#8 file.
+    Path(std::path::PathBuf),
+    /// RSA key in component form. All values are in little endian form.
+    Params {
+        /// RSA modulus 'n'.
+        n: Vec<u8>,
+        /// Public exponent 'e'.
+        e: Vec<u8>,
+    },
+    Key(RsaPublicKey),
 }
 
 /// Possible RSA private key formats.
@@ -68,9 +84,10 @@ pub enum PrivateKey {
     Key(RsaPrivateKey),
 }
 
-impl Connection {
+impl<P: ProtocolRW> Connection<P> {
     /// Creates a new connection.
-    /// `in_keyfile` is the RSA key to decrypt client's encryption request.
+    /// `in_keyfile` is the RSA key to decrypt encryption request.
+    /// `out_keyfile` is the RSA key to encrypt encryption request.
     ///
     /// # Note
     ///
@@ -85,6 +102,7 @@ impl Connection {
         stream: std::net::TcpStream,
         packet_type: PacketType,
         in_keyfile: PrivateKey,
+        out_keyfile: PublicKey,
     ) -> Self {
         #[cfg(feature = "tokio")]
         let stream = {
@@ -100,6 +118,7 @@ impl Connection {
             write: ConnectionWriter::default(),
             read_packets: Vec::new(),
             in_keyfile,
+            out_keyfile,
             packet_type,
             #[cfg(feature = "ppac")]
             ppac: None,
@@ -109,13 +128,15 @@ impl Connection {
     }
 
     /// Creates a new connection.
-    /// `in_keyfile` is the RSA key to decrypt client's encryption request.
+    /// `in_keyfile` is the RSA key to decrypt encryption request.
+    /// `out_keyfile` is the RSA key to encrypt encryption request.
     #[cfg(feature = "tokio")]
     #[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
     pub fn new_async(
         stream: tokio::net::TcpStream,
         packet_type: PacketType,
         in_keyfile: PrivateKey,
+        out_keyfile: PublicKey,
     ) -> Self {
         Self {
             stream,
@@ -124,6 +145,7 @@ impl Connection {
             write: ConnectionWriter::default(),
             read_packets: Vec::new(),
             in_keyfile,
+            out_keyfile,
             packet_type,
             #[cfg(feature = "ppac")]
             ppac: None,
@@ -154,7 +176,7 @@ impl Connection {
     /// Splits the connection into separate read and write components.
     #[cfg(feature = "split_connection")]
     #[cfg_attr(docsrs, doc(cfg(feature = "split_connection")))]
-    pub fn into_split(self) -> std::io::Result<(ConnectionRead, ConnectionWrite)> {
+    pub fn into_split(self) -> std::io::Result<(ConnectionRead<P>, ConnectionWrite)> {
         #[cfg(feature = "tokio")]
         let (read, write) = self.stream.into_split();
         #[cfg(not(feature = "tokio"))]
@@ -200,6 +222,7 @@ impl Connection {
             packettype_channel: (writept_send, writept_recv),
             write: self.write,
             encryption: enc,
+            out_keyfile: self.out_keyfile,
             packet_type: self.packet_type,
             #[cfg(feature = "ppac")]
             ppac,
@@ -214,7 +237,7 @@ impl Connection {
     /// # Note
     ///
     /// If `tokio` feature is enabled this function becomes nonblocking
-    pub fn read_packet(&mut self) -> std::io::Result<Packet> {
+    pub fn read_packet(&mut self) -> std::io::Result<P> {
         if !self.read_packets.is_empty() {
             return Ok(self.read_packets.remove(0));
         }
@@ -235,7 +258,7 @@ impl Connection {
     /// Reads a packet from the stream.
     #[cfg(feature = "tokio")]
     #[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
-    pub async fn read_packet_async(&mut self) -> std::io::Result<Packet> {
+    pub async fn read_packet_async(&mut self) -> std::io::Result<P> {
         if !self.read_packets.is_empty() {
             return Ok(self.read_packets.remove(0));
         }
@@ -253,18 +276,18 @@ impl Connection {
         }
         self.parse_packet(&data)
     }
-    fn parse_packet(&mut self, data: &[u8]) -> std::io::Result<Packet> {
-        let mut packets = Packet::read(data, self.packet_type)?;
+    fn parse_packet(&mut self, data: &[u8]) -> std::io::Result<P> {
+        let mut packets = P::read(data, self.packet_type)?;
         let mut packet = packets.remove(0);
         self.read_packets.append(&mut packets);
-        if let Packet::EncryptionRequest(data) = &mut packet {
+        if let Some(data) = packet.mut_enc_data() {
             if !matches!(&self.in_keyfile, PrivateKey::None) {
-                let dec_data = Encryption::decrypt_rsa_data(&data.rsa_data, &self.in_keyfile)?;
+                let dec_data = Encryption::decrypt_rsa_data(&data, &self.in_keyfile)?;
                 self.encryption = Encryption::from_dec_data(
                     &dec_data,
                     matches!(self.packet_type, PacketType::NGS),
                 )?;
-                data.rsa_data = dec_data;
+                *data = dec_data;
             }
         }
         Ok(packet)
@@ -274,9 +297,9 @@ impl Connection {
     /// connection.
     #[cfg(feature = "ppac")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ppac")))]
-    pub fn create_ppac<P: AsRef<std::path::Path>>(
+    pub fn create_ppac<PT: AsRef<std::path::Path>>(
         &mut self,
-        path: P,
+        path: PT,
         direction: Direction,
     ) -> std::io::Result<()> {
         self.ppac = Some(PPACWriter::new(
@@ -293,7 +316,7 @@ impl Connection {
     /// # Note
     ///
     /// If `tokio` feature is enabled this function becomes nonblocking
-    pub fn write_packet(&mut self, packet: &Packet) -> std::io::Result<()> {
+    pub fn write_packet(&mut self, packet: &impl ProtocolRW) -> std::io::Result<()> {
         self.prepare_data(packet)?;
         self.write.flush(&mut self.stream)?;
         Ok(())
@@ -302,19 +325,34 @@ impl Connection {
     /// Sends a packet.
     #[cfg(feature = "tokio")]
     #[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
-    pub async fn write_packet_async(&mut self, packet: &Packet) -> std::io::Result<()> {
+    pub async fn write_packet_async(&mut self, packet: &impl ProtocolRW) -> std::io::Result<()> {
         self.prepare_data(packet)?;
         self.write.flush_async(&mut self.stream).await?;
         Ok(())
     }
 
-    fn prepare_data(&mut self, packet: &Packet) -> std::io::Result<()> {
-        let packet = packet.write(self.packet_type);
+    fn prepare_data(&mut self, packet: &impl ProtocolRW) -> std::io::Result<()> {
+        let _packet = if packet.is_enc_data() && !matches!(&self.out_keyfile, PublicKey::None) {
+            let rsa_data = packet
+                .as_enc_data()
+                .expect("is_enc_data returned true while as_enc_data returned None");
+            let mut new_packet = EncryptionRequestPacket::default();
+            let enc =
+                Encryption::from_dec_data(rsa_data, matches!(self.packet_type, PacketType::NGS))?;
+            self.encryption = enc;
+            new_packet.rsa_data = encrypt(&rsa_data, &self.out_keyfile)?;
+            let packet = Packet::EncryptionRequest(new_packet).write(self.packet_type);
+            self.write.prepare_data(&packet, &mut Encryption::None)?;
+            packet
+        } else {
+            let packet = packet.write(self.packet_type);
+            self.write.prepare_data(&packet, &mut self.encryption)?;
+            packet
+        };
         #[cfg(feature = "ppac")]
         if let Some(writer) = &mut self.ppac {
-            writer.write_data(crate::ppac::get_now(), self.direction, &packet)?;
+            writer.write_data(crate::ppac::get_now(), self.direction, &_packet)?;
         }
-        self.write.prepare_data(&packet, &mut self.encryption)?;
         Ok(())
     }
 
@@ -338,7 +376,7 @@ impl Connection {
 #[cfg(feature = "split_connection")]
 #[cfg_attr(docsrs, doc(cfg(feature = "split_connection")))]
 #[derive(Debug)]
-pub struct ConnectionRead {
+pub struct ConnectionRead<P: ProtocolRW> {
     #[cfg(not(feature = "tokio"))]
     stream: std::net::TcpStream,
     #[cfg(feature = "tokio")]
@@ -347,7 +385,7 @@ pub struct ConnectionRead {
     packettype_channel: (Sender<PacketType>, Receiver<PacketType>),
     read: ConnectionReader,
     encryption: DecryptorType,
-    read_packets: Vec<Packet>,
+    read_packets: Vec<P>,
     in_keyfile: PrivateKey,
     packet_type: PacketType,
     #[cfg(feature = "ppac")]
@@ -369,6 +407,7 @@ pub struct ConnectionWrite {
     packettype_channel: (Sender<PacketType>, Receiver<PacketType>),
     write: ConnectionWriter,
     encryption: EncryptorType,
+    out_keyfile: PublicKey,
     packet_type: PacketType,
     #[cfg(feature = "ppac")]
     ppac: Option<Arc<Mutex<PPACWriter<std::fs::File>>>>,
@@ -378,7 +417,7 @@ pub struct ConnectionWrite {
 
 #[cfg(feature = "split_connection")]
 #[cfg_attr(docsrs, doc(cfg(feature = "split_connection")))]
-impl ConnectionRead {
+impl<P: ProtocolRW> ConnectionRead<P> {
     /// Returns the ip address of the client.
     pub fn get_ip(&self) -> std::io::Result<std::net::Ipv4Addr> {
         let ip = self.stream.peer_addr()?.ip();
@@ -429,7 +468,7 @@ impl ConnectionRead {
     /// If the encryption was not yet setup (i.e [`Packet::EncryptionResponse`] was not
     /// sent) and the stream is in a blocking mode then this function might not setup
     /// encryption correctly  
-    pub fn read_packet(&mut self) -> std::io::Result<Packet> {
+    pub fn read_packet(&mut self) -> std::io::Result<P> {
         if !self.read_packets.is_empty() {
             return Ok(self.get_one_packet());
         }
@@ -456,7 +495,7 @@ impl ConnectionRead {
     /// Reads a packet from stream.
     #[cfg(feature = "tokio")]
     #[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
-    pub async fn read_packet_async(&mut self) -> std::io::Result<Packet> {
+    pub async fn read_packet_async(&mut self) -> std::io::Result<P> {
         if !self.read_packets.is_empty() {
             return Ok(self.get_one_packet());
         }
@@ -490,19 +529,21 @@ impl ConnectionRead {
         }
         self.parse_packet(&data)
     }
-    fn parse_packet(&mut self, data: &[u8]) -> std::io::Result<Packet> {
-        let mut packets = Packet::read(data, self.packet_type)?;
+    fn parse_packet(&mut self, data: &[u8]) -> std::io::Result<P> {
+        let mut packets = P::read(data, self.packet_type)?;
         let mut packet = packets.remove(0);
         self.read_packets.append(&mut packets);
-        if let Packet::EncryptionRequest(data) = &mut packet {
+        if let Some(data) = packet.mut_enc_data() {
+            println!("got enc data");
             if !matches!(&self.in_keyfile, PrivateKey::None) {
-                let dec_data = Encryption::decrypt_rsa_data(&data.rsa_data, &self.in_keyfile)?;
+                let dec_data = Encryption::decrypt_rsa_data(&data, &self.in_keyfile)?;
                 let (enc, dec) = Encryption::from_dec_data(
                     &dec_data,
                     matches!(self.packet_type, PacketType::NGS),
                 )?
                 .into_split();
-                data.rsa_data = dec_data;
+                println!("decrypted data");
+                *data = dec_data;
                 let _ = self.enc_channel.0.send(enc);
                 self.encryption = dec;
             }
@@ -519,7 +560,7 @@ impl ConnectionRead {
         }
         self.encryption.get_key()
     }
-    fn get_one_packet(&mut self) -> Packet {
+    fn get_one_packet(&mut self) -> P {
         self.read_packets.remove(0)
     }
 }
@@ -575,20 +616,21 @@ impl ConnectionWrite {
     /// # Note
     ///
     /// If `tokio` feature is enabled this function becomes nonblocking
-    pub fn write_packet(&mut self, packet: &Packet) -> std::io::Result<()> {
+    pub fn write_packet(&mut self, packet: &impl ProtocolRW) -> std::io::Result<()> {
         self.prepare_data(packet)?;
         self.write.flush(&mut self.stream)?;
         Ok(())
     }
+
     /// Sends a packet.
     #[cfg(feature = "tokio")]
     #[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
-    pub async fn write_packet_async(&mut self, packet: &Packet) -> std::io::Result<()> {
+    pub async fn write_packet_async(&mut self, packet: &impl ProtocolRW) -> std::io::Result<()> {
         self.prepare_data(packet)?;
         self.write.flush_async(&mut self.stream).await?;
         Ok(())
     }
-    fn prepare_data(&mut self, packet: &Packet) -> std::io::Result<()> {
+    fn prepare_data(&mut self, packet: &impl ProtocolRW) -> std::io::Result<()> {
         if matches!(self.encryption, EncryptorType::None) {
             if let Ok(enc) = self.enc_channel.1.try_recv() {
                 self.encryption = enc
@@ -597,13 +639,30 @@ impl ConnectionWrite {
         if let Ok(packet_type) = self.packettype_channel.1.try_recv() {
             self.packet_type = packet_type
         }
-        let packet = packet.write(self.packet_type);
+        let _packet = if packet.is_enc_data() && !matches!(&self.out_keyfile, PublicKey::None) {
+            let rsa_data = packet
+                .as_enc_data()
+                .expect("is_enc_data returned true while as_enc_data returned None");
+            let mut new_packet = EncryptionRequestPacket::default();
+            let (enc, dec) =
+                Encryption::from_dec_data(rsa_data, matches!(self.packet_type, PacketType::NGS))?
+                    .into_split();
+            let _ = self.enc_channel.0.send(dec);
+            self.encryption = enc;
+            new_packet.rsa_data = encrypt(&rsa_data, &self.out_keyfile)?;
+            let packet = Packet::EncryptionRequest(new_packet).write(self.packet_type);
+            self.write.prepare_data(&packet, &mut EncryptorType::None)?;
+            packet
+        } else {
+            let packet = packet.write(self.packet_type);
+            self.write.prepare_data(&packet, &mut self.encryption)?;
+            packet
+        };
         #[cfg(feature = "ppac")]
         if let Some(writer) = &self.ppac {
             let mut lock = writer.lock().unwrap();
-            lock.write_data(crate::ppac::get_now(), self.direction, &packet)?;
+            lock.write_data(crate::ppac::get_now(), self.direction, &_packet)?;
         }
-        self.write.prepare_data(&packet, &mut self.encryption)?;
 
         Ok(())
     }
@@ -626,6 +685,23 @@ impl ConnectionWrite {
     #[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
     pub async fn flush_async(&mut self) -> std::io::Result<()> {
         self.write.flush_async(&mut self.stream).await
+    }
+}
+
+impl PublicKey {
+    pub fn into_key(&self) -> rsa::errors::Result<Option<RsaPublicKey>> {
+        match self {
+            Self::None => Ok(None),
+            Self::Path(p) => Ok(Some(
+                RsaPublicKey::read_public_key_pem_file(p)
+                    .map_err(|e| rsa::Error::Pkcs8(rsa::pkcs8::Error::PublicKey(e)))?,
+            )),
+            Self::Params { n, e } => Ok(Some(RsaPublicKey::new(
+                BigUint::from_bytes_le(n),
+                BigUint::from_bytes_le(e),
+            )?)),
+            Self::Key(k) => Ok(Some(k.clone())),
+        }
     }
 }
 

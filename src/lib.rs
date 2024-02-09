@@ -12,14 +12,8 @@ pub(crate) mod encryption;
 pub mod ppac;
 pub mod protocol;
 
-#[cfg(all(feature = "connection", feature = "proxy"))]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "connection", feature = "proxy"))))]
-pub use connection::proxy::{ProxyConnection, PublicKey};
-#[cfg(all(feature = "proxy", feature = "split_connection"))]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "proxy", feature = "split_connection"))))]
-pub use connection::proxy::{ProxyRead, ProxyWrite};
 #[cfg(feature = "connection")]
 #[cfg_attr(docsrs, doc(cfg(feature = "connection")))]
-pub use connection::{Connection, PrivateKey};
+pub use connection::{Connection, PrivateKey, PublicKey};
 
 pub use asciistring::AsciiString;

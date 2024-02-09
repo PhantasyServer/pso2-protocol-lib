@@ -58,13 +58,6 @@ use unk34::*;
 
 // Code is getting really messy.
 
-mod private {
-    pub trait Sealed: Sized {}
-    impl Sealed for super::Packet {}
-    #[cfg(feature = "proxy")]
-    impl Sealed for super::ProxyPacket {}
-}
-
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(u8)]
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
@@ -78,10 +71,17 @@ pub enum PacketType {
     Raw,
 }
 
+pub trait PacketEncryption {
+    /// Returns `true` is the packet contains RSA data (i.e is [`Packet::EncryptionRequest`]).
+    fn is_enc_data(&self) -> bool;
+    /// Returns a refrence to the RSA encrypted data.
+    fn as_enc_data(&self) -> Option<&[u8]>;
+    /// Returns a mutable refrence to the RSA encrypted data.
+    fn mut_enc_data(&mut self) -> Option<&mut Vec<u8>>;
+}
+
 /// Read/Write trait for [`Packet`].
-///
-/// This trait is sealed and cannot be implemented for other types.
-pub trait ProtocolRW: private::Sealed {
+pub trait ProtocolRW: PacketEncryption + Sized {
     /// Read packets from input slice.
     fn read(input: &[u8], packet_type: PacketType) -> std::io::Result<Vec<Self>>;
     /// Write a packet to a byte vector.
@@ -876,6 +876,49 @@ pub enum PacketCategory {
     ARKSMissions,
     /// Classic Mission pass related packets. See [`missionpass`]
     MissionPass,
+}
+
+// ----------------------------------------------------------------
+// PacketEncryption impls
+// ----------------------------------------------------------------
+impl PacketEncryption for Packet {
+    fn is_enc_data(&self) -> bool {
+        matches!(self, Self::EncryptionRequest(_))
+    }
+    fn as_enc_data(&self) -> Option<&[u8]> {
+        if let Self::EncryptionRequest(data) = self {
+            Some(&data.rsa_data)
+        } else {
+            None
+        }
+    }
+    fn mut_enc_data(&mut self) -> Option<&mut Vec<u8>> {
+        if let Self::EncryptionRequest(data) = self {
+            Some(&mut data.rsa_data)
+        } else {
+            None
+        }
+    }
+}
+#[cfg(feature = "proxy")]
+impl PacketEncryption for ProxyPacket {
+    fn is_enc_data(&self) -> bool {
+        matches!(self, Self::EncryptionRequest(_))
+    }
+    fn as_enc_data(&self) -> Option<&[u8]> {
+        if let Self::EncryptionRequest(data) = self {
+            Some(&data.rsa_data)
+        } else {
+            None
+        }
+    }
+    fn mut_enc_data(&mut self) -> Option<&mut Vec<u8>> {
+        if let Self::EncryptionRequest(data) = self {
+            Some(&mut data.rsa_data)
+        } else {
+            None
+        }
+    }
 }
 
 // ----------------------------------------------------------------

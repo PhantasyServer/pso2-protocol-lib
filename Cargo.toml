@@ -2,12 +2,12 @@
 name = "pso2packetlib"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.73"
+rust-version = "1.75"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["ngs_packets", "item_attrs", "connection", "base_enc", "tokio", "proxy", "split_connection"]
+default = ["ngs_packets", "item_attrs", "connection", "base_enc"]
 connection = ["dep:rsa"]
 proxy = []
 ppac = ["dep:zstd"]

@@ -1,8 +1,6 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
-use crate::connection::PrivateKey;
-#[cfg(feature = "proxy")]
-use crate::PublicKey;
+use crate::connection::{PrivateKey, PublicKey};
 #[cfg(any(feature = "base_enc", feature = "ngs_enc"))]
 use aes::cipher::{block_padding::Pkcs7, BlockDecryptMut, BlockEncryptMut, KeyIvInit};
 #[cfg(any(feature = "base_enc", feature = "ngs_enc"))]
@@ -503,10 +501,7 @@ impl Debug for Rc4Dec {
     }
 }
 
-#[cfg(all(
-    any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"),
-    feature = "proxy"
-))]
+#[cfg(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"))]
 pub fn encrypt(packet: &[u8], out_key: &PublicKey) -> std::io::Result<Vec<u8>> {
     let out_key = match out_key.into_key() {
         Ok(Some(x)) => x,
@@ -526,10 +521,7 @@ pub fn encrypt(packet: &[u8], out_key: &PublicKey) -> std::io::Result<Vec<u8>> {
     Ok(enc_data)
 }
 
-#[cfg(all(
-    not(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc")),
-    feature = "proxy"
-))]
+#[cfg(not(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc")))]
 pub fn encrypt(packet: &[u8], _: &PublicKey) -> std::io::Result<Vec<u8>> {
     Ok(packet.to_vec())
 }
