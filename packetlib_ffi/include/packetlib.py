@@ -206,8 +206,13 @@ cdef extern from *:
   #
   # # Safety
   # 'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
-  # path to a PKCS#8 file.
-  Connection *get_connection(SocketFactory *factory, PacketType packet_type, const int8_t *in_key);
+  # path to a PKCS#8 file containing a private key for decryption.
+  # 'out_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
+  # path to a PKCS#8 file containing a public key for encryption.
+  Connection *get_connection(SocketFactory *factory,
+                             PacketType packet_type,
+                             const int8_t *in_key,
+                             const int8_t *out_key);
 
   # Returns an incoming connection descriptor. Caller is responsible for closing the returned descriptor.
   # If no stream was opened, returns -1.
@@ -242,8 +247,13 @@ cdef extern from *:
   # `fd` must be a valid descriptor.
   #
   # 'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
-  # path to a PKCS#8 file.
-  Connection *new_connection(int64_t fd, PacketType packet_type, const int8_t *in_key);
+  # path to a PKCS#8 file containing a private key for decryption.
+  # 'out_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
+  # path to a PKCS#8 file containing a public key for encryption.
+  Connection *new_connection(int64_t fd,
+                             PacketType packet_type,
+                             const int8_t *in_key,
+                             const int8_t *out_key);
 
   # Destroys a connection.
   void free_connection(Connection *_conn);

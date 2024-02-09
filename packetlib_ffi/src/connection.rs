@@ -4,7 +4,7 @@ use std::{
     net::{TcpListener, TcpStream},
 };
 
-use pso2packetlib::PrivateKey;
+use pso2packetlib::{PrivateKey, PublicKey};
 
 use crate::protocol::{DataBuffer, Packet};
 
@@ -134,12 +134,15 @@ pub extern "C" fn get_stream_ip(factory: Option<&SocketFactory>) -> u32 {
 ///
 /// # Safety
 /// 'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
-/// path to a PKCS#8 file.
+/// path to a PKCS#8 file containing a private key for decryption.
+/// 'out_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
+/// path to a PKCS#8 file containing a public key for encryption.
 #[no_mangle]
 pub unsafe extern "C" fn get_connection(
     factory: Option<&mut SocketFactory>,
     packet_type: crate::protocol::PacketType,
     in_key: *const i8,
+    out_key: *const i8,
 ) -> Option<Box<Connection>> {
     let Some(factory) = factory else {
         return None;
@@ -157,12 +160,23 @@ pub unsafe extern "C" fn get_connection(
     } else {
         PrivateKey::None
     };
+    let out_key = if !out_key.is_null() {
+        PublicKey::Path(
+            unsafe { CStr::from_ptr(out_key) }
+                .to_string_lossy()
+                .to_string()
+                .into(),
+        )
+    } else {
+        PublicKey::None
+    };
     Some(Box::new(Connection {
         err_str: None,
         con: Some(pso2packetlib::Connection::new(
             con,
             packet_type.into(),
             in_key,
+            out_key,
         )),
         data: None,
         key: vec![],
@@ -324,7 +338,7 @@ fn copy_fd_failable(fd: i64) -> Result<i64, Box<dyn Error>> {
 
 pub struct Connection {
     err_str: Option<CString>,
-    con: Option<pso2packetlib::Connection>,
+    con: Option<pso2packetlib::Connection<pso2packetlib::protocol::Packet>>,
     data: Option<Packet>,
     key: Vec<u8>,
 }
@@ -335,12 +349,15 @@ pub struct Connection {
 /// `fd` must be a valid descriptor.
 ///
 /// 'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
-/// path to a PKCS#8 file.
+/// path to a PKCS#8 file containing a private key for decryption.
+/// 'out_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
+/// path to a PKCS#8 file containing a public key for encryption.
 #[no_mangle]
 pub unsafe extern "C" fn new_connection(
     fd: i64,
     packet_type: crate::protocol::PacketType,
     in_key: *const i8,
+    out_key: *const i8,
 ) -> Box<Connection> {
     let con = {
         #[cfg(windows)]
@@ -364,12 +381,23 @@ pub unsafe extern "C" fn new_connection(
     } else {
         PrivateKey::None
     };
+    let out_key = if !out_key.is_null() {
+        PublicKey::Path(
+            unsafe { CStr::from_ptr(out_key) }
+                .to_string_lossy()
+                .to_string()
+                .into(),
+        )
+    } else {
+        PublicKey::None
+    };
     Box::new(Connection {
         err_str: None,
         con: Some(pso2packetlib::Connection::new(
             con,
             packet_type.into(),
             in_key,
+            out_key,
         )),
         data: None,
         key: vec![],
