@@ -1,4 +1,4 @@
-use super::{ChatArea, HelperReadWrite, ObjectHeader, PacketReadWrite};
+use super::{HelperReadWrite, MessageChannel, ObjectHeader, PacketReadWrite};
 
 // ----------------------------------------------------------------
 // Symbol Art packets
@@ -92,7 +92,7 @@ pub struct SymbolArtListPacket {
 pub struct SendSymbolArtPacket {
     pub object: ObjectHeader,
     pub uuid: u128,
-    pub area: ChatArea,
+    pub area: MessageChannel,
     pub unk1: u8,
     pub unk2: u16,
     pub unk3: u32,
@@ -106,7 +106,7 @@ pub struct SendSymbolArtPacket {
 pub struct ReceiveSymbolArtPacket {
     pub object: ObjectHeader,
     pub uuid: u128,
-    pub area: ChatArea,
+    pub area: MessageChannel,
     pub unk1: u8,
     pub unk2: u16,
     pub unk3: u32,

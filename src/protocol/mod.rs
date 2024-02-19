@@ -65,16 +65,23 @@ mod private {
     impl Sealed for super::ProxyPacket {}
 }
 
+/// Type of the packet.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(u8)]
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub enum PacketType {
     #[default]
+    /// NGS packet.
     NGS,
+    /// Classic packet. (i.e. NA, JP and Vita)
     Classic,
+    /// NA packet.
     NA,
+    /// JP packet.
     JP,
+    /// Vita packet.
     Vita,
+    /// Raw packet. (i.e. don't parse the packet)
     Raw,
 }
 
@@ -217,54 +224,79 @@ pub enum Packet {
 
     // Object related packets [0x04]
     #[Category(PacketCategory::Object)]
+    /// (0x04, 0x02) Object Teleport Location.
     #[Id(0x04, 0x02)]
     TeleportTransfer(TeleportTransferPacket),
+    /// (0x04, 0x06) Item Picked Up.
     #[Id(0x04, 0x06)]
     ItemPickedUp(ItemPickedUpPacket),
+    /// (0x04, 0x07) Object Movement (broadcast).
     #[Id(0x04, 0x07)]
     Movement(MovementPacket),
+    /// (0x04, 0x08) Client Movement Action.
     #[Id(0x04, 0x08)]
     MovementAction(MovementActionPacket),
+    /// (0x04, 0x0F) Unknown.
     #[Id(0x04, 0x0F)]
     Unk040F(Unk040FPacket),
+    /// (0x04, 0x13) Unknown.
     #[Id(0x04, 0x13)]
     Unk0413(Unk0413Packet),
+    /// (0x04, 0x14) Client Interaction.
     #[Id(0x04, 0x14)]
     Interact(InteractPacket),
+    /// (0x04, 0x15) Object Action or Set Object Tag (unicast or broadcast).
     #[Id(0x04, 0x15)]
     SetTag(SetTagPacket),
+    /// (0x04, 0x22) Unknown.
     #[Id(0x04, 0x22)]
     Unk0422(Unk0422Packet),
+    /// (0x04, 0x23) Unknown.
     #[Id(0x04, 0x23)]
     Unk0423(Unk0423Packet),
+    /// (0x04, 0x24) Unknown.
     #[Id(0x04, 0x24)]
     Unk0424(Unk0424Packet),
+    /// (0x04, 0x25) Unknown.
     #[Id(0x04, 0x25)]
     Unk0425(Unk0425Packet),
+    /// (0x04, 0x2B) Unknown.
     #[Id(0x04, 0x2B)]
     Unk042B(Unk042BPacket),
+    /// (0x04, 0x2E) Load Learned Photon Arts (broadcast).
     #[Id(0x04, 0x2E)]
     LoadPAs(LoadPAsPacket),
+    /// (0x04, 0x3B) Remove Object (broadcast).
     #[Id(0x04, 0x3B)]
     RemoveObject(RemoveObjectPacket),
+    /// (0x04, 0x3C) Client Action Update.
     #[Id(0x04, 0x3C)]
     ActionUpdate(ActionUpdatePacket),
+    /// (0x04, 0x52) Damage Received.
     #[Id(0x04, 0x52)]
     DamageReceive(DamageReceivePacket),
+    /// (0x04, 0x71) Object Movement End (broadcast).
     #[Id(0x04, 0x71)]
     MovementEnd(MovementEndPacket),
+    /// (0x04, 0x75) Action End (broadcast).
     #[Id(0x04, 0x75)]
     ActionEnd(ActionEndPacket),
+    /// (0x04, 0x79) Unknown.
     #[Id(0x04, 0x79)]
     Unk0479(Unk0479Packet),
+    /// (0x04, 0x80) Movement Action Response (broadcast).
     #[Id(0x04, 0x80)]
     MovementActionServer(MovementActionServerPacket),
+    /// (0x04, 0x81) Action Update Response (broadcast).
     #[Id(0x04, 0x81)]
     ActionUpdateServer(ActionUpdateServerPacket),
+    /// (0x04, 0x86) Unknown.
     #[Id(0x04, 0x86)]
     Unk0486(Unk0486Packet),
+    /// (0x04, 0xB0) Unknown.
     #[Id(0x04, 0xB0)]
     Unk04B0(Unk04B0Packet),
+    /// (0x04, 0xEA) Unknown.
     #[Id(0x04, 0xEA)]
     Unk04EA(Unk04EAPacket),
 
@@ -279,6 +311,7 @@ pub enum Packet {
 
     // Chat packets [0x07]
     #[Category(PacketCategory::Chat)]
+    /// (0x07, 0x00) Chat Message.
     #[Id(0x07, 0x00)]
     ChatMessage(ChatMessage),
 
@@ -836,8 +869,10 @@ pub enum Packet {
     MissionPass(MissionPassPacket),
 
     //Other packets
+    /// Raw packet with header.
     #[Unknown]
     Raw(Vec<u8>),
+    /// Unknown packet.
     #[Unknown]
     Unknown((PacketHeader, Vec<u8>)),
 }

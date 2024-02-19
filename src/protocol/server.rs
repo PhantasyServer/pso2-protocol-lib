@@ -1,4 +1,4 @@
-//! Server related packets.
+//! Server related packets. \[0x03\]
 use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
 use crate::AsciiString;
 

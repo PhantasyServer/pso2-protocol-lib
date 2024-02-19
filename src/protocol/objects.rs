@@ -1,3 +1,4 @@
+//! Object related packets. \[0x04\]
 use super::{models::Position, Flags, ObjectHeader, PacketHeader, PacketReadWrite, PacketType};
 use crate::AsciiString;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
@@ -11,7 +12,11 @@ use std::{
 // Object related packets
 // ----------------------------------------------------------------
 
-// 0x04, 0x02
+/// (0x04, 0x02) Object Teleport Location
+///
+/// (S -> C) Sent when the client is teleported.
+///
+/// Response to: [`crate::protocol::Packet::Interact`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -19,23 +24,36 @@ use std::{
 #[Flags(Flags {object_related: true, ..Default::default()})]
 pub struct TeleportTransferPacket {
     pub unk1: [u8; 0xC],
+    /// Object that started the teleportation.
     pub source_tele: ObjectHeader,
+    /// New location.
     pub location: Position,
     pub unk2: u16,
 }
 
-// 0x04, 0x06
+/// (0x04, 0x06) Item Picked Up.
+///
+/// (S -> C) Sent when players pickup items.
+///
+/// Response to: [`crate::protocol::Packet::ItemPickupRequest`] and ???
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x06)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
 pub struct ItemPickedUpPacket {
+    /// Player that picked up the item. (?)
     pub player: ObjectHeader,
+    /// Item object that was picked up.
     pub item: ObjectHeader,
 }
 
-// 0x04, 0x07
+/// (0x04, 0x07) Object Movement (broadcast).
+///
+/// (Bidirectional) Sent when players (or objects?) move.
+///
+/// Response to: [`crate::protocol::Packet::Movement`] (C->S)
+/// Respond with: [`crate::protocol::Packet::Movement`] (S->C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -47,13 +65,21 @@ pub struct MovementPacket {
     pub ent2_id: Option<u64>,
     pub ent2_type: Option<u16>,
     pub ent2_unk: Option<u16>,
+    /// Timestamp of action.
     pub timestamp: Option<Duration>,
+    /// X quaternion rotation.
     pub rot_x: Option<f16>,
+    /// Y quaternion rotation.
     pub rot_y: Option<f16>,
+    /// Z quaternion rotation.
     pub rot_z: Option<f16>,
+    /// W quaternion rotation.
     pub rot_w: Option<f16>,
+    /// Current x position (i.e. new position).
     pub cur_x: Option<f16>,
+    /// Current y position (i.e. new position).
     pub cur_y: Option<f16>,
+    /// Current z position (i.e. new position).
     pub cur_z: Option<f16>,
     pub unk1: Option<f16>,
     pub unk_x: Option<f16>,
@@ -64,7 +90,11 @@ pub struct MovementPacket {
     pub unk4: Option<u8>,
 }
 
-// 0x04, 0x08
+/// (0x04, 0x08) Client Movement Action.
+///
+/// (C -> S) Sent when players does some action (e.g. jumping or attacking).
+///
+/// Respond with: [`crate::protocol::Packet::MovementActionServer`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -73,11 +103,13 @@ pub struct MovementPacket {
 #[Magic(0x922D, 0x45)]
 pub struct MovementActionPacket {
     pub unk1: ObjectHeader,
+    /// Object that performed an action.
     pub performer: ObjectHeader,
     pub unk3: u32,
     pub unk4: [u8; 0x10],
     pub unk5: [u8; 0x8],
     pub unk6: [u8; 0xC],
+    /// Name of performed action.
     pub action: AsciiString,
     pub unk7: u32,
     pub unk8: u32,
@@ -85,7 +117,9 @@ pub struct MovementActionPacket {
     pub unk10: u32,
 }
 
-// 0x04, 0x0F
+/// (0x04, 0x0F) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -112,7 +146,9 @@ pub struct Unk040FPacket {
     pub unk18: u32,
 }
 
-// 0x04, 0x13
+/// (0x04, 0x13) Unknown.
+///
+/// (C -> S)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -125,7 +161,11 @@ pub struct Unk0413Packet {
     pub unk4: u32,
 }
 
-// 0x04, 0x14
+/// (0x04, 0x14) Client Interaction.
+///
+/// (C -> S) Sent when players interacts with some object.
+///
+/// Respond with: [`crate::protocol::Packet::SetTag`] (optional)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -134,14 +174,20 @@ pub struct Unk0413Packet {
 #[Magic(0xD711, 0xCA)]
 pub struct InteractPacket {
     pub unk1: [u8; 0xC],
+    /// Target (?)
     pub object1: ObjectHeader,
     pub unk2: [u8; 0x4],
     pub object3: ObjectHeader,
     pub object4: [u8; 0x10],
+    /// Name of the action.
     pub action: AsciiString,
 }
 
-// 0x04, 0x15
+/// (0x04, 0x15) Object Action or Set Object Tag (unicast or broadcast).
+///
+/// (S -> C) Sent when object performs some action or it has new tag (usually after interaction).
+///
+/// Response to: [`crate::protocol::Packet::Interact`] (optional)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -149,7 +195,9 @@ pub struct InteractPacket {
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
 #[Magic(0x5CCF, 0x15)]
 pub struct SetTagPacket {
+    /// Player that receives this packet.
     pub receiver: ObjectHeader,
+    /// Target object.
     pub target: ObjectHeader,
     pub unk1: u32,
     pub object3: ObjectHeader,
@@ -158,10 +206,13 @@ pub struct SetTagPacket {
     pub unk3: u8,
     pub unk4: u8,
     pub unk5: u8,
+    /// Name of the action or tag.
     pub attribute: AsciiString,
 }
 
-// 0x04, 0x22
+/// (0x04, 0x22) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -175,7 +226,9 @@ pub struct Unk0422Packet {
     pub unk5: [u8; 0x20],
 }
 
-// 0x04, 0x23
+/// (0x04, 0x23) Unknown.
+///
+/// (C -> S)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -188,7 +241,9 @@ pub struct Unk0423Packet {
     pub unk4: u32,
 }
 
-// 0x04, 0x24
+/// (0x04, 0x24) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -204,7 +259,9 @@ pub struct Unk0424Packet {
     pub unk7: [u8; 0xC],
 }
 
-// 0x04, 0x25
+/// (0x04, 0x25) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -218,7 +275,9 @@ pub struct Unk0425Packet {
     pub unk5: u32,
 }
 
-// 0x04, 0x2B
+/// (0x04, 0x2B) Unknown.
+///
+/// (C -> S)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -229,33 +288,46 @@ pub struct Unk042BPacket {
     pub unk2: ObjectHeader,
 }
 
-// 0x04, 0x2E
+/// (0x04, 0x2E) Load Learned Photon Arts (broadcast).
+///
+/// (S -> C) Sent on any character spawning to list learned photon arts.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x2E)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
 pub struct LoadPAsPacket {
+    /// Player that receives this packet.
     pub receiver: ObjectHeader,
+    /// Player that has this data.
     pub target: ObjectHeader,
+    /// Levels for 0xEE(?) PAs.
     #[FixedLen(0xEE)]
     pub levels: Vec<u8>,
     #[FixedLen(0x40)]
     pub unk: Vec<u8>,
 }
 
-// 0x04, 0x3B
+/// (0x04, 0x3B) Remove Object (broadcast).
+///
+/// (S -> C) Sent when object gets deleted (e.g player disconnects).
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x3B)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
 pub struct RemoveObjectPacket {
+    /// Player that receives this packet.
     pub receiver: ObjectHeader,
+    /// Object that got removed.
     pub removed_object: ObjectHeader,
 }
 
-// 0x04, 0x3C
+/// (0x04, 0x3C) Client Action Update.
+///
+/// (C -> S) Sent when player wants to update action data.
+///
+/// Respond with: [`crate::protocol::Packet::ActionUpdateServer`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -263,32 +335,51 @@ pub struct RemoveObjectPacket {
 #[Flags(Flags {object_related: true, ..Default::default()})]
 pub struct ActionUpdatePacket {
     pub unk1: ObjectHeader,
+    /// Object that performed this action.
     pub performer: ObjectHeader,
     pub unk2: [u8; 0x20],
 }
 
-// 0x04, 0x52
+/// (0x04, 0x52) Damage Received.
+///
+/// (S -> C) Sent when object receives damage (including healing and selfdamage).
+///
+/// Response to: [`crate::protocol::Packet::DealDamage`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x52)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
 pub struct DamageReceivePacket {
+    /// Player that receives this packet.
     pub receiver: ObjectHeader,
+    /// Object that receives this damage.
     pub dmg_target: ObjectHeader,
+    /// Object that deals this damage.
     pub dmg_inflicter: ObjectHeader,
     pub unk1: u32,
+    /// How much damage was inflicted.
     pub dmg_amount: i32,
+    /// New HP.
     pub new_hp: u32,
+    /// Hitbox ID (?).
     pub hitbox_id: u32,
+    /// Hit x position.
     pub x_pos: f16,
+    /// Hit y position.
     pub y_pos: f16,
+    /// Hit z position.
     pub z_pos: f16,
     pub unk4: [u8; 0xE],
     pub unk5: u32,
 }
 
-// 0x04, 0x71
+/// (0x04, 0x71) Object Movement End (broadcast).
+///
+/// (Bidirectional) Sent when players (or objects?) stop moving.
+///
+/// Response to: [`crate::protocol::Packet::MovementEnd`] (C->S)
+/// Respond with: [`crate::protocol::Packet::MovementEnd`] (S->C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -298,6 +389,7 @@ pub struct MovementEndPacket {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
     pub unk3: u32,
+    /// Current position of the object.
     pub cur_pos: Position,
     pub unk5: u16,
     pub unk_x: f16,
@@ -307,7 +399,12 @@ pub struct MovementEndPacket {
     pub unk8: u32,
 }
 
-// 0x04, 0x75
+/// (0x04, 0x75) Action End (broadcast).
+///
+/// (Bidirectional) Sent when objects stop an action.
+///
+/// Response to: [`crate::protocol::Packet::ActionEnd`] (C->S)
+/// Respond with: [`crate::protocol::Packet::ActionEnd`] (S->C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -316,15 +413,19 @@ pub struct MovementEndPacket {
 #[Magic(0x83EF, 0x40)]
 pub struct ActionEndPacket {
     pub unk1: [u8; 0xC],
+    /// Object that was performing an action.
     pub performer: ObjectHeader,
     pub unk2: u32,
     pub unk3: ObjectHeader,
     pub unk4: ObjectHeader,
     pub unk5: [u8; 4],
-    pub unk6: AsciiString,
+    /// Name of an action.
+    pub action: AsciiString,
 }
 
-// 0x04, 0x79
+/// (0x04, 0x79) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -336,7 +437,11 @@ pub struct Unk0479Packet {
     pub unk3: u32,
 }
 
-// 0x04, 0x80
+/// (0x04, 0x80) Movement Action Response (broadcast).
+///
+/// (S -> C) Sent when players does some action (e.g. jumping or attacking).
+///
+/// Response to: [`crate::protocol::Packet::MovementAction`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -344,12 +449,15 @@ pub struct Unk0479Packet {
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
 #[Magic(0x4315, 0x7A)]
 pub struct MovementActionServerPacket {
+    /// Player that receives this packet.
     pub receiver: ObjectHeader,
+    /// Object that performed this action.
     pub performer: ObjectHeader,
     pub unk3: u32,
     pub unk4: [u8; 0x10],
     pub unk5: [u8; 0x8],
     pub unk6: [u8; 0xC],
+    /// Name of an action.
     pub action: AsciiString,
     pub unk7: u32,
     pub unk8: u32,
@@ -357,19 +465,27 @@ pub struct MovementActionServerPacket {
     pub unk10: u32,
 }
 
-// 0x04, 0x81
+/// (0x04, 0x81) Action Update Response (broadcast).
+///
+/// (S -> C) Sent when player wants to update action data.
+///
+/// Response to: [`crate::protocol::Packet::ActionUpdate`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x81)]
 #[Flags(Flags {object_related: true, ..Default::default()})]
 pub struct ActionUpdateServerPacket {
+    /// Player that receives this packet.
     pub receiver: ObjectHeader,
+    /// Object that performed this action.
     pub performer: ObjectHeader,
     pub unk2: [u8; 0x20],
 }
 
-// 0x04, 0x86
+/// (0x04, 0x86) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -380,7 +496,9 @@ pub struct Unk0486Packet {
     pub unk2: ObjectHeader,
 }
 
-// 0x04, 0xB0
+/// (0x04, 0xB0) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -393,7 +511,9 @@ pub struct Unk04B0Packet {
     pub unk4: u32,
 }
 
-// 0x04, 0xEA
+/// (0x04, 0xEA) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]

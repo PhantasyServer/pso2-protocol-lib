@@ -1,10 +1,16 @@
+//! Chat related packets. \[0x07\]
 use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
 
 // ----------------------------------------------------------------
 // Chat packets
 // ----------------------------------------------------------------
 
-// 0x07, 0x00
+/// (0x07, 0x00) Chat Message.
+///
+/// (Bidirectional) Sent when players send chat messages.
+///
+/// Response to: [`crate::protocol::Packet::ChatMessage`] (C->S)
+/// Respond with: [`crate::protocol::Packet::ChatMessage`] (S->C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
@@ -12,8 +18,10 @@ use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
 #[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
 #[Magic(0x9D3F, 0x44)]
 pub struct ChatMessage {
+    /// Sender of the message.
     pub object: ObjectHeader,
-    pub area: ChatArea,
+    /// Message channel.
+    pub channel: MessageChannel,
     pub unk3: u8,
     pub unk4: u16,
     #[cfg(feature = "ngs_packets")]
@@ -25,6 +33,7 @@ pub struct ChatMessage {
     #[OnlyOn(super::PacketType::NGS)]
     pub unk6: u16,
     pub unk7: String,
+    /// Message.
     pub message: String,
 }
 
@@ -32,16 +41,22 @@ pub struct ChatMessage {
 // Additional structs
 // ----------------------------------------------------------------
 
+/// Possible message channels.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, Default, PartialEq, HelperReadWrite)]
-pub enum ChatArea {
+pub enum MessageChannel {
     #[default]
+    /// Map channel.
     Map,
+    /// Party channel.
     Party,
     // the following is only speculation
+    /// Alliance channel. (?)
     Alliance,
+    /// Whisper channel. (?)
     Whisper,
+    /// Group channel. (?)
     Group,
 
     #[Read_default]
