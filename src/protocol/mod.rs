@@ -71,6 +71,7 @@ pub enum PacketType {
     Raw,
 }
 
+/// Trait for manipulating encryption data.
 pub trait PacketEncryption {
     /// Returns `true` is the packet contains RSA data (i.e is [`Packet::EncryptionRequest`]).
     fn is_enc_data(&self) -> bool;

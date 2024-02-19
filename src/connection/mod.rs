@@ -537,7 +537,6 @@ impl<P: ProtocolRW + Send> ConnectionRead<P> {
         let mut packet = packets.remove(0);
         self.read_packets.append(&mut packets);
         if let Some(data) = packet.mut_enc_data() {
-            println!("got enc data");
             if !matches!(&self.in_keyfile, PrivateKey::None) {
                 let dec_data = Encryption::decrypt_rsa_data(data, &self.in_keyfile)?;
                 let (enc, dec) = Encryption::from_dec_data(
@@ -545,7 +544,6 @@ impl<P: ProtocolRW + Send> ConnectionRead<P> {
                     matches!(self.packet_type, PacketType::NGS),
                 )?
                 .into_split();
-                println!("decrypted data");
                 *data = dec_data;
                 let _ = self.enc_channel.0.send(enc);
                 self.encryption = dec;
