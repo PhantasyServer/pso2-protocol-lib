@@ -57,9 +57,14 @@ pub struct ServerHelloPacket {
 ///
 /// (C -> S) Sent when the client has finished loading the map.
 ///
-/// Response to: [`MapTransferPacket`] or [`LoadLevelPacket`].
+/// Response to:
+/// [`crate::protocol::Packet::MapTransfer`] or
+/// [`crate::protocol::Packet::LoadLevel`].
 ///
-/// Respond with: user data, [`crate::protocol::Packet::UnlockControls`] and
+/// Respond with:
+/// user data,
+/// object spawn packets,
+/// [`crate::protocol::Packet::UnlockControls`] and
 /// [`crate::protocol::Packet::FinishLoading`].
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -108,6 +113,8 @@ pub struct CampshipDownPacket {
 /// (S -> C) Sent when the client is moved to a new map. (e.g. lobby <-> campship)
 ///
 /// Respond with: [`crate::protocol::Packet::MapLoaded`]
+///
+/// Followed by: [`crate::protocol::Packet::SetPlayerID`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
@@ -274,6 +281,7 @@ pub struct CafeTransportPacket {
 // Additional structs
 // ----------------------------------------------------------------
 
+/// Settings for map zone.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
@@ -281,6 +289,7 @@ pub struct ZoneSettings {
     pub world_id: u32,
     pub unk1: u32,
     pub zone_id: u32,
+    /// Map layout id.
     pub map_id: u32,
     pub zone_type: u32,
     pub seed: u32,
