@@ -350,8 +350,10 @@ pub enum Packet {
     #[Category(PacketCategory::QuestList)]
     #[Id(0x0B, 0x06)]
     StartCutscene(StartCutscenePacket),
+    /// (0x0B, 0x09) Unknown.
     #[Id(0x0B, 0x09)]
     Unk0B09(Unk0B09Packet),
+    /// (0x0B, 0x13) Unknown.
     #[Id(0x0B, 0x13)]
     Unk0B13(Unk0B13Packet),
     #[Id(0x0B, 0x15)]
@@ -382,8 +384,10 @@ pub enum Packet {
     QuestCounterRequest,
     #[Id(0x0B, 0x62)]
     EQARKSLevel(EQARKSLevelPacket),
+    /// (0x0B, 0xAF) Unknown.
     #[Id(0x0B, 0xAF)]
     Unk0BAF(Unk0BAFPacket),
+    /// (0x0B, 0xD0) Unknown.
     #[Id(0x0B, 0xD0)]
     Unk0BD0(Unk0BD0Packet),
 
@@ -425,6 +429,7 @@ pub enum Packet {
     PartyDisbandedMarker,
     #[Id(0x0E, 0x19)]
     ChatStatus(ChatStatusPacket),
+    /// (0x0E, 0x1A) Unknown.
     #[Id(0x0E, 0x1A)]
     Unk0E1A(Unk0E1APacket),
     #[Id(0x0E, 0x1B)]
@@ -437,6 +442,7 @@ pub enum Packet {
     PartyDetails(PartyDetailsPacket),
     #[Id(0x0E, 0x1F)]
     PartyDetailsStopper,
+    /// (0x0E, 0x21) Unknown.
     #[Id(0x0E, 0x21)]
     Unk0E21(Unk0E21Packet),
     #[Id(0x0E, 0x25)]
@@ -455,6 +461,7 @@ pub enum Packet {
     SetPartyQuest(SetPartyQuestPacket),
     #[Id(0x0E, 0x4F)]
     SetPartyColor(SetPartyColorPacket),
+    /// (0x0E, 0x52) Unknown.
     #[Id(0x0E, 0x52)]
     Unk0E52(Unk0E52Packet),
     #[Id(0x0E, 0x67)]
@@ -514,6 +521,9 @@ pub enum Packet {
     LoadItem(LoadItemPacket),
     #[Id(0x0F, 0x33)]
     LearnedPA(LearnedPAPacket),
+    /// (0x0F, 0x5B) Unknown.
+    ///
+    /// (S -> C)
     #[Id(0x0F, 0x5B)]
     Unk0F5B,
     #[Id(0x0F, 0x65)]
@@ -530,6 +540,7 @@ pub enum Packet {
     ReceiveCampaignRequest(ReceiveCampaignRequestPacket),
     #[Id(0x0F, 0x8A)]
     CharacterCapaignsRequest,
+    /// (0x0F, 0x9C) Unknown.
     #[Id(0x0F, 0x9C)]
     Unk0F9C(Unk0F9CPacket),
     #[Id(0x0F, 0xBC)]
@@ -548,8 +559,10 @@ pub enum Packet {
     MoveMSToStorageRequest(MoveMSToStorageRequestPacket),
     #[Id(0x0F, 0xE9)]
     MoveMSToStorage(MoveMSToStoragePacket),
+    /// (0x0F, 0xEF) Unknown.
     #[Id(0x0F, 0xEF)]
     Unk0FEF(Unk0FEFPacket),
+    /// (0x0F, 0xFC) Unknown.
     #[Id(0x0F, 0xFC)]
     Unk0FFC(Unk0FFCPacket),
 
@@ -558,6 +571,7 @@ pub enum Packet {
     #[Id(0x10, 0x00)]
     #[Classic]
     RunLua(LuaPacket),
+    /// (0x10, 0x03) Unknown.
     #[Id(0x10, 0x03)]
     Unk1003(Unk1003Packet),
 
@@ -649,6 +663,7 @@ pub enum Packet {
     #[Id(0x11, 0x6B)]
     #[Classic]
     SegaIDInfoRequest,
+    /// (0x11, 0x6F) Unknown.
     #[Id(0x11, 0x6F)]
     Unk116F(Unk116FPacket),
     #[Id(0x11, 0x71)]
@@ -671,14 +686,17 @@ pub enum Packet {
     CharacterNewName(CharacterNewNamePacket),
     #[Id(0x11, 0x9D)]
     NicknameChangeRequest,
+    /// (0x11, 0xAF) Unknown.
     #[Id(0x11, 0xAF)]
     Unk11AF(Unk11AFPacket),
+    /// (0x11, 0xB0) Unknown.
     #[Id(0x11, 0xB0)]
     Unk11B0(Unk11B0Packet),
     #[Id(0x11, 0xB8)]
     CharacterMoveRequest(CharacterMoveRequestPacket),
     #[Id(0x11, 0xB9)]
     CharacterMove(CharacterMovePacket),
+    /// (0x11, 0xD7) Unknown.
     #[Id(0x11, 0xD7)]
     Unk11D7(Unk11D7Packet),
     #[Id(0x11, 0xDE)]
@@ -689,6 +707,7 @@ pub enum Packet {
     BannerList(BannerListPacket),
     #[Id(0x11, 0xEE)]
     EmailCodeRequest(EmailCodeRequestPacket),
+    /// (0x11, 0xFF) Unknown.
     #[Id(0x11, 0xFF)]
     #[Classic]
     Unk11FF(Unk11FFPacket),
@@ -701,6 +720,7 @@ pub enum Packet {
     EmergencyEnd(EmergencyEndPacket),
     #[Id(0x15, 0x05)]
     EmergencyProgress(EmergencyProgressPacket),
+    /// (0x15, 0x08) Unknown.
     #[Id(0x15, 0x08)]
     Unk1508(Unk1508Packet),
     #[Id(0x15, 0x11)]
@@ -721,8 +741,14 @@ pub enum Packet {
     #[Category(PacketCategory::Unk19)]
     #[Id(0x19, 0x01)]
     SystemMessage(SystemMessagePacket),
+    /// (0x19, 0x04) Unknown.
+    ///
+    /// (C -> S)
     #[Id(0x19, 0x04)]
     Unk1904,
+    /// (0x19, 0x06) Unknown.
+    ///
+    /// (C -> S)
     #[Id(0x19, 0x06)]
     Unk1906,
     #[Id(0x19, 0x09)]
@@ -802,15 +828,21 @@ pub enum Packet {
     SkitItemAddRequest(SkitItemAddRequestPacket),
     #[Id(0x23, 0x0C)]
     SkitItemAddResponse(SkitItemAddResponsePacket),
+    /// (0x23, 0x0D) Unknown.
     #[Id(0x23, 0x0D)]
     Unk230D(Unk230DPacket),
+    /// (0x23, 0x0E) Unknown.
     #[Id(0x23, 0x0E)]
     Unk230E(Unk230EPacket),
+    /// (0x23, 0x10) Unknown.
+    ///
+    /// (C -> S)
     #[Id(0x23, 0x10)]
     Unk2310,
 
     // Unknown 0x2A packets [0x2A]
     #[Category(PacketCategory::Unk2A)]
+    /// (0x2A, 0x08) Unknown.
     #[Id(0x2A, 0x08)]
     Unk2A08(Unk2A08Packet),
 
@@ -850,8 +882,10 @@ pub enum Packet {
 
     // Unknown 0x34 packets [0x34]
     #[Category(PacketCategory::Unk34)]
+    /// (0x34, 0x35) Unknown.
     #[Id(0x34, 0x35)]
     Unk3435(Unk3435Packet),
+    /// (0x34, 0x5C) Unknown.
     #[Id(0x34, 0x5C)]
     Unk345C(Unk345CPacket),
 
@@ -861,6 +895,7 @@ pub enum Packet {
     MissionListRequest,
     #[Id(0x4A, 0x01)]
     MissionList(MissionListPacket),
+    /// (0x4A, 0x03) Unknown.
     #[Id(0x4A, 0x03)]
     Unk4A03(Unk4A03Packet),
     #[Id(0x4A, 0x0C)]
