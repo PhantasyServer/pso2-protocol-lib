@@ -302,10 +302,13 @@ pub enum Packet {
 
     // Player status packets [0x06]
     #[Category(PacketCategory::PlayerStatus)]
+    /// (0x06, 0x00) Set Player ID.
     #[Id(0x06, 0x00)]
     SetPlayerID(SetPlayerIDPacket),
+    /// (0x06, 0x01) Deal damage to an object.
     #[Id(0x06, 0x01)]
     DealDamage(DealDamagePacket),
+    /// (0x06, 0x05) EXP Gained. (broadcast)
     #[Id(0x06, 0x05)]
     GainedEXP(GainedEXPPacket),
 
