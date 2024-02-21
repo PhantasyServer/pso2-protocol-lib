@@ -48,7 +48,7 @@ pub struct ItemPickedUpPacket {
     pub item: ObjectHeader,
 }
 
-/// (0x04, 0x07) Object Movement (broadcast).
+/// (0x04, 0x07) Object Movement. (broadcast)
 ///
 /// (Bidirectional) Sent when players (or objects?) move.
 ///
@@ -174,7 +174,7 @@ pub struct Unk0413Packet {
 #[Magic(0xD711, 0xCA)]
 pub struct InteractPacket {
     pub unk1: [u8; 0xC],
-    /// Target (?)
+    /// Target. (?)
     pub object1: ObjectHeader,
     pub unk2: [u8; 0x4],
     pub object3: ObjectHeader,
@@ -183,7 +183,7 @@ pub struct InteractPacket {
     pub action: AsciiString,
 }
 
-/// (0x04, 0x15) Object Action or Set Object Tag (unicast or broadcast).
+/// (0x04, 0x15) Object Action or Set Object Tag. (unicast or broadcast)
 ///
 /// (S -> C) Sent when object performs some action or it has new tag (usually after interaction).
 ///
@@ -288,7 +288,7 @@ pub struct Unk042BPacket {
     pub unk2: ObjectHeader,
 }
 
-/// (0x04, 0x2E) Load Learned Photon Arts (broadcast).
+/// (0x04, 0x2E) Load Learned Photon Arts. (broadcast)
 ///
 /// (S -> C) Sent on any character spawning to list learned photon arts.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -308,7 +308,7 @@ pub struct LoadPAsPacket {
     pub unk: Vec<u8>,
 }
 
-/// (0x04, 0x3B) Remove Object (broadcast).
+/// (0x04, 0x3B) Remove Object. (broadcast)
 ///
 /// (S -> C) Sent when object gets deleted (e.g player disconnects).
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -374,7 +374,7 @@ pub struct DamageReceivePacket {
     pub unk5: u32,
 }
 
-/// (0x04, 0x71) Object Movement End (broadcast).
+/// (0x04, 0x71) Object Movement End. (broadcast)
 ///
 /// (Bidirectional) Sent when players (or objects?) stop moving.
 ///
@@ -399,7 +399,7 @@ pub struct MovementEndPacket {
     pub unk8: u32,
 }
 
-/// (0x04, 0x75) Action End (broadcast).
+/// (0x04, 0x75) Action End. (broadcast)
 ///
 /// (Bidirectional) Sent when objects stop an action.
 ///
@@ -437,7 +437,7 @@ pub struct Unk0479Packet {
     pub unk3: u32,
 }
 
-/// (0x04, 0x80) Movement Action Response (broadcast).
+/// (0x04, 0x80) Movement Action Response. (broadcast)
 ///
 /// (S -> C) Sent when players does some action (e.g. jumping or attacking).
 ///
@@ -465,7 +465,7 @@ pub struct MovementActionServerPacket {
     pub unk10: u32,
 }
 
-/// (0x04, 0x81) Action Update Response (broadcast).
+/// (0x04, 0x81) Action Update Response. (broadcast)
 ///
 /// (S -> C) Sent when player wants to update action data.
 ///

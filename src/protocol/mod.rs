@@ -230,7 +230,7 @@ pub enum Packet {
     /// (0x04, 0x06) Item Picked Up.
     #[Id(0x04, 0x06)]
     ItemPickedUp(ItemPickedUpPacket),
-    /// (0x04, 0x07) Object Movement (broadcast).
+    /// (0x04, 0x07) Object Movement. (broadcast)
     #[Id(0x04, 0x07)]
     Movement(MovementPacket),
     /// (0x04, 0x08) Client Movement Action.
@@ -245,7 +245,7 @@ pub enum Packet {
     /// (0x04, 0x14) Client Interaction.
     #[Id(0x04, 0x14)]
     Interact(InteractPacket),
-    /// (0x04, 0x15) Object Action or Set Object Tag (unicast or broadcast).
+    /// (0x04, 0x15) Object Action or Set Object Tag. (unicast or broadcast)
     #[Id(0x04, 0x15)]
     SetTag(SetTagPacket),
     /// (0x04, 0x22) Unknown.
@@ -263,10 +263,10 @@ pub enum Packet {
     /// (0x04, 0x2B) Unknown.
     #[Id(0x04, 0x2B)]
     Unk042B(Unk042BPacket),
-    /// (0x04, 0x2E) Load Learned Photon Arts (broadcast).
+    /// (0x04, 0x2E) Load Learned Photon Arts. (broadcast)
     #[Id(0x04, 0x2E)]
     LoadPAs(LoadPAsPacket),
-    /// (0x04, 0x3B) Remove Object (broadcast).
+    /// (0x04, 0x3B) Remove Object. (broadcast)
     #[Id(0x04, 0x3B)]
     RemoveObject(RemoveObjectPacket),
     /// (0x04, 0x3C) Client Action Update.
@@ -275,19 +275,19 @@ pub enum Packet {
     /// (0x04, 0x52) Damage Received.
     #[Id(0x04, 0x52)]
     DamageReceive(DamageReceivePacket),
-    /// (0x04, 0x71) Object Movement End (broadcast).
+    /// (0x04, 0x71) Object Movement End. (broadcast)
     #[Id(0x04, 0x71)]
     MovementEnd(MovementEndPacket),
-    /// (0x04, 0x75) Action End (broadcast).
+    /// (0x04, 0x75) Action End. (broadcast)
     #[Id(0x04, 0x75)]
     ActionEnd(ActionEndPacket),
     /// (0x04, 0x79) Unknown.
     #[Id(0x04, 0x79)]
     Unk0479(Unk0479Packet),
-    /// (0x04, 0x80) Movement Action Response (broadcast).
+    /// (0x04, 0x80) Movement Action Response. (broadcast)
     #[Id(0x04, 0x80)]
     MovementActionServer(MovementActionServerPacket),
-    /// (0x04, 0x81) Action Update Response (broadcast).
+    /// (0x04, 0x81) Action Update Response. (broadcast)
     #[Id(0x04, 0x81)]
     ActionUpdateServer(ActionUpdateServerPacket),
     /// (0x04, 0x86) Unknown.
