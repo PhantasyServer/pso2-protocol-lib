@@ -300,14 +300,14 @@ class Connection : IDisposable
         socket = client;
         unsafe
         {
-            conn = packetlib.NativeMethods.new_connection((long)handle, packetlib.PacketType.NGS, null);
+            conn = packetlib.NativeMethods.new_connection((long)handle, packetlib.PacketType.NGS, null, null);
         }
     }
     public Connection(long fd)
     {
         unsafe
         {
-            conn = packetlib.NativeMethods.new_connection(fd, packetlib.PacketType.NGS, null);
+            conn = packetlib.NativeMethods.new_connection(fd, packetlib.PacketType.NGS, null, null);
         }
     }
     ~Connection()

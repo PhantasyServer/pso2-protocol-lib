@@ -24,16 +24,24 @@ pub extern "C" fn get_protocol_version() -> u32 {
 #[no_mangle]
 pub extern "C" fn have_connection() -> bool {
     #[cfg(feature = "connection")]
-    return true;
+    {
+        true
+    }
     #[cfg(not(feature = "connection"))]
-    return false;
+    {
+        false
+    }
 }
 
 /// Returns whether the library is built with PPAC support.
 #[no_mangle]
 pub extern "C" fn have_ppac() -> bool {
     #[cfg(feature = "ppac")]
-    return true;
+    {
+        true
+    }
     #[cfg(not(feature = "ppac"))]
-    return false;
+    {
+        false
+    }
 }

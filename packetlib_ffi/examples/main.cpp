@@ -84,8 +84,10 @@ private:
   ::Connection *conn;
 
 public:
-  Connection(uint64_t fd, enum ::PacketType packet_type, const char *in_key) {
-    conn = ::new_connection(fd, packet_type, (const int8_t *)in_key);
+  Connection(uint64_t fd, enum ::PacketType packet_type, const char *in_key,
+             const char *out_key) {
+    conn = ::new_connection(fd, packet_type, (const int8_t *)in_key,
+                            (const int8_t *)out_key);
   }
   Connection(::Connection *other) { conn = other; }
   ~Connection() { ::free_connection(conn); }
