@@ -320,25 +320,31 @@ pub enum Packet {
 
     // Spawn packets [0x08]
     #[Category(PacketCategory::Spawning)]
+    /// (0x08, 0x04) Spawn Character. (broadcast)
     #[Id(0x08, 0x04)]
     #[Classic]
     CharacterSpawn(CharacterSpawnPacket),
-    // temporarily commented out for the server
-    // #[cfg(feature = "ngs_packets")]
+    /// (0x08, 0x04) Spawn Character. (broadcast) (NGS)
+    #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[Id(0x08, 0x04)]
     #[NGS]
     CharacterSpawnNGS(CharacterSpawnNGSPacket),
+    /// (0x08, 0x05) Spawn Transporter.
     #[Id(0x08, 0x05)]
     TransporterSpawn(TransporterSpawnPacket),
+    /// (0x08, 0x09) Spawn Event.
     #[Id(0x08, 0x09)]
     EventSpawn(EventSpawnPacket),
+    /// (0x08, 0x0B) Spawn Object.
     #[Id(0x08, 0x0B)]
     ObjectSpawn(ObjectSpawnPacket),
-    #[Id(0x08, 0x0D)]
-    EnemySpawn(EnemySpawnPacket),
+    /// (0x08, 0x0C) Spawn NPC.
     #[Id(0x08, 0x0C)]
     NPCSpawn(NPCSpawnPacket),
+    /// (0x08, 0x0D) Spawn Enemy.
+    #[Id(0x08, 0x0D)]
+    EnemySpawn(EnemySpawnPacket),
 
     // Quest List packets [0x0B]
     #[Category(PacketCategory::QuestList)]

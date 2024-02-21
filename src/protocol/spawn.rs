@@ -1,3 +1,4 @@
+//! Spawn packets \[0x08\]
 use super::{
     models::{character::Character, Position},
     HelperReadWrite, ObjectHeader, ObjectType, PacketReadWrite,
@@ -8,16 +9,21 @@ use crate::AsciiString;
 // Spawn packets
 // ----------------------------------------------------------------
 
-//0x08, 0x04
+/// (0x08, 0x04) Spawn Character. (broadcast)
+///
+/// (S -> C) Sent when a new character is spawned.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x08, 0x04)]
 pub struct CharacterSpawnPacket {
     // unsure about real structure
+    /// Spawned character's player object.
     pub player_obj: ObjectHeader,
+    /// Object position.
     pub position: Position,
     pub unk1: u16, // padding?
+    /// Always `Character`. (?)
     #[FixedStr(0x20)]
     pub unk2: AsciiString,
     pub unk3: u16,
@@ -26,20 +32,27 @@ pub struct CharacterSpawnPacket {
     pub unk6: u32,
     pub unk7: u32,
     pub unk8: u32,
-    pub is_me: CharacterSpawnType,
+    /// Character spawn type.
+    pub spawn_type: CharacterSpawnType,
     pub unk9: u8,
     pub unk10: u16,
+    /// Character data.
     pub character: Character,
     pub unk11: u32,
+    /// Set to `1` if the player is a GM.
     pub gm_flag: u32,
+    /// Player's nickname.
     #[FixedStr(0x10)]
     pub nickname: String,
-    pub unk12_1: [u8; 0x20],
     #[SeekAfter(0x60)]
-    pub unk12_2: [u8; 0x20],
+    #[FixedLen(0x40)]
+    pub unk12: Vec<u8>,
 }
 
-// #[cfg(feature = "ngs_packets")]
+/// (0x08, 0x04) Spawn Character. (broadcast) (NGS)
+///
+/// (S -> C) Sent when a new character is spawned.
+#[cfg(feature = "ngs_packets")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -47,9 +60,12 @@ pub struct CharacterSpawnPacket {
 #[Id(0x08, 0x04)]
 pub struct CharacterSpawnNGSPacket {
     // unsure about real structure
+    /// Spawned character's player object.
     pub player_obj: ObjectHeader,
+    /// Object position.
     pub position: Position,
     pub unk1: u16, // padding?
+    /// Always `Character`. (?)
     #[FixedStr(0x20)]
     pub unk2: AsciiString,
     pub unk3: u16,
@@ -58,29 +74,37 @@ pub struct CharacterSpawnNGSPacket {
     pub unk6: u32,
     pub unk7: u32,
     pub unk8: u32,
-    pub is_me: CharacterSpawnType,
+    /// Character spawn type.
+    pub spawn_type: CharacterSpawnType,
     pub unk9: u8,
     pub unk10: u16,
+    /// Character data.
     #[FixedLen(0x63C)]
     pub character: Vec<u8>,
     pub unk11: u32,
-    pub gm_flag: u32,
+    pub unk12: u32,
+    /// Player's nickname.
     #[FixedStr(0x10)]
     pub nickname: String,
-    pub unk12_1: [u8; 0x20],
     #[SeekAfter(0x60)]
-    pub unk12_2: [u8; 0x20],
+    #[FixedLen(0x40)]
+    pub unk13: Vec<u8>,
 }
 
-// 0x08, 0x05
+/// (0x08, 0x05) Spawn Transporter.
+///
+/// (S -> C) Sent to spawn a new transporter. (only campship telepool?)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x08, 0x05)]
 pub struct TransporterSpawnPacket {
+    /// Spawned object header.
     pub object: ObjectHeader,
+    /// Spawned object position.
     pub position: Position,
     pub unk1: u16,
+    /// Object name.
     #[FixedStr(0x20)]
     pub name: AsciiString,
     pub unk2: u32,
@@ -92,15 +116,20 @@ pub struct TransporterSpawnPacket {
     pub unk8: u32,
 }
 
-// 0x08, 0x09
+/// (0x08, 0x09) Spawn Event.
+///
+/// (S -> C) Sent to spawn a new event (e.g. camera lock).
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x08, 0x09)]
 pub struct EventSpawnPacket {
+    /// Spawned event header.
     pub object: ObjectHeader,
+    /// Spawned event position.
     pub position: Position,
     pub unk1: u16,
+    /// Event name.
     #[FixedStr(0x20)]
     pub name: AsciiString,
     pub unk3: u32,
@@ -116,28 +145,38 @@ pub struct EventSpawnPacket {
     pub unk13: u32,
     pub unk14: u32,
     pub flags: u32,
+    /// Event data.
     #[Len_u32]
     pub data: Vec<u32>,
 }
 
-// 0x08, 0x0B
+/// (0x08, 0x0B) Spawn Object.
+///
+/// (S -> C) Sent to spawn a new object.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x08, 0x0B)]
 pub struct ObjectSpawnPacket {
+    /// Spawned object header.
     pub object: ObjectHeader,
+    /// Spawned object position.
     pub position: Position,
     pub unk1: u16,
+    /// Object name.
     #[FixedStr(0x20)]
     pub name: AsciiString,
     pub unk2: [u32; 5],
+    /// Object flags. (?)
     pub flags: u32,
+    /// Object data.
     #[Len_u32]
     pub data: Vec<u32>,
 }
 
-// 0x08, 0x0C
+/// (0x08, 0x0C) Spawn NPC.
+///
+/// (S -> C) Sent to spawn a new NPC.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -145,9 +184,12 @@ pub struct ObjectSpawnPacket {
 #[Flags(Flags {packed: true, ..Default::default()})]
 #[Magic(0x9FCD, 0xE7)]
 pub struct NPCSpawnPacket {
+    /// Spawned NPC object.
     pub object: ObjectHeader,
+    /// Spawned NPC position.
     pub position: Position,
     pub unk1: u16,
+    /// NPC name.
     #[FixedStr(0x20)]
     pub name: AsciiString,
     pub unk2: u32,
@@ -164,7 +206,9 @@ pub struct NPCSpawnPacket {
     pub unk13: AsciiString,
 }
 
-// 0x08, 0x0D
+/// (0x08, 0x0D) Spawn Enemy.
+///
+/// (S -> C) Sent when a new enemy is spawned.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -172,14 +216,19 @@ pub struct NPCSpawnPacket {
 #[Flags(Flags {packed: true, ..Default::default()})]
 #[Magic(0x258B, 0x32)]
 pub struct EnemySpawnPacket {
+    /// Spawned enemy object.
     pub object: ObjectHeader,
+    /// Spawned enemy position.
     pub position: Position,
     pub unk1: u16,
+    /// Enemy name.
     #[FixedStr(0x20)]
     pub name: AsciiString,
     pub unk2: u32,
+    /// Enemy HP.
     pub hp: u32,
     pub unk4: u32,
+    /// Enemy level.
     pub level: u32,
     pub unk5: u32,
     pub unk6: u32,
@@ -197,13 +246,16 @@ pub struct EnemySpawnPacket {
 // Additional structs
 // ----------------------------------------------------------------
 
+/// Character spawn type.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 #[repr(u8)]
 pub enum CharacterSpawnType {
+    /// Spawned character is not related to the receiver.
+    Other = 0x27,
+    /// Spawned character is related to the receiver.
     #[default]
-    Myself = 47,
-    Other = 39,
+    Myself = 0x2F,
 
     #[Read_default]
     Undefined = 0xFF,
@@ -239,15 +291,14 @@ impl Default for CharacterSpawnPacket {
             unk6: 1,
             unk7: 53,
             unk8: 0,
-            is_me: CharacterSpawnType::Myself,
+            spawn_type: CharacterSpawnType::Myself,
             unk9: 0,
             unk10: 0,
             character: Character::default(),
             unk11: 0,
             gm_flag: 0,
             nickname: String::new(),
-            unk12_1: [0u8; 0x20],
-            unk12_2: [0u8; 0x20],
+            unk12: vec![0; 0x40],
         }
     }
 }
