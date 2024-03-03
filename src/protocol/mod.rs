@@ -22,6 +22,7 @@ pub mod objects;
 pub mod orders;
 pub mod palette;
 pub mod party;
+pub mod playershop;
 pub mod playerstatus;
 pub mod questlist;
 pub mod server;
@@ -45,6 +46,7 @@ use objects::*;
 use orders::*;
 use palette::*;
 use party::*;
+use playershop::*;
 use playerstatus::*;
 use questlist::*;
 use server::*;
@@ -742,6 +744,21 @@ pub enum Packet {
     #[Id(0x2B, 0x02)]
     LoadSettings(LoadSettingsPacket),
 
+    // Player shop packets [0x2D]
+    #[Category(PacketCategory::PlayerShop)]
+    /// (0x2D, 0x02) Player Shop Item Search Request.
+    #[Id(0x2D, 0x02)]
+    ProductSearchRequest(ProductSearchRequestPacket),
+    /// (0x2D, 0x03) Player Shop Item Search Request.
+    #[Id(0x2D, 0x03)]
+    ProductSearchResponse(ProductSearchResponsePacket),
+    /// (0x2D, 0x0B) Player Shop Details Request.
+    #[Id(0x2D, 0x0B)]
+    PlayerShopDetailsRequest(PlayerShopDetailsRequestPacket),
+    /// (0x2D, 0x0C) Player Shop Details Response.
+    #[Id(0x2D, 0x0C)]
+    PlayerShopDetailsResponse(PlayerShopDetailsResponsePacket),
+
     // Symbol art packets [0x2F]
     #[Category(PacketCategory::SymbolArt)]
     #[Id(0x2F, 0x00)]
@@ -869,6 +886,8 @@ pub enum PacketCategory {
     Unk2A,
     /// Settings related packets. See [`settings`]
     Settings,
+    /// Player shop related packets. See [`playershop`]
+    PlayerShop,
     /// Symbol Art related packets. See [`symbolart`]
     SymbolArt,
     /// Unknown 0x34 packets. See [`unk34`]
