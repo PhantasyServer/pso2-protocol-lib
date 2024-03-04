@@ -427,12 +427,8 @@ pub enum Packet {
     UpdateStorage(UpdateStoragePacket),
     #[Id(0x0F, 0x25)]
     DiscardStorageItemRequest(DiscardStorageItemRequestPacket),
-    #[cfg(not(test))]
     #[Id(0x0F, 0x30)]
     LoadItem(LoadItemPacket),
-    #[cfg(test)]
-    #[Id(0x0F, 0x30)]
-    LoadItem(LoadItemInternal),
     #[Id(0x0F, 0x33)]
     LearnedPA(LearnedPAPacket),
     #[Id(0x0F, 0x5B)]

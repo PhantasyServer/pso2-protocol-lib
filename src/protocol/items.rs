@@ -534,10 +534,10 @@ pub struct Unk0FFCPacket {
 #[Id(0x0F, 0x30)]
 #[Flags(Flags {packed: true, ..Default::default()})]
 #[Magic(0x9E22, 0x46)]
-pub struct LoadItemInternal {
-    pub ids: Vec<ItemId>,
-    pub names: String,
-    pub name_length: Vec<u8>,
+struct LoadItemInternal {
+    ids: Vec<ItemId>,
+    names: String,
+    name_length: Vec<u8>,
 }
 
 // ----------------------------------------------------------------
