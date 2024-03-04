@@ -83,6 +83,73 @@ pub struct PlayerShopDetailsResponsePacket {
     pub symbol_art_uuid: u128,
 }
 
+/// (0x2D, 0x0D) Character Search Request.
+///
+/// (C -> S) Sent when the client searches for a character.
+///
+/// Respond with: [`crate::protocol::Packet::CharacterSearchResponse`]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x2D, 0x0D)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x8F2A, 0x75)]
+pub struct CharacterSearchRequestPacket {
+    /// Searched character name.
+    pub char_name: String,
+}
+
+/// (0x2D, 0x0E) Character Search Response.
+///
+/// (S -> C) Sent in response to a search request.
+///
+/// Response to: [`crate::protocol::Packet::CharacterSearchRequest`]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x2D, 0x0E)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0x14E7, 0xC0)]
+pub struct CharacterSearchResponsePacket {
+    pub unk1: u8,
+    pub unk2: u8,
+    pub unk3: u16,
+    #[FixedLen(0x32)]
+    pub characters: Vec<CharacterSearchEntry>,
+}
+
+/// (0x2D, 0x12) Recruiting Alliances List Request.
+///
+/// (C -> S) Sent when the client wants the list of recruiting alliances.
+///
+/// Respond with: [`crate::protocol::Packet::RecruitingAlliancesResponse`]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x2D, 0x12)]
+pub struct RecruitingAlliancesRequestPacket {
+    pub unk: u64,
+}
+
+/// (0x2D, 0x13) Recruiting Alliances List Response.
+///
+/// (S -> C) Sent in response to a list request.
+///
+/// Response to: [`crate::protocol::Packet::RecruitingAlliancesRequest`]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x2D, 0x13)]
+#[Flags(Flags {packed: true, ..Default::default()})]
+#[Magic(0xB19C, 0x38)]
+pub struct RecruitingAlliancesResponsePacket {
+    pub unk1: u32,
+    pub unk2: u16,
+    pub unk3: u16,
+    #[FixedLen(0x64)]
+    pub alliances: Vec<RecruitingAlliance>,
+}
+
 // ----------------------------------------------------------------
 // Additional structs
 // ----------------------------------------------------------------
@@ -102,4 +169,38 @@ pub struct SoldItem {
     pub amount: u32,
     /// Price of an item.
     pub price: u64,
+}
+
+/// Character entry in a character search results.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+pub struct CharacterSearchEntry {
+    /// Player object.
+    pub player: ObjectHeader,
+    /// Player's username.
+    pub username: String,
+    /// Character's name.
+    pub char_name: String,
+}
+
+/// Recruiting alliance entry.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+pub struct RecruitingAlliance {
+    pub unk1: u32,
+    /// Name of the alliance.
+    pub alliance_name: String,
+    /// Number of members.
+    pub members: u8,
+    /// Alliance level.
+    pub level: u8,
+    pub unk5: u8,
+    pub unk6: u8,
+    /// Alliance flag UUID.
+    pub symbol_art_uuid: u128,
+    /// Alliance leader comments.
+    pub comment: String,
+    pub unk8: u32,
 }

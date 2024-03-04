@@ -11,6 +11,7 @@ use std::{
 pub mod chat;
 pub mod emergency;
 pub mod flag;
+pub mod friendavatar;
 pub mod friends;
 pub mod items;
 pub mod login;
@@ -32,10 +33,12 @@ pub mod symbolart;
 pub mod unk10;
 pub mod unk19;
 pub mod unk2a;
+pub mod unk31;
 pub mod unk34;
 use chat::*;
 use emergency::*;
 use flag::*;
+use friendavatar::*;
 use friends::*;
 use items::*;
 use login::*;
@@ -56,6 +59,7 @@ use symbolart::*;
 use unk10::*;
 use unk19::*;
 use unk2a::*;
+use unk31::*;
 use unk34::*;
 
 // Code is getting really messy.
@@ -726,6 +730,15 @@ pub enum Packet {
     #[Id(0x23, 0x10)]
     Unk2310,
 
+    // Friend avatar packets [0x26]
+    #[Category(PacketCategory::FriendAvatar)]
+    /// (0x26, 0x00) Friend Avatar Data Request.
+    #[Id(0x26, 0x00)]
+    FriendAvatarDataRequest(FriendAvatarDataRequestPacket),
+    /// (0x26, 0x08) Friend Avatar Data Response.
+    #[Id(0x26, 0x08)]
+    FriendAvatarDataResponse(FriendAvatarDataResponsePacket),
+
     // Unknown 0x2A packets [0x2A]
     #[Category(PacketCategory::Unk2A)]
     #[Id(0x2A, 0x08)]
@@ -754,6 +767,18 @@ pub enum Packet {
     /// (0x2D, 0x0C) Player Shop Details Response.
     #[Id(0x2D, 0x0C)]
     PlayerShopDetailsResponse(PlayerShopDetailsResponsePacket),
+    /// (0x2D, 0x0D) Character Search Request.
+    #[Id(0x2D, 0x0D)]
+    CharacterSearchRequest(CharacterSearchRequestPacket),
+    /// (0x2D, 0x0E) Character Search Response.
+    #[Id(0x2D, 0x0E)]
+    CharacterSearchResponse(CharacterSearchResponsePacket),
+    /// (0x2D, 0x12) Recruiting Alliances List Request.
+    #[Id(0x2D, 0x12)]
+    RecruitingAlliancesRequest(RecruitingAlliancesRequestPacket),
+    /// (0x2D, 0x13) Recruiting Alliances List Response.
+    #[Id(0x2D, 0x13)]
+    RecruitingAlliancesResponse(RecruitingAlliancesResponsePacket),
 
     // Symbol art packets [0x2F]
     #[Category(PacketCategory::SymbolArt)]
@@ -780,12 +805,35 @@ pub enum Packet {
     #[Classic]
     ReceiveSymbolArt(ReceiveSymbolArtPacket),
 
+    // Unknown 0x31 packets [0x31]
+    #[Category(PacketCategory::Unk31)]
+    /// (0x31, 0x08) Play Achievements Request.
+    ///
+    /// (C -> S) Sent when the client request play achievements list.
+    ///
+    /// Respond with: [`Packet::PlayAchievementsResponse`]
+    #[Id(0x31, 0x08)]
+    PlayAchievementsRequest,
+    /// (0x31, 0x09) Play Achievements Request.
+    #[Id(0x31, 0x09)]
+    PlayAchievementsResponse(PlayAchievementsResponsePacket),
+
     // Unknown 0x34 packets [0x34]
     #[Category(PacketCategory::Unk34)]
     #[Id(0x34, 0x35)]
     Unk3435(Unk3435Packet),
     #[Id(0x34, 0x5C)]
     Unk345C(Unk345CPacket),
+    /// (0x34, 0x70) Player Shop Top Items List Request.
+    ///
+    /// (C -> S) Sent when the client enters the player shop.
+    ///
+    /// Respond with: [`Packet::PlayerShopListResponse`]
+    #[Id(0x34, 0x70)]
+    PlayerShopListRequest,
+    /// (0x34, 0x71) Player Shop Top Items List Response.
+    #[Id(0x34, 0x71)]
+    PlayerShopListResponse(PlayerShopListResponsePacket),
 
     // ARKS Misions packets [0x4A]
     #[Category(PacketCategory::ARKSMissions)]
@@ -878,6 +926,8 @@ pub enum PacketCategory {
     Palette,
     /// Flag packets. See [`flag`]
     Flag,
+    /// Friend avatar relater packets. See [`friendavatar`]
+    FriendAvatar,
     /// Unknown 0x2A packets. See [`unk2a`]
     Unk2A,
     /// Settings related packets. See [`settings`]
@@ -886,6 +936,8 @@ pub enum PacketCategory {
     PlayerShop,
     /// Symbol Art related packets. See [`symbolart`]
     SymbolArt,
+    /// Unknown 0x31 packets. See [`unk31`]
+    Unk31,
     /// Unknown 0x34 packets. See [`unk34`]
     Unk34,
     /// ARKS Missions related packets. See [`missions`]
