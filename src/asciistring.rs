@@ -113,7 +113,8 @@ impl From<AsciiString> for String {
 }
 
 impl From<String> for AsciiString {
-    /// Convert from [`String`] into [`AsciiString`]. All non-ascii characters are discarded.
+    /// Convert from [`String`] into [`AsciiString`].
+    /// All non-ascii characters are discarded.
     fn from(value: String) -> Self {
         let string = value.chars().filter(char::is_ascii).collect();
         Self(string)
@@ -121,7 +122,8 @@ impl From<String> for AsciiString {
 }
 
 impl From<&str> for AsciiString {
-    /// Convert from [`str`] into [`AsciiString`]. All non-ascii characters are discarded.
+    /// Convert from [`str`] into [`AsciiString`].
+    /// All non-ascii characters are discarded.
     fn from(value: &str) -> Self {
         let string = value.chars().filter(char::is_ascii).collect();
         Self(string)
@@ -191,23 +193,21 @@ impl StringRW for AsciiString {
 
     #[cfg(not(test))]
     fn write(&self, len: usize) -> Vec<u8> {
-        return self
-            .chars()
+        self.chars()
             .take(len - 1)
             .map(|c| c as u8)
             .chain([0].into_iter().cycle())
             .take(len)
-            .collect();
+            .collect()
     }
     // sega pls clear your buffers
     #[cfg(test)]
     fn write(&self, len: usize) -> Vec<u8> {
-        return self
-            .chars()
+        self.chars()
             .map(|c| c as u8)
             .chain([0].into_iter().cycle())
             .take(len)
-            .collect();
+            .collect()
     }
 
     #[inline]
@@ -218,6 +218,7 @@ impl StringRW for AsciiString {
 
 impl AsciiString {
     /// Create an [`AsciiString`] without checking for non-ascii characters.
+    ///
     /// # Safety
     /// The caller must ensure that the contents of the string are valid ascii characters.
     pub fn from_string_unchecked(other: String) -> Self {
