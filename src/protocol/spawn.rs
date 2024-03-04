@@ -68,8 +68,9 @@ pub struct CharacterSpawnNGSPacket {
     #[FixedStr(0x10)]
     pub nickname: String,
     pub unk12_1: [u8; 0x20],
-    #[SeekAfter(0x60)]
     pub unk12_2: [u8; 0x20],
+    #[SeekAfter(0x60)]
+    pub unk13: u64,
 }
 
 // 0x08, 0x05

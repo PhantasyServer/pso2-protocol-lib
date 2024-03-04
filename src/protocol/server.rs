@@ -80,7 +80,6 @@ pub struct CampshipDownPacket {
 #[Magic(0x7542, 0x5E)]
 pub struct LoadLevelPacket {
     pub map_object: ObjectHeader,
-    #[cfg_attr(feature = "serde", serde(skip))]
     pub receiver: ObjectHeader,
     pub settings: ZoneSettings,
     pub unk4: [u8; 0xC],
