@@ -10,7 +10,7 @@ import "fmt"
 import "net"
 
 type Packet struct {
-	packet *C.Packet
+	packet *C.PLIB_Packet
 }
 
 func (p Packet) Close() {
@@ -23,7 +23,7 @@ func (p Packet) Close() {
 //------------------------
 
 type PacketWorker struct {
-	worker *C.PacketWorker
+	worker *C.PLIB_PacketWorker
 }
 
 func new_packetworker() PacketWorker {
@@ -115,11 +115,11 @@ func packet_test() {
 //------------------------
 
 type SocketFactory struct {
-	sf *C.SocketFactory
+	sf *C.PLIB_SocketFactory
 }
 
 type Connection struct {
-	conn *C.Connection
+	conn *C.PLIB_Connection
 }
 
 func create_sf() SocketFactory {
@@ -290,7 +290,7 @@ func socket_test() {
 //------------------------
 
 type PPACReader struct {
-	reader *C.PPACReader
+	reader *C.PLIB_PPACReader
 }
 
 func create_reader(s string) (PPACReader, error) {
@@ -387,7 +387,7 @@ func ppac_test() {
 }
 
 func main() {
-	if C.API_VERSION != C.get_api_version() {
+	if C.PLIB_API_VERSION != C.get_api_version() {
 		return
 	}
 	packet_test()

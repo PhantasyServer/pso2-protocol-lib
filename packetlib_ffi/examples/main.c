@@ -9,15 +9,15 @@
 //------------------------
 
 void packet_demo() {
-  PacketWorker *worker = new_worker(Classic, JSON);
+  PLIB_PacketWorker *worker = new_worker(Classic, JSON);
 
   // example of parsing packets
   uint8_t data[] = {8, 0, 0, 0, 3, 4, 0, 0};
-  Packet *packet = raw_to_packet(worker, data, 8);
+  PLIB_Packet *packet = raw_to_packet(worker, data, 8);
   const unsigned char *err = get_pw_error(worker);
   if (err != NULL)
     printf("%s\n", err);
-  DataBuffer buf = packet_to_ser(worker, packet);
+  PLIB_DataBuffer buf = packet_to_ser(worker, packet);
   err = get_pw_error(worker);
   if (err != NULL)
     printf("%s\n", err);
@@ -55,8 +55,8 @@ void packet_demo() {
 //------------------------
 
 void socket_demo() {
-  PacketWorker *worker = new_worker(Classic, JSON);
-  SocketFactory *sf = new_factory();
+  PLIB_PacketWorker *worker = new_worker(Classic, JSON);
+  PLIB_SocketFactory *sf = new_factory();
 
   // create a new listener
   if (!create_listener(sf, (const signed char *)"0.0.0.0:13370")) {
@@ -86,7 +86,7 @@ void socket_demo() {
   close_fd(handle);
 
   // wait for connection
-  enum SocketResult sr = Blocked;
+  enum PLIB_SocketResult sr = Blocked;
   while (sr != Ready) {
     sr = accept_listener(sf);
     if (sr == Blocked)
@@ -102,7 +102,7 @@ void socket_demo() {
   }
 
   // get received connection
-  Connection *conn = get_connection(sf, Classic, NULL, NULL);
+  PLIB_Connection *conn = get_connection(sf, Classic, NULL, NULL);
 
   int ip = get_conn_ip(conn);
   printf("Ip: ");
@@ -112,7 +112,8 @@ void socket_demo() {
 
   // write data to client
   char str[] = "{\"LoadLevel\":{}}";
-  Packet *packet = ser_to_packet(worker, (const uint8_t *)str, strlen(str) + 1);
+  PLIB_Packet *packet =
+      ser_to_packet(worker, (const uint8_t *)str, strlen(str) + 1);
   {
     const unsigned char *err = get_pw_error(worker);
     if (err != NULL)
@@ -151,8 +152,8 @@ void socket_demo() {
   // read packet from server
   sr = conn_read_packet(conn);
   if (sr == Ready) {
-    Packet *packet = conn_get_data(conn);
-    DataBuffer data = packet_to_ser(worker, packet);
+    PLIB_Packet *packet = conn_get_data(conn);
+    PLIB_DataBuffer data = packet_to_ser(worker, packet);
     printf("%s\n", data.ptr);
     free_packet(packet);
   } else if (sr == SocketError) {
@@ -175,8 +176,8 @@ void socket_demo() {
 //------------------------
 
 void ppac_demo() {
-  PacketWorker *worker = new_worker(Classic, JSON);
-  PPACReader *pr = new_reader((const signed char *)"test.pak");
+  PLIB_PacketWorker *worker = new_worker(Classic, JSON);
+  PLIB_PPACReader *pr = new_reader((const signed char *)"test.pak");
   const unsigned char *err = get_reader_error(pr);
   if (err) {
     printf("%s\n", err);
@@ -184,7 +185,7 @@ void ppac_demo() {
     return;
   }
   set_out_type(pr, OutputBoth);
-  ReaderResult rr = Ok;
+  PLIB_ReaderResult rr = Ok;
   while (rr == Ok || rr == RawOnly) {
     rr = read_packet(pr);
     err = get_reader_error(pr);
@@ -194,13 +195,13 @@ void ppac_demo() {
     }
     if (rr == ReaderEOF)
       break;
-    PacketData pd = get_reader_data(pr);
+    PLIB_PacketData pd = get_reader_data(pr);
     printf("----------\n");
     printf("Time: %lu\n", pd.time);
     printf("Direction: %u\n", pd.direction);
     printf("Protocol Type: %u\n", pd.protocol_type);
     if (pd.data) {
-      DataBuffer data = packet_to_ser(worker, pd.data);
+      PLIB_DataBuffer data = packet_to_ser(worker, pd.data);
       printf("Packet: %s\n", data.ptr);
       free_packet(pd.data);
     } else if (pd.raw_ptr && pd.raw_size) {
@@ -213,7 +214,7 @@ void ppac_demo() {
 }
 
 int main(int argc, char **argv) {
-  if (get_api_version() != API_VERSION)
+  if (get_api_version() != PLIB_API_VERSION)
     return -1;
   packet_demo();
   socket_demo();

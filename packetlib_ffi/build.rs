@@ -7,7 +7,8 @@ use cbindgen::{Config, Language};
 fn main() {
     let _ = std::fs::create_dir("include");
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let config = Config::from_root_or_default(&crate_dir);
+    let mut config = Config::from_root_or_default(&crate_dir);
+    config.cython.header = Some(String::from("\"packetlib.h\""));
     let builder_c = cbindgen::Builder::new()
         .with_config(config)
         .with_crate(crate_dir);
@@ -22,7 +23,7 @@ fn main() {
     builder_cpy
         .generate()
         .expect("Unable to generate Cython bindings")
-        .write_to_file("include/packetlib.py");
+        .write_to_file("include/packetlib.pxd");
     csbindgen::Builder::default()
         .input_extern_file("src/protocol.rs")
         .input_extern_file("src/lib.rs")

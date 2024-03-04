@@ -6,17 +6,17 @@ cdef extern from *:
   ctypedef bint bool
   ctypedef struct va_list
 
-cdef extern from *:
+cdef extern from "packetlib.h":
 
-  const uint32_t API_VERSION # = 5
+  const uint32_t PLIB_API_VERSION # = 5
 
-  const uint32_t PROTOCOL_VERSION # = 4
+  const uint32_t PLIB_PROTOCOL_VERSION # = 4
 
-  cdef enum Direction:
+  cdef enum PLIB_Direction:
     ToServer,
     ToClient,
 
-  cdef enum OutputType:
+  cdef enum PLIB_OutputType:
     # Output only parsed packet.
     OutputPacket,
     # Output only raw packet.
@@ -25,7 +25,7 @@ cdef extern from *:
     OutputBoth,
 
   # Packet types.
-  cdef enum PacketType:
+  cdef enum PLIB_PacketType:
     NGS,
     Classic,
     NA,
@@ -33,53 +33,53 @@ cdef extern from *:
     Vita,
     Raw,
 
-  cdef enum ReaderResult:
+  cdef enum PLIB_ReaderResult:
     Ok,
     RawOnly,
     ReaderEOF,
     PPACError,
 
   # Serialized packet format
-  cdef enum SerializedFormat:
+  cdef enum PLIB_SerializedFormat:
     JSON,
     MessagePack,
     MessagePackNamed,
 
-  cdef enum SocketResult:
+  cdef enum PLIB_SocketResult:
     Ready,
     Blocked,
     NoSocket,
     SocketError,
 
-  cdef struct Connection:
+  cdef struct PLIB_Connection:
     pass
 
-  cdef struct PPACReader:
+  cdef struct PLIB_PPACReader:
     pass
 
-  cdef struct Packet:
+  cdef struct PLIB_Packet:
     pass
 
-  cdef struct PacketWorker:
+  cdef struct PLIB_PacketWorker:
     pass
 
-  cdef struct SocketFactory:
+  cdef struct PLIB_SocketFactory:
     pass
 
   # Fat pointer to data.
-  cdef struct DataBuffer:
+  cdef struct PLIB_DataBuffer:
     const uint8_t *ptr;
     size_t size;
 
-  cdef struct PacketData:
+  cdef struct PLIB_PacketData:
     # When was the packet stored (in secs).
     uint64_t time;
     # Where the packet was heading.
-    Direction direction;
+    PLIB_Direction direction;
     # Which client version produced this packet.
-    PacketType protocol_type;
+    PLIB_PacketType protocol_type;
     # Parsed packet (if requested)
-    Packet *data;
+    PLIB_Packet *data;
     # Raw packet (if requested)
     const uint8_t *raw_ptr;
     size_t raw_size;
@@ -95,41 +95,41 @@ cdef extern from *:
   bool have_ppac();
 
   # Creates a new packet worker.
-  PacketWorker *new_worker(PacketType packet_type, SerializedFormat serde_format);
+  PLIB_PacketWorker *new_worker(PLIB_PacketType packet_type, PLIB_SerializedFormat serde_format);
 
   # Destroys a packet worker.
-  void free_worker(PacketWorker *_worker);
+  void free_worker(PLIB_PacketWorker *_worker);
 
   # Destroys a packet.
-  void free_packet(Packet *_packet);
+  void free_packet(PLIB_Packet *_packet);
 
   # Clones the packet.
-  Packet *clone_packet(const Packet *packet);
+  PLIB_Packet *clone_packet(const PLIB_Packet *packet);
 
   # Checks if the packet is empty.
-  bool packet_is_empty(const Packet *packet);
+  bool packet_is_empty(const PLIB_Packet *packet);
 
   # Sets a new packet type.
-  void set_packet_type(PacketWorker *worker, PacketType packet_type);
+  void set_packet_type(PLIB_PacketWorker *worker, PLIB_PacketType packet_type);
 
   # Sets a new serde format.
-  void set_serde_format(PacketWorker *worker, SerializedFormat format);
+  void set_serde_format(PLIB_PacketWorker *worker, PLIB_SerializedFormat format);
 
   # Checks if the specified serde format is supported.
-  bool serde_supported(SerializedFormat serde_format);
+  bool serde_supported(PLIB_SerializedFormat serde_format);
 
   # Parses raw packet data and returns a [`Packet`] type or a null pointer if an error occured.
   #
   # # Safety
   # `data_ptr' must point to valid packet data up to `size` bytes.
-  Packet *raw_to_packet(PacketWorker *worker, const uint8_t *data_ptr, size_t size);
+  PLIB_Packet *raw_to_packet(PLIB_PacketWorker *worker, const uint8_t *data_ptr, size_t size);
 
   # Parses serialized packet data and returns a [`Packet`] type or a null pointer if an error
   # occurred.
   #
   # # Safety
   # `data_ptr' must point to valid serialied data up to `size` bytes.
-  Packet *ser_to_packet(PacketWorker *worker, const uint8_t *data_ptr, size_t size);
+  PLIB_Packet *ser_to_packet(PLIB_PacketWorker *worker, const uint8_t *data_ptr, size_t size);
 
   # Parses [`Packet`] and returns raw packet data.
   #
@@ -137,7 +137,7 @@ cdef extern from *:
   # The returned pointer is only valid until the next data-returning function call.
   # If the returned array is empty, the pointer might be non-null but still invalid. This is not
   # considered an error.
-  DataBuffer packet_to_raw(PacketWorker *worker, const Packet *packet);
+  PLIB_DataBuffer packet_to_raw(PLIB_PacketWorker *worker, const PLIB_Packet *packet);
 
   # Parses [`Packet`] and returns serialized packet data or a null pointer if an error occured.
   #
@@ -145,7 +145,7 @@ cdef extern from *:
   # The returned pointer is only valid until the next data-returning function call.
   # If the returned array is empty, the pointer might be non-null but still invalid. This is not
   # considered an error.
-  DataBuffer packet_to_ser(PacketWorker *worker, const Packet *packet);
+  PLIB_DataBuffer packet_to_ser(PLIB_PacketWorker *worker, const PLIB_Packet *packet);
 
   # Parses packet data and returns a fat pointer to the serialized packet or a null pointer if
   # an error occurred.
@@ -156,7 +156,7 @@ cdef extern from *:
   # The returned pointer is only valid until the next data-returning function call.
   # If the returned array is empty, the pointer might be non-null but still invalid. This is not
   # considered an error.
-  DataBuffer parse_packet(PacketWorker *worker, const uint8_t *data_ptr, size_t size);
+  PLIB_DataBuffer parse_packet(PLIB_PacketWorker *worker, const uint8_t *data_ptr, size_t size);
 
   # Deserializes packet and returns a fat pointer to the packet data or a null pointer if an error
   # occured.
@@ -167,40 +167,40 @@ cdef extern from *:
   # The returned pointer is only valid until the next data-returning function call.
   # If the returned array is empty, the pointer might be non-null but still invalid. This is not
   # considered an error.
-  DataBuffer create_packet(PacketWorker *worker, const uint8_t *data_ptr, size_t size);
+  PLIB_DataBuffer create_packet(PLIB_PacketWorker *worker, const uint8_t *data_ptr, size_t size);
 
   # Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error
   # occurred.
   #
   # # Safety
   # The returned pointer is only valid until the next failable function call.
-  const uint8_t *get_pw_error(const PacketWorker *worker);
+  const uint8_t *get_pw_error(const PLIB_PacketWorker *worker);
 
   # Creates a new socket factory.
-  SocketFactory *new_factory();
+  PLIB_SocketFactory *new_factory();
 
   # Destroys a socket factory.
-  void free_factory(SocketFactory *_factory);
+  void free_factory(PLIB_SocketFactory *_factory);
 
   # Creates a new listener on the specified address.
-  bool create_listener(SocketFactory *factory, const int8_t *addr);
+  bool create_listener(PLIB_SocketFactory *factory, const int8_t *addr);
 
   # Sets the blocking mode of the listener.
-  void listener_nonblocking(const SocketFactory *factory, bool nonblocking);
+  void listener_nonblocking(const PLIB_SocketFactory *factory, bool nonblocking);
 
   # Accepts a new incoming connection from installed listener. To collect the resulting connection
   # call `get_connection` or `stream_into_fd".
-  SocketResult accept_listener(SocketFactory *factory);
+  PLIB_SocketResult accept_listener(PLIB_SocketFactory *factory);
 
   # Creates a new stream to the specified address. To collect the resulting stream
   # call `get_connection` or `stream_into_fd".
-  bool create_stream(SocketFactory *factory, const int8_t *addr);
+  bool create_stream(PLIB_SocketFactory *factory, const int8_t *addr);
 
   # Sets the blocking mode of the stream.
-  void stream_nonblocking(SocketFactory *factory, bool nonblocking);
+  void stream_nonblocking(PLIB_SocketFactory *factory, bool nonblocking);
 
   # Returns the IP address of the stream.
-  uint32_t get_stream_ip(const SocketFactory *factory);
+  uint32_t get_stream_ip(const PLIB_SocketFactory *factory);
 
   # Creates a new connection from incoming connection.
   #
@@ -209,37 +209,37 @@ cdef extern from *:
   # path to a PKCS#8 file containing a private key for decryption.
   # 'out_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
   # path to a PKCS#8 file containing a public key for encryption.
-  Connection *get_connection(SocketFactory *factory,
-                             PacketType packet_type,
-                             const int8_t *in_key,
-                             const int8_t *out_key);
+  PLIB_Connection *get_connection(PLIB_SocketFactory *factory,
+                                  PLIB_PacketType packet_type,
+                                  const int8_t *in_key,
+                                  const int8_t *out_key);
 
   # Returns an incoming connection descriptor. Caller is responsible for closing the returned descriptor.
   # If no stream was opened, returns -1.
-  int64_t stream_into_fd(SocketFactory *factory);
+  int64_t stream_into_fd(PLIB_SocketFactory *factory);
 
   # Clones the descriptor. Returns the cloned descriptor or -1 if an error occurred.
-  int64_t clone_fd(SocketFactory *factory, int64_t fd);
+  int64_t clone_fd(PLIB_SocketFactory *factory, int64_t fd);
 
   # Closes the file descriptor.
   void close_fd(int64_t fd);
 
   # Returns an owned socket descriptor. Caller is responsible for closing the returned descriptor.
   # If no listener was opened, returns -1.
-  int64_t listener_into_fd(SocketFactory *factory);
+  int64_t listener_into_fd(PLIB_SocketFactory *factory);
 
   # Installs the provided listener. This function takes ownership of the descriptor.
   #
   # # Safety
   # `fd` must be a valid descriptor.
-  bool listener_from_fd(SocketFactory *factory, int64_t fd);
+  bool listener_from_fd(PLIB_SocketFactory *factory, int64_t fd);
 
   # Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error
   # occurred.
   #
   # # Safety
   # The returned pointer is only valid until the next failable function call.
-  const uint8_t *get_sf_error(const SocketFactory *factory);
+  const uint8_t *get_sf_error(const PLIB_SocketFactory *factory);
 
   # Creates a new connection from owned socket descriptor.
   #
@@ -250,19 +250,19 @@ cdef extern from *:
   # path to a PKCS#8 file containing a private key for decryption.
   # 'out_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
   # path to a PKCS#8 file containing a public key for encryption.
-  Connection *new_connection(int64_t fd,
-                             PacketType packet_type,
-                             const int8_t *in_key,
-                             const int8_t *out_key);
+  PLIB_Connection *new_connection(int64_t fd,
+                                  PLIB_PacketType packet_type,
+                                  const int8_t *in_key,
+                                  const int8_t *out_key);
 
   # Destroys a connection.
-  void free_connection(Connection *_conn);
+  void free_connection(PLIB_Connection *_conn);
 
   # Returns the IP address of the connection.
-  uint32_t get_conn_ip(const Connection *conn);
+  uint32_t get_conn_ip(const PLIB_Connection *conn);
 
   # Changes the connection's packet type.
-  void conn_set_packet_type(Connection *conn, PacketType packet_type);
+  void conn_set_packet_type(PLIB_Connection *conn, PLIB_PacketType packet_type);
 
   # Returns a [`Packet`] or a null pointer if no connection was provided.
   #
@@ -270,40 +270,40 @@ cdef extern from *:
   # The returned pointer is only valid until the next data-returning function call.
   # If the returned array is empty, the pointer might be non-null but still invalid. This is not
   # considered an error.
-  Packet *conn_get_data(Connection *conn);
+  PLIB_Packet *conn_get_data(PLIB_Connection *conn);
 
   # Reads a packet from the connection and stores it in the internal buffer. Call `conn_get_data`
   # to access it.
-  SocketResult conn_read_packet(Connection *conn);
+  PLIB_SocketResult conn_read_packet(PLIB_Connection *conn);
 
   # Writes a packet to the connection. If `ptr` is null, flushes the buffer.
   #
   # # Note
   # If this function returns [`SocketResult::Blocked`], then the data has been written to the
   # buffer.
-  SocketResult conn_write_packet(Connection *conn, const Packet *packet);
+  PLIB_SocketResult conn_write_packet(PLIB_Connection *conn, const PLIB_Packet *packet);
 
   # Returns the encryption key (for [`Packet::EncryptionResponse`]).
-  DataBuffer conn_get_key(Connection *conn);
+  PLIB_DataBuffer conn_get_key(PLIB_Connection *conn);
 
   # Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error
   # occurred.
   #
   # # Safety
   # The returned pointer is only valid until the next failable function call.
-  const uint8_t *get_conn_error(const Connection *conn);
+  const uint8_t *get_conn_error(const PLIB_Connection *conn);
 
   # Creates a new PPAC reader. After creation don't forget to check for errors.
-  PPACReader *new_reader(const int8_t *path);
+  PLIB_PPACReader *new_reader(const int8_t *path);
 
   # Destroys the reader.
-  void free_reader(PPACReader *_reader);
+  void free_reader(PLIB_PPACReader *_reader);
 
   # Sets the output type.
-  void set_out_type(PPACReader *reader, OutputType out_type);
+  void set_out_type(PLIB_PPACReader *reader, PLIB_OutputType out_type);
 
   # Reads the packet and returns if the function succeeded.
-  ReaderResult read_packet(PPACReader *reader);
+  PLIB_ReaderResult read_packet(PLIB_PPACReader *reader);
 
   # Returns a pointer to the packet data or a null pointer if no data exists.
   #
@@ -314,11 +314,11 @@ cdef extern from *:
   # The returned pointer is only valid until the next data-returning function call.
   # If the returned array is empty, the pointer might be non-null but still invalid. This is not
   # considered an error.
-  PacketData get_reader_data(PPACReader *reader);
+  PLIB_PacketData get_reader_data(PLIB_PPACReader *reader);
 
   # Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error
   # occurred.
   #
   # # Safety
   # The returned pointer is only valid until the next failable function call.
-  const uint8_t *get_reader_error(const PPACReader *reader);
+  const uint8_t *get_reader_error(const PLIB_PPACReader *reader);

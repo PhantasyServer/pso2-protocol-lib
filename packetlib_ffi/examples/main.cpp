@@ -6,24 +6,24 @@
 namespace packetlib {
 class Packet {
 private:
-  ::Packet *packet;
+  ::PLIB_Packet *packet;
 
 public:
-  Packet(::Packet *ptr) { packet = ptr; }
+  Packet(::PLIB_Packet *ptr) { packet = ptr; }
   ~Packet() { ::free_packet(packet); }
   Packet(const Packet &) = delete;
   Packet &operator=(Packet other) {
     std::swap(packet, other.packet);
     return *this;
   }
-  ::Packet *get_ptr() { return packet; }
+  ::PLIB_Packet *get_ptr() { return packet; }
 };
 class PacketFactory {
 private:
-  PacketWorker *worker;
+  PLIB_PacketWorker *worker;
 
 public:
-  PacketFactory(PacketType pt, SerializedFormat sf) {
+  PacketFactory(PLIB_PacketType pt, PLIB_SerializedFormat sf) {
     worker = ::new_worker(pt, sf);
   }
   ~PacketFactory() { ::free_worker(worker); }
@@ -33,7 +33,7 @@ public:
     return *this;
   }
   Packet raw_to_packet(char *ptr, size_t size) {
-    ::Packet *packet = ::raw_to_packet(worker, (uint8_t *)ptr, size);
+    ::PLIB_Packet *packet = ::raw_to_packet(worker, (uint8_t *)ptr, size);
     const char *err = (const char *)::get_pw_error(worker);
     if (err) {
       std::string err_str = std::string((const char *)err);
@@ -42,7 +42,7 @@ public:
     return Packet(packet);
   }
   Packet ser_to_packet(char *ptr, size_t size) {
-    ::Packet *packet = ::ser_to_packet(worker, (uint8_t *)ptr, size);
+    ::PLIB_Packet *packet = ::ser_to_packet(worker, (uint8_t *)ptr, size);
     const char *err = (const char *)::get_pw_error(worker);
     if (err) {
       std::string err_str = std::string((const char *)err);
@@ -51,7 +51,7 @@ public:
     return Packet(packet);
   }
   std::string packet_to_ser(Packet &packet) {
-    DataBuffer buf = ::packet_to_ser(worker, packet.get_ptr());
+    PLIB_DataBuffer buf = ::packet_to_ser(worker, packet.get_ptr());
     const char *err = (const char *)::get_pw_error(worker);
     if (err) {
       std::string err_str = std::string((const char *)err);
@@ -64,7 +64,7 @@ public:
     return "";
   }
   std::vector<uint8_t> packet_to_raw(Packet &packet) {
-    DataBuffer buf = ::packet_to_raw(worker, packet.get_ptr());
+    PLIB_DataBuffer buf = ::packet_to_raw(worker, packet.get_ptr());
     const char *err = (const char *)::get_pw_error(worker);
     if (err) {
       std::string err_str = std::string((const char *)err);
@@ -81,15 +81,15 @@ public:
 
 class Connection {
 private:
-  ::Connection *conn;
+  ::PLIB_Connection *conn;
 
 public:
-  Connection(uint64_t fd, enum ::PacketType packet_type, const char *in_key,
-             const char *out_key) {
+  Connection(uint64_t fd, enum ::PLIB_PacketType packet_type,
+             const char *in_key, const char *out_key) {
     conn = ::new_connection(fd, packet_type, (const int8_t *)in_key,
                             (const int8_t *)out_key);
   }
-  Connection(::Connection *other) { conn = other; }
+  Connection(::PLIB_Connection *other) { conn = other; }
   ~Connection() { ::free_connection(conn); }
   Connection(const Connection &) = delete;
   Connection &operator=(Connection other) {
@@ -98,7 +98,7 @@ public:
   }
   uint32_t get_ip() { return ::get_conn_ip(conn); }
   void write_packet(Packet &packet) {
-    SocketResult sr = conn_write_packet(conn, packet.get_ptr());
+    PLIB_SocketResult sr = conn_write_packet(conn, packet.get_ptr());
     if (sr == SocketError) {
       const char *err = (const char *)::get_conn_error(conn);
       if (err) {
@@ -108,7 +108,7 @@ public:
     }
   }
   Packet read_packet() {
-    SocketResult sr = ::conn_read_packet(conn);
+    PLIB_SocketResult sr = ::conn_read_packet(conn);
     if (sr == SocketError) {
       const char *err = (const char *)::get_conn_error(conn);
       if (err) {
@@ -116,7 +116,7 @@ public:
         throw err_str;
       }
     } else if (sr == Ready) {
-      ::Packet *packet = ::conn_get_data(conn);
+      ::PLIB_Packet *packet = ::conn_get_data(conn);
       return Packet(packet);
     }
     return Packet(0);
@@ -125,7 +125,7 @@ public:
 
 class SocketFactory {
 private:
-  ::SocketFactory *sf;
+  ::PLIB_SocketFactory *sf;
 
 public:
   SocketFactory() { sf = ::new_factory(); }
@@ -164,9 +164,9 @@ public:
     }
     return cloned_fd;
   }
-  Connection accept_connection(enum ::PacketType packet_type,
+  Connection accept_connection(enum ::PLIB_PacketType packet_type,
                                const char *in_key, const char *out_key) {
-    ::SocketResult sr = Blocked;
+    ::PLIB_SocketResult sr = Blocked;
     while (sr != Ready) {
       sr = accept_listener(sf);
       if (sr == Blocked)
@@ -182,7 +182,7 @@ public:
     return Connection(::stream_into_fd(sf), packet_type, in_key, out_key);
   }
 
-  Connection new_connection(const char *ip, enum ::PacketType packet_type,
+  Connection new_connection(const char *ip, enum ::PLIB_PacketType packet_type,
                             const char *in_key, const char *out_key) {
     if (!::create_stream(sf, (const int8_t *)ip)) {
       const char *err = (const char *)::get_sf_error(sf);
@@ -206,11 +206,11 @@ typedef struct {
 
 class PPACReader {
 private:
-  ::PPACReader *pr;
+  ::PLIB_PPACReader *pr;
 
 public:
   PPACReader(const char *path) {
-    ::PPACReader *reader = ::new_reader((const int8_t *)path);
+    ::PLIB_PPACReader *reader = ::new_reader((const int8_t *)path);
     const char *err = (const char *)::get_reader_error(reader);
     if (err) {
       std::string err_str = std::string((const char *)err);
@@ -227,12 +227,12 @@ public:
     return *this;
   }
   PPACData read_packet() {
-    ReaderResult rr = ::read_packet(pr);
+    PLIB_ReaderResult rr = ::read_packet(pr);
     switch (rr) {
 
     case Ok:
     case RawOnly: {
-      ::PacketData pd = ::get_reader_data(pr);
+      ::PLIB_PacketData pd = ::get_reader_data(pr);
       std::vector data = std::vector<uint8_t>(pd.raw_size);
       std::copy_n(pd.raw_ptr, pd.raw_size, data.begin());
       return {.time = pd.time,
@@ -360,7 +360,7 @@ void ppac_demo() {
 }
 
 int main(int argc, char **argv) {
-  if (get_api_version() != API_VERSION)
+  if (get_api_version() != PLIB_API_VERSION)
     return -1;
   packet_demo();
   socket_demo();
