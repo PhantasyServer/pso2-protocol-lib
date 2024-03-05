@@ -1,13 +1,15 @@
-use half::f16;
-
+//! Quest list related packets. \[0x0B\]
 use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
 use crate::AsciiString;
+use half::f16;
 
 // ----------------------------------------------------------------
 // Quests packets
 // ----------------------------------------------------------------
 
-// 0x0B, 0x06
+/// (0x0B, 0x06) Start Cutscene.
+///
+/// (S -> C) Sent in order to start a cutscene.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -15,6 +17,7 @@ use crate::AsciiString;
 #[Flags(Flags {packed: true, ..Default::default()})]
 #[Magic(0xB65A, 0x7D)]
 pub struct StartCutscenePacket {
+    /// Name of the cutscene.
     pub scene_name: AsciiString,
     pub unk1: [u32; 9],
     pub unk2: Vec<ObjectHeader>,
@@ -29,7 +32,9 @@ pub struct StartCutscenePacket {
     pub unk11: ObjectHeader,
 }
 
-// 0x0B, 0x09
+/// (0x0B, 0x09) Unknown.
+///
+/// (C -> S)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -41,7 +46,9 @@ pub struct Unk0B09Packet {
     pub unk4: u32,
 }
 
-// 0x0B, 0x13
+/// (0x0B, 0x13) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -55,7 +62,12 @@ pub struct Unk0B13Packet {
     pub unk5: u32,
 }
 
-// 0x0B, 0x15
+/// (0x0B, 0x15) Available Quests Request.
+///
+/// (C -> S) Sent when the client wants to display quest category list
+/// (i.e. interacts with the quest counter).
+///
+/// Respond with: (0x0B, 0xF1), [`crate::protocol::Packet::AvailableQuests`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -64,7 +76,11 @@ pub struct AvailableQuestsRequestPacket {
     pub unk1: u32,
 }
 
-// 0x0B, 0x16
+/// (0x0B, 0x16) Available Quests Response.
+///
+/// (S -> C) Sent in response to the request.
+///
+/// Response to: [`crate::protocol::Packet::AvailableQuestsRequest`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -137,22 +153,35 @@ pub struct AvailableQuestsPacket {
     pub unk19: AvailableQuestType,
     #[NotOn(super::PacketType::Vita)]
     pub unk20: AvailableQuestType2,
+    /// Round boost active flag.
     pub round_boost: u32,
     pub unk21: u32,
 }
 
-// 0x0B, 0x17
+/// (0x0B, 0x17) Quest Category List Request
+///
+/// (C -> S) Sent when the client requests the list of quests in a certain category.
+///
+/// Respond with: [`crate::protocol::Packet::QuestCategory`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x17)]
 pub struct QuestCategoryRequestPacket {
     pub unk1: u32,
+    /// Requested category.
     #[SeekAfter(3)]
     pub category: QuestType,
 }
 
-// 0x0B, 0x18
+/// (0x0B, 0x18) Quest Category List Response
+///
+/// (S -> C) Sent in response to the request.
+///
+/// Response to: [`crate::protocol::Packet::QuestCategoryRequest`]
+///
+/// Follow with: [`crate::protocol::Packet::QuestCategory`] (if there are more quests),
+/// [`crate::protocol::Packet::QuestCategoryStopper`] (if all quests are sent)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -160,10 +189,15 @@ pub struct QuestCategoryRequestPacket {
 #[Flags(Flags {packed: true, ..Default::default()})]
 #[Magic(0x1DB0, 0xC5)]
 pub struct QuestCategoryPacket {
+    /// List of quests in a requested category.
     pub quests: Vec<Quest>,
 }
 
-// 0x0B, 0x19
+/// (0x0B, 0x19) Quest Difficulty List Request
+///
+/// (C -> S) Sent when the client requests the difficulties of certain quests.
+///
+/// Respond with: [`crate::protocol::Packet::QuestDifficulty`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -171,10 +205,18 @@ pub struct QuestCategoryPacket {
 #[Flags(Flags {packed: true, ..Default::default()})]
 #[Magic(0xA36E, 0x10)]
 pub struct QuestDifficultyRequestPacket {
+    /// List of object of requested quests.
     pub quests: Vec<ObjectHeader>,
 }
 
-// 0x0B, 0x1A
+/// (0x0B, 0x1A) Quest Difficulty List Response
+///
+/// (S -> C) Sent in response to the request.
+///
+/// Response to: [`crate::protocol::Packet::QuestDifficultyRequest`]
+///
+/// Follow with: [`crate::protocol::Packet::QuestDifficulty`] (if there are more quests),
+/// [`crate::protocol::Packet::QuestDifficultyStopper`] (if all quests are sent)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -182,68 +224,99 @@ pub struct QuestDifficultyRequestPacket {
 #[Flags(Flags {packed: true, ..Default::default()})]
 #[Magic(0x292C, 0x5B)]
 pub struct QuestDifficultyPacket {
+    /// List of difficulties for requested quests.
     pub quests: Vec<QuestDifficulty>,
 }
 
-// 0x0B, 0x1F
+/// (0x0B, 0x1F) Set Quest Points. (broadcast)
+///
+/// (S -> C) Sent when quest points are changed (usually due to an emergency).
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x1F)]
 pub struct SetQuestPointsPacket {
     pub unk1: ObjectHeader,
+    /// Party receiving the points.
     pub party: ObjectHeader,
+    /// Total amount of points.
     pub total: u32,
+    /// Gained amount of points (may be zero).
     pub gained: u32,
 }
 
-// 0x0B, 0x20
+/// (0x0B, 0x20) Accept Quest.
+///
+/// (C -> S) Sent when the client accepts a quest.
+/// When this packet is sent is currently unknown.
+///
+/// Respond with: setup quest.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x20)]
 pub struct AcceptQuestPacket {
+    /// Selected quest object.
     pub quest_obj: ObjectHeader,
+    /// Selected difficulty.
     pub diff: u16,
     pub unk1: u16,
     pub unk2: [u32; 7],
 }
 
-// 0x0B, 0x28
+/// (0x0B, 0x28) Add Quest Points. (broadcast)
+///
+/// (S -> C) Sent when quest points are increase (usually due to killing an enemy).
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x28)]
 pub struct QuestPointsAddedPacket {
+    /// Gained amount of points (may be zero).
     pub added: u32,
+    /// X position of the number.
     pub x: f16,
+    /// Y position of the number.
     pub y: f16,
+    /// Z position of the number.
     #[SeekAfter(2)]
     pub z: f16,
 }
 
-// 0x0B, 0x2F
+/// (0x0B, 0x2F) Accept Quest. (alternative)
+///
+/// (C -> S) Sent when the client accepts a quest.
+/// When this packet is sent is currently unknown.
+///
+/// Respond with: setup quest.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x2F)]
 pub struct AcceptQuestOtherPacket {
+    /// Selected quest object.
     pub quest_obj: ObjectHeader,
+    /// Selected difficulty.
     pub diff: u16,
     pub unk1: u16,
     pub unk2: [u32; 7],
 }
 
-// 0x0B, 0x62
+/// (0x0B, 0x62) Set EQ ARKS Level. (broadcast)
+///
+/// (S -> C) Sent when the EQ's ARKS Level is changed.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x62)]
 pub struct EQARKSLevelPacket {
-    pub unk1: u32,
+    /// New level.
+    pub level: u32,
 }
 
-// 0x0B, 0xAF
+/// (0x0B, 0xAF) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -253,7 +326,9 @@ pub struct Unk0BAFPacket {
     pub unk2: u32,
 }
 
-// 0x0B, 0xD0
+/// (0x0B, 0xD0) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -270,13 +345,17 @@ pub struct Unk0BD0Packet {
 // Additional structs
 // ----------------------------------------------------------------
 
+/// Information about a quest.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Quest {
+    /// Quest date.
     #[FixedStr(0x20)]
     pub date: AsciiString,
+    /// Quest object.
     pub quest_obj: ObjectHeader,
+    /// ID of the quest name.
     pub name_id: u32,
     pub unk3: [u32; 27],
     pub unk4: u16,
@@ -284,15 +363,23 @@ pub struct Quest {
     pub unk6: u8,
     pub unk7: [u32; 20],
     pub unk8: [u16; 3],
+    /// Length of the quest.
     pub length: u8,
+    /// Party type of the quest.
     pub party_type: PartyType,
+    /// Available difficulties.
     pub difficulties: QuestDifficultyType,
+    /// Completed difficulties.
     pub difficulties_completed: QuestDifficultyType,
     pub unk9: u8,
+    /// Required level.
     pub req_level: u8,
+    /// Required sub level.
     pub sub_class_req_level: u8,
+    /// Enemy level.
     pub enemy_level: u8,
     pub unk10: u8,
+    /// Type of the quest.
     pub quest_type: QuestType,
     pub unk11: [u8; 6],
     pub unk12: u16,
@@ -304,48 +391,69 @@ pub struct Quest {
     pub unk16: Vec<u8>,
 }
 
+/// Amount of parties that can join a quest.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 #[repr(u8)]
 pub enum PartyType {
+    /// Only one player can join.
     #[default]
     #[Read_default]
     Solo,
+    /// Only one party can join (up to 4 players).
     SingleParty,
+    /// Multiple parties can join (up to 12 players).
     MultiParty,
 }
 
+/// Information about a quest difficulty.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct QuestDifficulty {
+    /// Quest date.
     #[FixedStr(0x20)]
     pub date: AsciiString,
+    /// Quest object.
     pub quest_obj: ObjectHeader,
+    /// ID of the quest name.
     pub name_id: u32,
+    /// Planet ID.
     pub planet: u8,
+    /// Area ID.
     pub area: u8,
     pub unk1: u8,
     pub unk2: u8,
+    /// Difficulty list.
     pub diffs: [QuestDifficultyEntry; 8],
 }
 
+/// Quest difficulty entry.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct QuestDifficultyEntry {
+    /// Required level.
     pub req_level: u8,
+    /// Required sub level.
     pub sub_class_req_level: u8,
+    /// Enemy level.
     pub monster_level: u8,
     pub unk1: u8,
     pub ability_adj: u32,
+    /// Damage limit.
     pub dmg_limit: u32,
+    /// Time limit.
     pub time_limit: u32,
+    /// Time limit.
     pub time_limit2: u32,
+    /// Suppression target ID.
     pub supp_target: u32,
     pub unk2: u32,
+    /// Other enemy 1.
     pub enemy1: u32,
     pub unk3: u32,
+    /// Other enemy 2.
     pub enemy2: u32,
     pub unk4: u32,
 }
@@ -359,6 +467,7 @@ pub struct QuestThing {
     pub unk3: u16,
 }
 
+/// Available quest types flags.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[Flags(u64)]
@@ -443,6 +552,7 @@ pub struct AvailableQuestType {
     pub unk6: bool,
 }
 
+/// Available quest types flags (continuation).
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[Flags(u64)]
@@ -464,6 +574,7 @@ pub struct AvailableQuestType2 {
     pub unk2: bool,
 }
 
+/// Type of the quest.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 #[repr(u8)]
@@ -539,6 +650,7 @@ pub enum QuestType {
     Stars6,
 }
 
+/// Available quest difficulties.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[Flags(u8)]

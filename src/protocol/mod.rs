@@ -356,32 +356,58 @@ pub enum Packet {
     /// (0x0B, 0x13) Unknown.
     #[Id(0x0B, 0x13)]
     Unk0B13(Unk0B13Packet),
+    /// (0x0B, 0x15) Available Quests Request.
     #[Id(0x0B, 0x15)]
     AvailableQuestsRequest(AvailableQuestsRequestPacket),
+    /// (0x0B, 0x16) Available Quests Response.
     #[Id(0x0B, 0x16)]
     AvailableQuests(AvailableQuestsPacket),
+    /// (0x0B, 0x17) Quest Category List Request
     #[Id(0x0B, 0x17)]
     QuestCategoryRequest(QuestCategoryRequestPacket),
+    /// (0x0B, 0x18) Quest Category List Response
     #[Id(0x0B, 0x18)]
     QuestCategory(QuestCategoryPacket),
+    /// (0x0B, 0x19) Quest Difficulty List Request
     #[Id(0x0B, 0x19)]
     QuestDifficultyRequest(QuestDifficultyRequestPacket),
+    /// (0x0B, 0x1A) Quest Difficulty List Response
     #[Id(0x0B, 0x1A)]
     QuestDifficulty(QuestDifficultyPacket),
+    /// (0x0B, 0x1B) Quest Category List Stopper.
+    ///
+    /// (S -> C) Sent when all quests are sent.
+    ///
+    /// Following: [`crate::protocol::Packet::QuestCategory`]
     #[Id(0x0B, 0x1B)]
     QuestCategoryStopper,
+    /// (0x0B, 0x1C) Quest Difficulty Stopper.
+    ///
+    /// (S -> C) Sent when all quest difficulties are sent.
+    ///
+    /// Following: [`crate::protocol::Packet::QuestDifficulty`]
     #[Id(0x0B, 0x1C)]
     QuestDifficultyStopper,
+    /// (0x0B, 0x1F) Set Quest Points. (broadcast)
     #[Id(0x0B, 0x1F)]
     SetQuestPoints(SetQuestPointsPacket),
+    /// (0x0B, 0x20) Accept Quest.
     #[Id(0x0B, 0x20)]
     AcceptQuest(AcceptQuestPacket),
+    /// (0x0B, 0x28) Add Quest Points. (broadcast)
     #[Id(0x0B, 0x28)]
     QuestPointsAdded(QuestPointsAddedPacket),
+    /// (0x0B, 0x2F) Accept Quest. (alternative)
     #[Id(0x0B, 0x2F)]
     AcceptQuestOther(AcceptQuestOtherPacket),
+    /// (0x0B, 0x30) Quest Counter Request.
+    ///
+    /// (C -> S) Sent when the client interacts with the quest counter.
+    ///
+    /// Respond with: (0x0B, 0x22)
     #[Id(0x0B, 0x30)]
     QuestCounterRequest,
+    /// (0x0B, 0x62) Set EQ ARKS Level. (broadcast)
     #[Id(0x0B, 0x62)]
     EQARKSLevel(EQARKSLevelPacket),
     /// (0x0B, 0xAF) Unknown.
