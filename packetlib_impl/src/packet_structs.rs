@@ -388,21 +388,18 @@ fn get_attrs(
         }
         "FixedLen" => {
             set.fixed_len = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
+            set.str_type = StringType::Fixed(set.fixed_len as u64);
         }
         "Const_u16" => {
             let num: u16 = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
             read.extend(quote! {reader.seek(std::io::SeekFrom::Current(2))?;});
             write.extend(quote! {writer.write_u16::<LittleEndian>(#num).unwrap();});
         }
-        "FixedStr" => {
-            let len = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
-            set.str_type = StringType::Fixed(len);
+        "Len_u16" => {
+            set.len_size = Some(Size::U16);
         }
         "Len_u32" => {
             set.len_size = Some(Size::U32);
-        }
-        "Len_u16" => {
-            set.len_size = Some(Size::U16);
         }
         _ => {}
     }

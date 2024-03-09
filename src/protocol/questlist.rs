@@ -274,7 +274,7 @@ pub struct Unk0BD0Packet {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Quest {
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub date: AsciiString,
     pub quest_obj: ObjectHeader,
     pub name_id: u32,
@@ -319,7 +319,7 @@ pub enum PartyType {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct QuestDifficulty {
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub date: AsciiString,
     pub quest_obj: ObjectHeader,
     pub name_id: u32,

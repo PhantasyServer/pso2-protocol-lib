@@ -53,11 +53,11 @@ pub struct AddedRequestPacket {
     #[Seek(4)]
     pub target_id: u32,
     #[Seek(4)]
-    #[FixedStr(0x22)]
+    #[FixedLen(0x22)]
     pub sender_nickname: String,
-    #[FixedStr(0x22)]
+    #[FixedLen(0x22)]
     pub target_nickname: String,
-    #[FixedStr(0x80)]
+    #[FixedLen(0x80)]
     pub msg: String,
     pub send_time: Duration,
     #[Seek(0x88)]
@@ -77,10 +77,10 @@ pub struct AddedRequestPacket {
 pub struct FriendListEntry {
     pub id: u32,
     #[Seek(4)]
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub nickname: String,
     #[Seek(4)]
-    #[FixedStr(0x10)]
+    #[FixedLen(0x10)]
     pub char_name: String,
     #[Seek(4)]
     pub flags: FriendFlags,
@@ -94,7 +94,7 @@ pub struct FriendListEntry {
     pub location: FriendLocation,
     pub unk6: u16,
     pub unk7: u32,
-    #[FixedStr(0x18)]
+    #[FixedLen(0x18)]
     pub alliance_name: String,
     #[Seek(0x8)]
     pub unk8: Duration,

@@ -79,7 +79,7 @@ pub struct CharacterFlagsPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x23, 0x0A)]
 pub struct CutsceneEndPacket {
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub skit_name: AsciiString,
     pub emergency_obj: ObjectHeader,
     pub unk2: u32,
@@ -92,7 +92,7 @@ pub struct CutsceneEndPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x23, 0x0B)]
 pub struct SkitItemAddRequestPacket {
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub skit_name: AsciiString,
     pub unk: u32,
 }
@@ -103,7 +103,7 @@ pub struct SkitItemAddRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x23, 0x0C)]
 pub struct SkitItemAddResponsePacket {
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub skit_name: AsciiString,
     pub unk: u32,
 }

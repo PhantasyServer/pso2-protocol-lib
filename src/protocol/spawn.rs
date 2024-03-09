@@ -18,7 +18,7 @@ pub struct CharacterSpawnPacket {
     pub player_obj: ObjectHeader,
     pub position: Position,
     pub unk1: u16, // padding?
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub unk2: AsciiString,
     pub unk3: u16,
     pub unk4: u16,
@@ -32,7 +32,7 @@ pub struct CharacterSpawnPacket {
     pub character: Character,
     pub unk11: u32,
     pub gm_flag: u32,
-    #[FixedStr(0x10)]
+    #[FixedLen(0x10)]
     pub nickname: String,
     pub unk12_1: [u8; 0x20],
     #[SeekAfter(0x60)]
@@ -50,7 +50,7 @@ pub struct CharacterSpawnNGSPacket {
     pub player_obj: ObjectHeader,
     pub position: Position,
     pub unk1: u16, // padding?
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub unk2: AsciiString,
     pub unk3: u16,
     pub unk4: u16,
@@ -65,7 +65,7 @@ pub struct CharacterSpawnNGSPacket {
     pub character: Vec<u8>,
     pub unk11: u32,
     pub gm_flag: u32,
-    #[FixedStr(0x10)]
+    #[FixedLen(0x10)]
     pub nickname: String,
     pub unk12_1: [u8; 0x20],
     pub unk12_2: [u8; 0x20],
@@ -82,7 +82,7 @@ pub struct TransporterSpawnPacket {
     pub object: ObjectHeader,
     pub position: Position,
     pub unk1: u16,
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub name: AsciiString,
     pub unk2: u32,
     pub unk3: u16,
@@ -102,7 +102,7 @@ pub struct EventSpawnPacket {
     pub object: ObjectHeader,
     pub position: Position,
     pub unk1: u16,
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub name: AsciiString,
     pub unk3: u32,
     pub unk4: [u8; 0xC],
@@ -130,7 +130,7 @@ pub struct ObjectSpawnPacket {
     pub object: ObjectHeader,
     pub position: Position,
     pub unk1: u16,
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub name: AsciiString,
     pub unk2: [u32; 5],
     pub flags: u32,
@@ -149,7 +149,7 @@ pub struct NPCSpawnPacket {
     pub object: ObjectHeader,
     pub position: Position,
     pub unk1: u16,
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub name: AsciiString,
     pub unk2: u32,
     pub unk3: [u8; 0xC],
@@ -176,7 +176,7 @@ pub struct EnemySpawnPacket {
     pub object: ObjectHeader,
     pub position: Position,
     pub unk1: u16,
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub name: AsciiString,
     pub unk2: u32,
     pub hp: u32,

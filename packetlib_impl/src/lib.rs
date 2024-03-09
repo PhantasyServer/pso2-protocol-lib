@@ -9,11 +9,12 @@ use syn::{parse_macro_input, DeriveInput};
 
 // Be warned that most of the variable names are nonsensical.
 
+// Internal derive.
 #[proc_macro_derive(
     PacketReadWrite,
     attributes(
-        Id, Seek, SeekAfter, Const_u16, FixedStr, Flags, PSOTime, Magic, Len_u32, Len_u16, OnlyOn,
-        FixedLen, NotOn
+        Id, Seek, SeekAfter, Const_u16, Flags, PSOTime, Magic, Len_u32, Len_u16, OnlyOn, FixedLen,
+        NotOn
     )
 )]
 pub fn packet_read_write_derive(input: TokenStream) -> TokenStream {
@@ -27,7 +28,6 @@ pub fn packet_read_write_derive(input: TokenStream) -> TokenStream {
         Seek,
         SeekAfter,
         Const_u16,
-        FixedStr,
         PSOTime,
         Magic,
         Len_u32,

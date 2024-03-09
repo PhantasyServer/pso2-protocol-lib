@@ -42,7 +42,7 @@ pub struct SegaIDLoginPacket {
     pub text_lang2: Language,
     pub lang_lang: Language,
     #[Seek(0x8)]
-    #[FixedStr(0x10)]
+    #[FixedLen(0x10)]
     pub language: String,
     pub unk6: u32,
     pub unk7: u32,
@@ -51,10 +51,10 @@ pub struct SegaIDLoginPacket {
     #[FixedLen(0x44)]
     pub unk9: Vec<u8>,
     #[Seek(0x104)]
-    #[FixedStr(0x40)]
+    #[FixedLen(0x40)]
     pub username: AsciiString,
     #[Seek(0x20)]
-    #[FixedStr(0x40)]
+    #[FixedLen(0x40)]
     pub password: AsciiString,
     #[Seek(0x4)]
     pub unk10: u32,
@@ -73,7 +73,7 @@ pub struct LoginResponsePacket {
     pub status: LoginStatus,
     pub error: String,
     pub player: ObjectHeader,
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub blockname: String,
     pub unk1: f32,
     pub unk2: u32,
@@ -102,7 +102,7 @@ pub struct LoginResponsePacket {
     pub unk25: f32,
     pub unk26: u32,
     pub unk27: [u8; 0xC],
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub unk28: String,
     pub unk29: u32,
     pub unk30: String,
@@ -354,7 +354,7 @@ pub struct NicknameRequestPacket {
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x1D)]
 pub struct NicknameResponsePacket {
-    #[FixedStr(0x10)]
+    #[FixedLen(0x10)]
     #[SeekAfter(0x20)]
     pub nickname: String,
 }
@@ -366,7 +366,7 @@ pub struct NicknameResponsePacket {
 #[Id(0x11, 0x2C)]
 pub struct BlockBalancePacket {
     pub unk1: [u8; 0x20],
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub blockname: String,
     pub ip: Ipv4Addr,
     pub port: u16,
@@ -459,7 +459,7 @@ pub struct VitaLoginPacket {
     pub flag4: u32,
     pub flag5: u32,
     pub flag6: u32,
-    #[FixedStr(0x10)]
+    #[FixedLen(0x10)]
     pub language: String,
     pub unk9: u32,
     pub unk10: u32,
@@ -468,10 +468,10 @@ pub struct VitaLoginPacket {
     #[FixedLen(0x44)]
     pub unk12: Vec<u8>,
     #[Seek(0xFC)]
-    #[FixedStr(0x40)]
+    #[FixedLen(0x40)]
     pub username: AsciiString,
     #[Seek(0x20)]
-    #[FixedStr(0x40)]
+    #[FixedLen(0x40)]
     pub password: AsciiString,
     #[Seek(0x4)]
     pub unk13: u8,
@@ -617,7 +617,7 @@ pub struct CharacterRenamePacket {
 #[Id(0x11, 0x9B)]
 pub struct CharacterNewNameRequestPacket {
     pub char_id: u32,
-    #[FixedStr(0x10)]
+    #[FixedLen(0x10)]
     pub name: String,
 }
 
@@ -629,7 +629,7 @@ pub struct CharacterNewNameRequestPacket {
 pub struct CharacterNewNamePacket {
     pub status: NewNameStatus,
     pub char_id: u32,
-    #[FixedStr(0x10)]
+    #[FixedLen(0x10)]
     pub name: String,
 }
 
@@ -776,7 +776,7 @@ pub struct Unk11FFPacket {
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct NetInterface {
     pub state: u32,
-    #[FixedStr(0x18)]
+    #[FixedLen(0x18)]
     pub mac: AsciiString,
 }
 
@@ -785,7 +785,7 @@ pub struct NetInterface {
 #[derive(Debug, Clone, PartialEq, HelperReadWrite)]
 pub struct ShipEntry {
     pub id: u32,
-    #[FixedStr(0x10)]
+    #[FixedLen(0x10)]
     pub name: String,
     pub ip: Ipv4Addr,
     #[Seek(4)]
@@ -862,7 +862,7 @@ pub struct BlockInfo {
     pub unk7: u32,
     pub unk8: u16,
     pub block_id: u16,
-    #[FixedStr(0x20)]
+    #[FixedLen(0x20)]
     pub blockname: String,
     pub ip: Ipv4Addr,
     pub port: u16,

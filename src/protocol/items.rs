@@ -845,9 +845,9 @@ pub struct Campaign {
     pub id: u32,
     pub start_date: Duration,
     pub end_date: Duration,
-    #[FixedStr(0x3E)]
+    #[FixedLen(0x3E)]
     pub title: String,
-    #[FixedStr(0x102)]
+    #[FixedLen(0x102)]
     pub conditions: String,
 }
 

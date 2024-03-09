@@ -105,8 +105,8 @@ pub struct MailHeader {
     pub unk5: u32,
     pub receive_time: Duration,
     pub unk6: u32,
-    #[FixedStr(0x22)]
+    #[FixedLen(0x22)]
     pub sender: String,
-    #[FixedStr(0x2A)]
+    #[FixedLen(0x2A)]
     pub subject: String,
 }
