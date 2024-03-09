@@ -6,7 +6,7 @@ use syn::{
     Expr, Fields, GenericArgument, Ident, Lit, LitInt, MetaList, PathArguments, Token, Type,
 };
 
-pub fn packet_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
+pub fn packet_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<TokenStream> {
     let name = &ast.ident;
     let (id, subid) = get_packet_id(&ast.attrs)?;
     let xor_sub = get_magic(&ast.attrs)?;
@@ -15,6 +15,12 @@ pub fn packet_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
         return Err(syn::Error::new(ast.ident.span(), "No magic provided"));
     }
     let (xor, sub) = xor_sub.unwrap_or((0, 0));
+
+    let crate_location = if is_internal {
+        quote! {crate}
+    } else {
+        quote! {pso2packetlib}
+    };
 
     let mut read = quote! {};
     let mut write = quote! {};
@@ -25,26 +31,21 @@ pub fn packet_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
 
     let code = quote! {
         #[automatically_derived]
-        impl PacketReadWrite for #name {
+        impl #crate_location::protocol::PacketReadWrite for #name {
             fn read(
                 reader: &mut (impl std::io::Read + std::io::Seek),
-                flags: &crate::protocol::Flags, packet_type:
-                crate::protocol::PacketType
+                flags: &#crate_location::protocol::Flags,
+                packet_type: #crate_location::protocol::PacketType
             ) -> std::io::Result<Self> {
-                use byteorder::{LittleEndian, ReadBytesExt};
-                use crate::protocol::HelperReadWrite;
-                use crate::asciistring::StringRW;
+                use #crate_location::derive_reexports::*;
 
                 let (xor, sub) = (#xor, #sub);
                 #read
             }
-            fn write(&self, packet_type: crate::protocol::PacketType) -> std::io::Result<Vec<u8>> {
-                use byteorder::{LittleEndian, WriteBytesExt};
-                use crate::protocol::{HelperReadWrite, Flags};
-                use crate::asciistring::StringRW;
-                use std::io::Write;
+            fn write(&self, packet_type: #crate_location::protocol::PacketType) -> std::io::Result<Vec<u8>> {
+                use #crate_location::derive_reexports::*;
 
-                let mut buf = crate::protocol::PacketHeader::new(#id, #subid, #flags).write(packet_type);
+                let mut buf = PacketHeader::new(#id, #subid, #flags).write(packet_type);
                 let writer = &mut buf;
                 let (xor, sub) = (#xor, #sub);
                 #write
@@ -55,7 +56,7 @@ pub fn packet_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
     Ok(code.into())
 }
 
-pub fn helper_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
+pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<TokenStream> {
     let name = &ast.ident;
 
     let mut read = quote! {};
@@ -63,6 +64,12 @@ pub fn helper_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
     let repr_type = get_repr(&ast.attrs)?;
     let is_flags = get_flags_struct(&ast.attrs)?;
     let no_seek = get_no_seek(&ast.attrs);
+
+    let crate_location = if is_internal {
+        quote! {crate}
+    } else {
+        quote! {pso2packetlib}
+    };
 
     match &ast.data {
         Data::Struct(data) if is_flags.is_some() => {
@@ -78,27 +85,25 @@ pub fn helper_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
 
     let gen = quote! {
         #[automatically_derived]
-        impl HelperReadWrite for #name {
+        impl #crate_location::protocol::HelperReadWrite for #name {
             fn read(
                 reader: &mut (impl std::io::Read + std::io::Seek),
-                packet_type: crate::protocol::PacketType,
+                packet_type: #crate_location::protocol::PacketType,
                 xor: u32,
                 sub: u32
             ) -> std::io::Result<Self> {
-                use byteorder::{LittleEndian, ReadBytesExt};
-                use crate::asciistring::StringRW;
+                use #crate_location::derive_reexports::*;
 
                 #read
             }
             fn write(
                 &self,
                 writer: &mut impl std::io::Write,
-                packet_type: crate::protocol::PacketType,
+                packet_type: #crate_location::protocol::PacketType,
                 xor: u32,
                 sub: u32
             ) -> std::io::Result<()> {
-                use byteorder::{LittleEndian, WriteBytesExt};
-                use crate::asciistring::StringRW;
+                use #crate_location::derive_reexports::*;
 
                 #write
                 Ok(())
@@ -260,11 +265,6 @@ fn parse_struct_field(
         let name = field.ident.as_ref().unwrap();
         return_token.extend(quote! {#name,});
 
-        if *name == "is_global" {
-            read.extend(quote! {let is_global = false;});
-            continue;
-        }
-
         let mut settings = Settings::default();
 
         for attr in &field.attrs {
@@ -417,18 +417,16 @@ fn check_syn_type(
 ) -> syn::Result<()> {
     match in_type {
         Type::Path(path) => {
-            if let Some(identity) = path.path.get_ident() {
-                let string = identity.to_string();
+            let segment = path.path.segments.last().unwrap();
+            let type_name = segment.ident.to_string();
+            if !type_name.contains("Vec") {
+                let string = type_name;
                 let (in_read, in_write) = check_code_type(string, name, set, is_first)?;
                 read.extend(in_read);
                 write.extend(in_write);
                 return Ok(());
             }
-            // if the type is Container<T>
-            let segment = &path.path.segments[0];
-            if segment.ident != "Vec" {
-                return Ok(());
-            }
+            // assume type is Vec<T>
             let PathArguments::AngleBracketed(args) = &segment.arguments else {
                 return Ok(());
             };
@@ -467,7 +465,7 @@ fn check_syn_type(
                     Size::U64 => quote! { reader.read_u64::<LittleEndian>()? },
                 }
             } else {
-                quote! { crate::protocol::read_magic(reader, sub, xor)? as usize }
+                quote! { read_magic(reader, sub, xor)? as usize }
             };
             let write_len = if let Some(size) = &set.len_size {
                 match size {
@@ -485,7 +483,7 @@ fn check_syn_type(
                     }
                 }
             } else {
-                quote! { writer.write_u32::<LittleEndian>(crate::protocol::write_magic(self.#name.len() as u32, sub, xor))? }
+                quote! { writer.write_u32::<LittleEndian>(write_magic(self.#name.len() as u32, sub, xor))? }
             };
 
             if set.fixed_len == 0 {
@@ -618,7 +616,9 @@ fn check_code_type(
         return Ok((read, write));
     }
 
-    match string.as_str() {
+    let type_str = string.split("::").last().unwrap();
+
+    match type_str {
         "u8" => {
             read.extend(quote! {let #name = reader.read_u8()?;});
             write.extend(quote! {writer.write_u8(#write_name.clone())?;});
@@ -660,9 +660,7 @@ fn check_code_type(
             write.extend(quote! {writer.write_i128::<LittleEndian>(#write_name.clone())?;});
         }
         "f16" => {
-            read.extend(
-                quote! {let #name = half::f16::from_bits(reader.read_u16::<LittleEndian>()?);},
-            );
+            read.extend(quote! {let #name = f16::from_bits(reader.read_u16::<LittleEndian>()?);});
             write
                 .extend(quote! {writer.write_u16::<LittleEndian>(#write_name.clone().to_bits())?;});
         }
@@ -678,7 +676,7 @@ fn check_code_type(
             read.extend(quote! {
                 let mut ip_buf = [0u8; 4];
                 reader.read_exact(&mut ip_buf)?;
-                let #name = Ipv4Addr::from(ip_buf);
+                let #name = std::net::Ipv4Addr::from(ip_buf);
             });
             write.extend(quote! {
                 writer.write_all(&#write_name.octets())?;
@@ -687,13 +685,15 @@ fn check_code_type(
         "Duration" => {
             if set.is_psotime {
                 read.extend(
-                    quote! {let #name = crate::protocol::psotime_to_duration(reader.read_u64::<LittleEndian>()?);},
+                    quote! {let #name = psotime_to_duration(reader.read_u64::<LittleEndian>()?);},
                 );
                 write.extend(
-                    quote! {writer.write_u64::<LittleEndian>(crate::protocol::duration_to_psotime(#write_name))?;},
+                    quote! {writer.write_u64::<LittleEndian>(duration_to_psotime(#write_name))?;},
                 );
             } else {
-                read.extend(quote! {let #name = Duration::from_secs(reader.read_u32::<LittleEndian>()? as u64);});
+                read.extend(
+                    quote! {let #name = core::time::Duration::from_secs(reader.read_u32::<LittleEndian>()? as u64);}
+                );
                 write.extend(
                     quote! {writer.write_u32::<LittleEndian>(#write_name.as_secs() as u32)?;},
                 );
@@ -711,13 +711,11 @@ fn check_code_type(
         },
         "AsciiString" => match set.str_type {
             StringType::Unknown => {
-                read.extend(
-                    quote! {let #name = crate::AsciiString::read_variable(reader, sub, xor)?;},
-                );
+                read.extend(quote! {let #name = AsciiString::read_variable(reader, sub, xor)?;});
                 write.extend(quote! {writer.write_all(&#write_name.write_variable(sub, xor))?;});
             }
             StringType::Fixed(len) => {
-                read.extend(quote! {let #name = crate::AsciiString::read(reader, #len)?;});
+                read.extend(quote! {let #name = AsciiString::read(reader, #len)?;});
                 write.extend(quote! {writer.write_all(&#write_name.write(#len as usize))?;});
             }
         },

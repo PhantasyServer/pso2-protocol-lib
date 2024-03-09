@@ -6,12 +6,18 @@ use syn::{
     LitInt, MetaList, Token, Type, TypePath,
 };
 
-pub fn protocol_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
+#[derive(Default)]
+struct OutputCode {
+    read: TS2,
+    write: TS2,
+    category: TS2,
+    read_raw: TS2,
+}
+
+pub fn protocol_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<TokenStream> {
     let name = &ast.ident;
 
-    let mut read = quote! {};
-    let mut write = quote! {};
-    let mut category = quote! {};
+    let mut out_code = OutputCode::default();
 
     let Data::Enum(data) = &ast.data else {
         return Err(syn::Error::new(
@@ -19,29 +25,44 @@ pub fn protocol_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
             "ProtocolRW is only defined for enums",
         ));
     };
-    parse_enum_field(&mut read, &mut write, &mut category, data)?;
+    parse_enum_field(&mut out_code, data)?;
+
+    let crate_location = if is_internal {
+        quote! {crate}
+    } else {
+        quote! {pso2packetlib}
+    };
+
+    let OutputCode {
+        read,
+        write,
+        category,
+        read_raw,
+    } = out_code;
 
     let gen = quote! {
         #[automatically_derived]
-        impl ProtocolRW for #name {
-            fn write(&self, packet_type: PacketType) -> Vec<u8> {
-                let mut buf = vec![0,0,0,0];
-                buf.extend(match self {
+        impl #crate_location::protocol::ProtocolRW for #name {
+            fn write(&self, packet_type: #crate_location::protocol::PacketType) -> Vec<u8> {
+                use #crate_location::derive_reexports::*;
+
+                let mut buf: Vec<u8> = vec![0; 4];
+                let packet_out: Result<Vec<u8>, std::io::Error> = match self {
                     #write
-                    Self::Raw(data) => Ok(data[4..].to_vec()),
-                    Self::Unknown(data) => {
-                        let mut out_data = data.0.write(packet_type);
-                        out_data.extend_from_slice(&data.1);
-                        Ok(out_data)
-                    }
-                }.expect("Writing to a Vec shouldn't fail"));
+                };
+                buf.extend(packet_out.expect("Writing to a Vec shouldn't fail"));
                 let len = buf.len().next_multiple_of(4);
                 buf.resize(len, 0);
                 let len = (len as u32).to_le_bytes();
                 buf[..4].copy_from_slice(&len);
                 buf
             }
-            fn read(input: &[u8], packet_type: PacketType) -> std::io::Result<Vec<Self>> {
+            fn read(
+                input: &[u8],
+                packet_type: #crate_location::protocol::PacketType,
+            ) -> ::std::io::Result<Vec<Self>> {
+                use #crate_location::derive_reexports::*;
+
                 let mut packets: Vec<Self> = vec![];
                 let buffer_length = input.len();
                 let mut pointer = 0;
@@ -57,32 +78,20 @@ pub fn protocol_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
                     if input[pointer..].len() < len {
                         return Err(std::io::ErrorKind::UnexpectedEof.into());
                     }
-                    if matches!(packet_type, PacketType::Raw) {
-                        let data = &input[pointer - 4..pointer + len];
-                        packets.push(Self::Raw(data.to_vec()));
-                        pointer += len;
-                        continue;
-                    }
-                    let mut buf_tmp = Cursor::new(&input[pointer..pointer + len]);
+                    #read_raw
+                    let mut buf_tmp = std::io::Cursor::new(&input[pointer..pointer + len]);
                     let header = PacketHeader::read(&mut buf_tmp, packet_type)?;
                     let flags = &header.flag;
 
                     pointer += len;
                     match (header.id, header.subid, packet_type) {
                         #read
-                        (_, _, _) => {
-                            packets.push(Self::Unknown({
-                                let mut data = vec![];
-                                buf_tmp.read_to_end(&mut data)?;
-                                (header, data)
-                            }));
-                        }
                     }
                 }
 
                 Ok(packets)
             }
-            fn get_category(&self) -> PacketCategory {
+            fn get_category(&self) -> #crate_location::protocol::PacketCategory {
                 let cat = match self {
                     #category
                     _ => Default::default(),
@@ -94,13 +103,14 @@ pub fn protocol_deriver(ast: &syn::DeriveInput) -> syn::Result<TokenStream> {
     Ok(gen.into())
 }
 
-fn parse_enum_field(
-    read: &mut TS2,
-    write: &mut TS2,
-    category: &mut TS2,
-    data: &DataEnum,
-) -> syn::Result<()> {
+fn parse_enum_field(out_code: &mut OutputCode, data: &DataEnum) -> syn::Result<()> {
     let mut category_stream = quote! {Default::default()};
+    let OutputCode {
+        read,
+        write,
+        category,
+        read_raw,
+    } = out_code;
     for variant in &data.variants {
         let name = &variant.ident;
         let mut settings = Settings::default();
@@ -123,12 +133,21 @@ fn parse_enum_field(
         }
         if settings.id == 0
             && settings.subid == 0
+            && !settings.raw
+            && !settings.unknown
             && !matches!(settings.packet_type, PacketType::Empty)
         {
             return Err(syn::Error::new(variant.span(), "No Id defined"));
         }
-        let id = settings.id;
-        let subid = settings.subid;
+
+        // set ids to a wildcard for unknown packets
+        let Settings { id, subid, .. } = settings;
+        let (id, subid) = if settings.unknown {
+            (quote! {_}, quote! {_})
+        } else {
+            (quote! {#id}, quote! {#subid})
+        };
+
         if let PacketType::Empty = settings.packet_type {
             write.extend(quote! {
                 Self::#name => return vec![],
@@ -141,6 +160,26 @@ fn parse_enum_field(
         match &variant.fields {
             Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
                 if let Type::Path(TypePath { path, .. }) = &unnamed.first().unwrap().ty {
+                    if settings.raw {
+                        read_raw.extend(quote! {
+                            if matches!(packet_type, PacketType::Raw) {
+                                let data = &input[pointer - 4..pointer + len];
+                                packets.push(Self::#name(data.to_vec()));
+                                pointer += len;
+                                continue;
+                            }
+                        });
+                        write.extend(quote! {
+                            Self::#name(data) => Ok(data[4..].to_vec()),
+                        });
+                        continue;
+                    }
+                    if settings.unknown {
+                        return Err(syn::Error::new(
+                            variant.span(),
+                            "Unknown packets with fields should only contain tuple of (PacketHeader, Vec<u8>).",
+                        ));
+                    }
                     let struct_field = path.get_ident().unwrap();
                     push_string = quote! {packets.push(Self::#name(#struct_field::read(&mut buf_tmp, flags, packet_type)?))};
                     write.extend(quote! {
@@ -150,12 +189,48 @@ fn parse_enum_field(
                         Self::#name(_) => {#category_stream},
                     })
                 }
+
+                if settings.unknown {
+                    push_string = quote! {
+                        packets.push(Self::#name({
+                            let mut data = vec![];
+                            buf_tmp.read_to_end(&mut data)?;
+                            (header, data)
+                        }));
+                    };
+                    write.extend(quote! {
+                        Self::#name((header, data)) => {
+                            let mut out_data = header.write(packet_type);
+                            out_data.extend_from_slice(&data);
+                            Ok(out_data)
+                        }
+                    });
+                }
             }
             Fields::Unit => {
                 push_string = quote! {packets.push(Self::#name)};
-                write.extend(quote! {
-                    Self::#name => Ok(PacketHeader::new(#id, #subid, Flags::default()).write(packet_type)),
-                });
+                if settings.raw {
+                    read_raw.extend(quote! {
+                        if matches!(packet_type, PacketType::Raw) {
+                            packets.push(Self::#name);
+                            pointer += len;
+                            continue;
+                        }
+                    });
+                    write.extend(quote! {
+                        Self::#name => Ok(vec![]),
+                    });
+                    continue;
+                }
+                if settings.unknown {
+                    write.extend(quote! {
+                        Self::#name => Ok(vec![]),
+                    });
+                } else {
+                    write.extend(quote! {
+                        Self::#name => Ok(PacketHeader::new(#id, #subid, Flags::default()).write(packet_type)),
+                    });
+                }
                 category.extend(quote! {
                     Self::#name => {#category_stream},
                 })
@@ -196,7 +271,11 @@ fn get_attrs(
     match string {
         "Empty" => set.packet_type = PacketType::Empty,
         "Unknown" => {
-            set.skip = true;
+            set.unknown = true;
+            // set.skip = true;
+        }
+        "Raw" => {
+            set.raw = true;
         }
         "NGS" => set.packet_type = PacketType::Ngs,
         "Classic" => set.packet_type = PacketType::Classic,
@@ -237,6 +316,8 @@ struct Settings {
     id: u8,
     subid: u16,
     packet_type: PacketType,
+    raw: bool,
+    unknown: bool,
     skip: bool,
     category: TS2,
 }

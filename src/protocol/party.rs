@@ -1,7 +1,5 @@
 use crate::{
-    protocol::{
-        models::character::Class, HelperReadWrite, ObjectHeader, PacketReadWrite, PacketType,
-    },
+    protocol::{models::character::Class, HelperReadWrite, ObjectHeader, PacketReadWrite},
     AsciiString,
 };
 

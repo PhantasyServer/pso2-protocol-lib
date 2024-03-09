@@ -8,6 +8,7 @@ rust-version = "1.75"
 
 [features]
 default = ["ngs_packets", "item_attrs", "connection", "base_enc"]
+derive = []
 connection = ["dep:rsa"]
 proxy = []
 ppac = ["dep:zstd"]

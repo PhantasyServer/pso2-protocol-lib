@@ -3,5 +3,6 @@
 /failed_tests
 /packetlib_impl/target
 test*
+!/tests
 /packetlib_ffi/target
 /ppac_tools/*/target

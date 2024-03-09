@@ -3,10 +3,15 @@ use crate::protocol::{read_magic, write_magic};
 use byteorder::{LittleEndian, WriteBytesExt};
 use std::io::{Read, Seek, SeekFrom, Write};
 
-pub(crate) trait StringRW: Sized + Default + std::ops::Deref<Target = str> {
+/// Helper read/write trait for strings.
+pub trait StringRW: Sized + Default + std::ops::Deref<Target = str> {
+    /// Reads a fixed length string from a reader.
     fn read(reader: &mut impl Read, len: u64) -> std::io::Result<Self>;
+    /// Writes a fixed length string to a writer.
     fn write(&self, len: usize) -> Vec<u8>;
+    /// Returns number of bytes needed to pad a string to align it to a 4 byte boundary.
     fn get_padding(len: u64) -> u64;
+    /// Reads a variable length string from a reader.
     fn read_variable(reader: &mut (impl Read + Seek), sub: u32, xor: u32) -> std::io::Result<Self> {
         let magic_len = read_magic(reader, sub, xor)? as u64;
         if magic_len == 0 {
@@ -18,6 +23,7 @@ pub(crate) trait StringRW: Sized + Default + std::ops::Deref<Target = str> {
         reader.seek(SeekFrom::Current(padding as i64))?;
         Ok(string)
     }
+    /// Writes a variable length string to a writer.
     fn write_variable(&self, sub: u32, xor: u32) -> Vec<u8> {
         let mut buf = vec![];
         if self.is_empty() {
