@@ -7,6 +7,7 @@ use std::{
 };
 
 use crate::protocol::{Packet, PacketType};
+use pso2packetlib::protocol::Packet as ProtocolPacket;
 
 #[repr(C)]
 pub enum ReaderResult {
@@ -33,9 +34,9 @@ pub enum OutputType {
 }
 
 pub struct PPACReader {
-    reader: Option<PR<File>>,
+    reader: Option<PR<File, ProtocolPacket>>,
     err_str: Option<CString>,
-    data: Option<ppac::PacketData>,
+    data: Option<ppac::PacketData<ProtocolPacket>>,
     data_parsed: Vec<u8>,
 }
 
@@ -172,7 +173,7 @@ fn read_packet_failable(reader: &mut PPACReader) -> Result<ReaderResult, Box<dyn
     }
 }
 
-fn new_reader_failable(path: *const i8) -> Result<PR<File>, Box<dyn Error>> {
+fn new_reader_failable(path: *const i8) -> Result<PR<File, ProtocolPacket>, Box<dyn Error>> {
     let str = unsafe { CStr::from_ptr(path) }.to_str()?;
     let file = File::open(str)?;
     Ok(PR::open(file)?)

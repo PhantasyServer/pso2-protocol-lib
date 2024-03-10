@@ -51,7 +51,7 @@ fn to_repack<T: AsRef<Path>, P: AsRef<Path>>(
         return Ok(());
     };
     let reader = BufReader::new(reader);
-    let Ok(mut reader) = PPACReader::open(reader) else {
+    let Ok(mut reader) = PPACReader::<_, Packet>::open(reader) else {
         return Ok(());
     };
     println!("{out_path:?}");

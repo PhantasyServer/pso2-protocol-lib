@@ -42,10 +42,10 @@ enum WriterWrapper<W: Write> {
 }
 
 /// Reader for the `ppac` packet files.
-pub struct PPACReader<R: Read> {
+pub struct PPACReader<R: Read, P: ProtocolRW> {
     reader: ReaderWrapper<R>,
     version: u8,
-    packet_buffer: Vec<Packet>,
+    packet_buffer: Vec<P>,
     data_buffer: Vec<Vec<u8>>,
     protocol_type: PacketType,
     last_header: Header,
@@ -60,7 +60,7 @@ pub struct PPACWriter<W: Write> {
 }
 
 /// Packet data.
-pub struct PacketData {
+pub struct PacketData<P: ProtocolRW> {
     /// When was the packet stored.
     pub time: Duration,
     /// Where the packet was heading.
@@ -68,7 +68,7 @@ pub struct PacketData {
     /// Which client version produced this packet.
     pub protocol_type: PacketType,
     /// Parsed packet (if requested).
-    pub packet: Option<Packet>,
+    pub packet: Option<P>,
     /// Unparsed packet (if requested).
     pub data: Option<Vec<u8>>,
 }
@@ -145,7 +145,7 @@ impl<W: Write> std::fmt::Debug for WriterWrapper<W> {
 // PPAC reader wrapper implementation
 //--------------------------------------
 
-impl<R: Read> PPACReader<R> {
+impl<R: Read, P: ProtocolRW> PPACReader<R, P> {
     /// Opens a PPAC file.
     pub fn open(mut reader: R) -> std::io::Result<Self> {
         let mut header = [0u8; 4];
@@ -201,7 +201,7 @@ impl<R: Read> PPACReader<R> {
     }
 
     /// Reads a packet from the PPAC.
-    pub fn read(&mut self) -> std::io::Result<Option<PacketData>> {
+    pub fn read(&mut self) -> std::io::Result<Option<PacketData<P>>> {
         let packet = if !self.packet_buffer.is_empty() {
             self.packet_buffer.drain(0..1).next()
         } else {
@@ -269,7 +269,7 @@ impl<R: Read> PPACReader<R> {
 
     fn read_packet(&mut self, buf: &[u8]) -> std::io::Result<()> {
         self.packet_buffer
-            .append(&mut Packet::read(buf, self.protocol_type)?);
+            .append(&mut P::read(buf, self.protocol_type)?);
         Ok(())
     }
 
@@ -382,7 +382,7 @@ impl<W: Write> PPACWriter<W> {
         &mut self,
         time: Duration,
         direction: Direction,
-        input: &Packet,
+        input: &impl ProtocolRW,
     ) -> std::io::Result<()> {
         let data = input.write(self.packet_type);
         self.write_data_unchecked(time, direction, &data)?;
