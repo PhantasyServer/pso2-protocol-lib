@@ -419,77 +419,136 @@ pub enum Packet {
 
     // Party packets [0x0E]
     #[Category(PacketCategory::Party)]
+    /// (0x0E, 0x00) Add New Party Member (broadcast).
     #[Id(0x0E, 0x00)]
     AddMember(AddMemberPacket),
+    /// (0x0E, 0x01) Remove Party Member (broadcast).
     #[Id(0x0E, 0x01)]
     RemoveMember(RemoveMemberPacket),
+    /// (0x0E, 0x02) Init Party.
     #[Id(0x0E, 0x02)]
     PartyInit(PartyInitPacket),
+    /// (0x0E, 0x03) Removed From Party.
+    ///
+    /// (S -> C) Sent when a receiver is removed from the party.
+    ///
+    /// Follow with: [`Packet::PartyInit`]
     #[Id(0x0E, 0x03)]
     RemovedFromParty,
+    /// (0x0E, 0x04) Party Invite Result.
     #[Id(0x0E, 0x04)]
     PartyInviteResult(PartyInviteResultPacket),
+    /// (0x0E, 0x05) Party Invite Request.
     #[Id(0x0E, 0x05)]
     PartyInviteRequest(PartyInviteRequestPacket),
+    /// (0x0E, 0x06) New Party Invite.
     #[Id(0x0E, 0x06)]
     NewInvite(NewInvitePacket),
+    /// (0x0E, 0x07) Accept Party Invite.
     #[Id(0x0E, 0x07)]
     AcceptInvite(AcceptInvitePacket),
+    /// (0x0E, 0x09) Leave Party.
+    ///
+    /// (C -> S) Sent when the player leaves the party.
+    ///
+    /// Respond with: [`Packet::RemovedFromParty`]
     #[Id(0x0E, 0x09)]
     LeaveParty,
+    /// (0x0E, 0x0C) Set Party Settings.
     #[Id(0x0E, 0x0C)]
     NewPartySettings(NewPartySettingsPacket),
+    /// (0x0E, 0x0D) Party Settings (broadcast).
     #[Id(0x0E, 0x0D)]
     PartySettings(PartySettingsPacket),
+    /// (0x0E, 0x0E) Transfer Party Leadership.
     #[Id(0x0E, 0x0E)]
     TransferLeader(TransferLeaderPacket),
+    /// (0x0E, 0x0F) New Party Leader (broadcast).
     #[Id(0x0E, 0x0F)]
     NewLeader(NewLeaderPacket),
+    /// (0x0E, 0x10) Kick Party Member.
     #[Id(0x0E, 0x10)]
     KickMember(KickMemberPacket),
+    /// (0x0E, 0x11) Party Member Kicked (broadcast).
     #[Id(0x0E, 0x11)]
     KickedMember(KickedMemberPacket),
+    /// (0x0E, 0x17) Disband Party Request.
     #[Id(0x0E, 0x17)]
     DisbandParty(DisbandPartyPacket),
+    /// (0x0E, 0x18) Party Disbanded (broadcast).
+    ///
+    /// (S -> C) Sent when the party is disbanded.
+    ///
+    /// Response to: [`Packet::DisbandParty`]
+    ///
+    /// Follow with: [`Packet::PartyInit`],
+    /// [`Packet::SetPartyColor`]
     #[Id(0x0E, 0x18)]
     PartyDisbandedMarker,
+    /// (0x0E, 0x19) Set Chat Status (broadcast).
     #[Id(0x0E, 0x19)]
     ChatStatus(ChatStatusPacket),
     /// (0x0E, 0x1A) Unknown.
     #[Id(0x0E, 0x1A)]
     Unk0E1A(Unk0E1APacket),
+    /// (0x0E, 0x1B) Party Info.
     #[Id(0x0E, 0x1B)]
     PartyInfo(PartyInfoPacket),
+    /// (0x0E, 0x1C) Pary Info Stopper.
     #[Id(0x0E, 0x1C)]
     PartyInfoStopper(PartyInfoStopperPacker),
+    /// (0x0E, 0x1D) Party Details Request.
     #[Id(0x0E, 0x1D)]
     GetPartyDetails(GetPartyDetailsPacket),
+    /// (0x0E, 0x1E) Party Details.
     #[Id(0x0E, 0x1E)]
     PartyDetails(PartyDetailsPacket),
+    /// (0x0E, 0x1F) Party Details Stopper.
+    ///
+    /// (S -> C) Sent when no more party details are available.
+    ///
+    /// Following: [`crate::protocol::Packet::PartyDetails`]
     #[Id(0x0E, 0x1F)]
     PartyDetailsStopper,
     /// (0x0E, 0x21) Unknown.
     #[Id(0x0E, 0x21)]
     Unk0E21(Unk0E21Packet),
+    /// (0x0E, 0x25) Set Quest Info.
     #[Id(0x0E, 0x25)]
     SetQuestInfo(SetQuestInfoPacket),
+    /// (0x0E, 0x28) Player Is Busy.
+    ///
+    /// (C -> S) Sent when the player is busy (e.g. interacting with an NPC).
+    ///
+    /// Respond with: [`crate::protocol::Packet::NewBusyState`] (except for sender)
     #[Id(0x0E, 0x28)]
     SetBusy,
+    /// (0x0E, 0x29) Player Is Not Busy.
+    ///
+    /// (C -> S) Sent when the player is no longer busy.
+    ///
+    /// Respond with: [`crate::protocol::Packet::NewBusyState`] (except for sender)
     #[Id(0x0E, 0x29)]
     SetNotBusy,
+    /// (0x0E, 0x2B) New Busy State (broadcast).
     #[Id(0x0E, 0x2B)]
     NewBusyState(NewBusyStatePacket),
+    /// (0x0E, 0x2C) Set Invite Decline.
     #[Id(0x0E, 0x2C)]
     SetInviteDecline(InviteDeclinePacket),
+    /// (0x0E, 0x2E) Party Info Request.
     #[Id(0x0E, 0x2E)]
     GetPartyInfo(GetPartyInfoPacket),
+    /// (0x0E, 0x31) Set Party Quest.
     #[Id(0x0E, 0x31)]
     SetPartyQuest(SetPartyQuestPacket),
+    /// (0x0E, 0x4F) Set In Party Status.
     #[Id(0x0E, 0x4F)]
     SetPartyColor(SetPartyColorPacket),
     /// (0x0E, 0x52) Unknown.
     #[Id(0x0E, 0x52)]
     Unk0E52(Unk0E52Packet),
+    /// (0x0E, 0x67) Party Setup Finish.
     #[Id(0x0E, 0x67)]
     PartySetupFinish(PartySetupFinishPacket),
 
