@@ -1,3 +1,4 @@
+//! Character related structures.
 use crate::{
     asciistring::StringRW,
     protocol::{HelperReadWrite, PacketType},
@@ -9,6 +10,7 @@ use std::io::{Read, Seek, Write};
 // Structures
 // ----------------------------------------------------------------
 
+/// Character data. (Classic only)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -16,15 +18,17 @@ pub struct Character {
     pub character_id: u32,
     pub player_id: u32,
     pub unk1: u32,
+    /// Voice type ID.
     pub voice_type: u32,
     pub unk2: u16,
-    pub voice_pitch: u16,
+    pub voice_pitch: i16,
     pub name: String,
     pub look: Look,
     pub classes: ClassInfo,
     pub unk3: String,
 }
 
+/// HSV color data.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
@@ -34,15 +38,18 @@ pub struct HSVColor {
     pub value: u16,
 }
 
+/// Character's figure data.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 // I'm unsure if we need to name these fields
 pub struct Figure(pub u16, pub u16, pub u16);
 
+/// Character's accessory data. Represented by three sliders during editing.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct AccessoryData(pub i8, pub i8, pub i8);
 
+/// Character race.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 #[repr(u16)]
@@ -57,6 +64,7 @@ pub enum Race {
     Unknown = 0xFFFF,
 }
 
+/// Character gender.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 #[repr(u16)]
@@ -69,84 +77,166 @@ pub enum Gender {
     Unknown = 0xFFFF,
 }
 
+/// Character's look data.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, HelperReadWrite)]
 pub struct Look {
-    pub running_animation: u16,
+    /// Running animation ID.
+    pub running_animation: RunAnimation,
     pub race: Race,
     pub gender: Gender,
+    /// Muscule mass.
     pub muscule: u16,
+    /// Body proportions.
     pub body: Figure,
+    /// Arm proportions.
     pub arms: Figure,
+    /// Leg proportions.
     pub legs: Figure,
+    /// Chest proportions.
     pub chest: Figure,
     pub face_shape: Figure,
+    /// Face parts position.
     pub face_parts: Figure,
+    /// Eye shape.
     pub eyes: Figure,
     pub nose_size: Figure,
     pub nose_height: Figure,
+    /// Mouth shape and size.
     pub mouth: Figure,
+    /// Ear shape for newmans, horn shape for deumans.
     pub ears: Figure,
+    /// Head proportions.
     pub neck: Figure,
+    /// Waist proportions.
     pub waist: Figure,
+    /// Duplicate of `body`.
     pub body2: Figure,
+    /// Duplicate of `arms`.
     pub arms2: Figure,
+    /// Duplicate of `legs`.
     pub legs2: Figure,
+    /// Duplicate of `chest`.
     pub chest2: Figure,
+    /// Duplicate of `neck`.
     pub neck2: Figure,
+    /// Duplicate of `waist`.
     pub waist2: Figure,
     pub unk1: [u8; 0x20],
     pub unk2: [u8; 0x0A],
+    /// Accessory 1 position.
     pub acc1_location: AccessoryData,
+    /// Accessory 2 position.
     pub acc2_location: AccessoryData,
+    /// Accessory 3 position.
     pub acc3_location: AccessoryData,
+    /// Accessory 4 position.
     pub acc4_location: AccessoryData,
     pub unk_color: HSVColor,
+    /// Outfit color.
     pub costume_color: HSVColor,
+    /// Main color for CASTs.
     pub main_color: HSVColor,
+    /// Sub-color 1 for CASTs.
     pub sub1_color: HSVColor,
+    /// Skin color for non-CASTs, sub-color 2 for CASTs.
     pub sub2_color: HSVColor,
+    /// Left eye color for deumans, sub-color 3 for CASTs.
     pub sub3_color: HSVColor,
+    /// Character eye color (right eye color for deumans).
     pub eye_color: HSVColor,
     pub hair_color: HSVColor,
     pub unk3: [u8; 0x20],
     pub unk4: [u8; 0x10],
+    /// Outfit ID for non-CASTs, body part ID for CASTs.
     pub costume_id: u16,
+    /// Body paint 1 ID.
     pub body_paint1: u16,
+    /// Outfit decal ID.
     pub sticker_id: u16,
+    /// Eye iris ID (right eye for deumans).
     pub right_eye_id: u16,
+    /// Eyebrow ID and color.
     pub eyebrow_id: u16,
     pub eyelash_id: u16,
+    // I have no idea why there are 2 face ids.
+    /// Face ID 1.
     pub face_id1: u16,
+    /// Face ID 2.
     pub face_id2: u16,
+    /// Face makeup pattern 1 ID.
     pub facemakeup1_id: u16,
     pub hairstyle_id: u16,
+    /// Accessory 1 ID.
     pub acc1_id: u16,
+    /// Accessory 2 ID.
     pub acc2_id: u16,
+    /// Accessory 3 ID.
     pub acc3_id: u16,
+    /// Face makeup pattern 2 ID.
     pub facemakeup2_id: u16,
+    /// Leg part ID for CASTs.
     pub leg_id: u16,
+    /// Arm part ID for CASTs.
     pub arm_id: u16,
+    /// Accessory 4 ID.
     pub acc4_id: u16,
     pub unk5: [u8; 0x4],
+    /// Body paint 2 ID.
     pub body_paint2: u16,
+    /// Left eye iris ID (matters only for deumans).
     pub left_eye_id: u16,
     pub unk6: [u8; 0x12],
+    /// Accessory 1 size.
     pub acc1_size: AccessoryData,
+    /// Accessory 2 size.
     pub acc2_size: AccessoryData,
+    /// Accessory 3 size.
     pub acc3_size: AccessoryData,
+    /// Accessory 4 size.
     pub acc4_size: AccessoryData,
+    /// Accessory 1 angle.
     pub acc1_rotation: AccessoryData,
+    /// Accessory 2 angle.
     pub acc2_rotation: AccessoryData,
+    /// Accessory 3 angle.
     pub acc3_rotation: AccessoryData,
+    /// Accessory 4 angle.
     pub acc4_rotation: AccessoryData,
     pub unk7: u16,
     pub unk8: [u8; 0x8],
-    pub skin_color_type: u8,
-    pub eyebrow_thickness: u8,
+    pub skin_color_type: SkinColor,
+    pub eyebrow_thickness: i8,
 }
 
+/// Character's run animation.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
+#[repr(u16)]
+pub enum RunAnimation {
+    #[default]
+    #[Read_default]
+    Walking = 9,
+    /// Hover animation (only for CASTs).
+    Hovering = 11,
+}
+
+/// Character's skin color type
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
+#[repr(u8)]
+pub enum SkinColor {
+    #[default]
+    #[Read_default]
+    RaceDefined,
+    Human,
+    Deuman,
+    Cast,
+}
+
+
+/// Character class.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 #[repr(u8)]
@@ -172,6 +262,7 @@ pub enum Class {
     Unknown = 0xFF,
 }
 
+/// Enabled classes flags.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
@@ -194,15 +285,19 @@ pub struct ClassFlags {
     pub luster: bool,
 }
 
+/// Character class level.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Copy, Clone, PartialEq, HelperReadWrite)]
 pub struct ClassLevel {
+    /// Main level.
     pub level1: u16,
     pub level2: u16,
+    /// Current EXP.
     pub exp: u32,
 }
 
+/// Info about the character classes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
@@ -270,7 +365,7 @@ impl HelperReadWrite for Character {
         let unk1 = reader.read_u32::<LittleEndian>()?;
         let voice_type = reader.read_u32::<LittleEndian>()?;
         let unk2 = reader.read_u16::<LittleEndian>()?;
-        let voice_pitch = reader.read_u16::<LittleEndian>()?;
+        let voice_pitch = reader.read_i16::<LittleEndian>()?;
         let name = String::read(reader, 16)?;
 
         if matches!(packet_type, PacketType::Vita) {
@@ -311,7 +406,7 @@ impl HelperReadWrite for Character {
         writer.write_u32::<LittleEndian>(self.unk1)?;
         writer.write_u32::<LittleEndian>(self.voice_type)?;
         writer.write_u16::<LittleEndian>(self.unk2)?;
-        writer.write_u16::<LittleEndian>(self.voice_pitch)?;
+        writer.write_i16::<LittleEndian>(self.voice_pitch)?;
         writer.write_all(&self.name.write(16))?;
 
         if matches!(packet_type, PacketType::Vita) {
@@ -424,7 +519,7 @@ impl Character {
 impl Default for Look {
     fn default() -> Self {
         Self {
-            running_animation: 9,
+            running_animation: RunAnimation::Walking,
             race: Race::Human,
             gender: Gender::Male,
             muscule: 0,
@@ -526,7 +621,7 @@ impl Default for Look {
             acc4_rotation: AccessoryData(0, 0, 0),
             unk7: 0,
             unk8: [2, 1, 0, 0, 0, 0, 0, 0],
-            skin_color_type: 0,
+            skin_color_type: SkinColor::RaceDefined,
             eyebrow_thickness: 0,
         }
     }

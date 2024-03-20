@@ -1,3 +1,4 @@
+//! Common packet structures.
 pub mod character;
 #[cfg(feature = "item_attrs")]
 #[cfg_attr(docsrs, doc(cfg(feature = "item_attrs")))]
