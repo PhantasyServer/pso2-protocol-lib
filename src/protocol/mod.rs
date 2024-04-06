@@ -554,56 +554,82 @@ pub enum Packet {
 
     // Item packets [0x0F]
     #[Category(PacketCategory::Item)]
+    /// (0x0F, 0x00) Item Attribute Data.
     #[Id(0x0F, 0x00)]
     LoadItemAttributes(ItemAttributesPacket),
+    /// (0x0F, 0x01) Item Pickup Request.
     #[Id(0x0F, 0x01)]
     ItemPickupRequest(ItemPickupRequestPacket),
+    /// (0x0F, 0x02) Item Pickup Response.
     #[Id(0x0F, 0x02)]
     ItemPickupResponse(ItemPickupResponsePacket),
+    /// (0x0F, 0x04) New Item Drop.
     #[Id(0x0F, 0x04)]
     NewItemDrop(NewItemDropPacket),
+    /// (0x0F, 0x05) Add Item To Inventory.
     #[Id(0x0F, 0x05)]
     AddedItem(AddedItemPacket),
+    /// (0x0F, 0x06) Update Inventory.
     #[Id(0x0F, 0x06)]
     UpdateInventory(UpdateInventoryPacket),
+    /// (0x0F, 0x0C) Load Player's Equipment (broadcast).
     #[Id(0x0F, 0x0C)]
     LoadEquiped(LoadEquipedPacket),
+    /// (0x0F, 0x0D) Load Player's Inventory.
     #[Id(0x0F, 0x0D)]
     LoadPlayerInventory(LoadPlayerInventoryPacket),
+    /// (0x0F, 0x0F) Move Items From Inventory To Storage Request.
     #[Id(0x0F, 0x0F)]
     MoveToStorageRequest(MoveToStorageRequestPacket),
+    /// (0x0F, 0x10) Move Items From Inventory To Storage.
     #[Id(0x0F, 0x10)]
     MoveToStorage(MoveToStoragePacket),
+    /// (0x0F, 0x11) Move Items From Storage To Inventory Request.
     #[Id(0x0F, 0x11)]
     MoveToInventoryRequest(MoveToInventoryRequestPacket),
+    /// (0x0F, 0x12) Move Items From Storage To Inventory.
     #[Id(0x0F, 0x12)]
     MoveToInventory(MoveToInventoryPacket),
+    /// (0x0F, 0x13) Load Player's Storages.
     #[Id(0x0F, 0x13)]
     LoadStorages(LoadStoragesPacket),
+    /// (0x0F, 0x14) New Inventory Meseta Amount.
     #[Id(0x0F, 0x14)]
     InventoryMeseta(InventoryMesetaPacket),
+    /// (0x0F, 0x15) Move Meseta Request.
     #[Id(0x0F, 0x15)]
     MoveMeseta(MoveMesetaPacket),
+    /// (0x0F, 0x16) New Storage Meseta Amount.
     #[Id(0x0F, 0x16)]
     StorageMeseta(StorageMesetaPacket),
+    /// (0x0F, 0x17) Discard Item Request.
     #[Id(0x0F, 0x17)]
     DiscardItemRequest(DiscardItemRequestPacket),
+    /// (0x0F, 0x18) Move Items Between Storages Request.
     #[Id(0x0F, 0x18)]
     MoveStoragesRequest(MoveStoragesRequestPacket),
+    /// (0x0F, 0x19) Move Items Between Storages.
     #[Id(0x0F, 0x19)]
     MoveStorages(MoveStoragesPacket),
+    /// (0x0F, 0x1C) Get Item Description.
     #[Id(0x0F, 0x1C)]
     GetItemDescription(GetItemDescriptionPacket),
+    /// (0x0F, 0x1D) Load Item Description.
     #[Id(0x0F, 0x1D)]
     LoadItemDescription(LoadItemDescriptionPacket),
+    /// (0x0F, 0x21) Change Equiped Weapon (broadcast).
     #[Id(0x0F, 0x21)]
     EquipedWeapon(EquipedWeaponPacket),
+    /// (0x0F, 0x22) Update Storage.
     #[Id(0x0F, 0x22)]
     UpdateStorage(UpdateStoragePacket),
+    /// (0x0F, 0x25) Discard Storage Item Request.
     #[Id(0x0F, 0x25)]
     DiscardStorageItemRequest(DiscardStorageItemRequestPacket),
+    /// (0x0F, 0x30) Load Item Name.
     #[Id(0x0F, 0x30)]
     LoadItem(LoadItemPacket),
+    /// (0x0F, 0x33) Learn Photon Art.
     #[Id(0x0F, 0x33)]
     LearnedPA(LearnedPAPacket),
     /// (0x0F, 0x5B) Unknown.
@@ -611,37 +637,60 @@ pub enum Packet {
     /// (S -> C)
     #[Id(0x0F, 0x5B)]
     Unk0F5B,
+    /// (0x0F, 0x65) Weapon Potential List.
     #[Id(0x0F, 0x65)]
     PotentialList(PotentialListPacket),
+    /// (0x0F, 0x6F) Account Campaign List Request.
+    ///
+    /// (C -> S) Sent when a player has requested a list of available account campaigns.
+    ///
+    /// Respond with: [Packet::AccountCampaigns]
     #[Id(0x0F, 0x6F)]
-    AccountCapaignsRequest,
+    AccountCampaignsRequest,
+    /// (0x0F, 0x70) Account Campaign List.
     #[Id(0x0F, 0x70)]
-    AccountCapaigns(AccountCapaignsPacket),
+    AccountCampaigns(AccountCampaignsPacket),
+    /// (0x0F, 0x71) Campaign Item List Request.
     #[Id(0x0F, 0x71)]
     CampaignItemsRequest(CampaignItemsRequestPacket),
+    /// (0x0F, 0x72) Campaign Item List.
     #[Id(0x0F, 0x72)]
     CampaignItemList(CampaignItemListPacket),
+    /// (0x0F, 0x73) Receive Campaign Rewards Request.
     #[Id(0x0F, 0x73)]
     ReceiveCampaignRequest(ReceiveCampaignRequestPacket),
+    /// (0x0F, 0x8A) Character Campaign List Request.
+    ///
+    /// (C -> S) Sent when a player has requested a list of available character campaigns.
+    ///
+    /// Respond with: (0x0F, 0x8B)
     #[Id(0x0F, 0x8A)]
     CharacterCapaignsRequest,
     /// (0x0F, 0x9C) Unknown.
     #[Id(0x0F, 0x9C)]
     Unk0F9C(Unk0F9CPacket),
+    /// (0x0F, 0xBC) Change Player's Current Palette (broadcast).
     #[Id(0x0F, 0xBC)]
     ChangeWeaponPalette(ChangeWeaponPalettePacket),
+    /// (0x0F, 0xDF) Load Player's Material Storage.
     #[Id(0x0F, 0xDF)]
     LoadMaterialStorage(LoadMaterialStoragePacket),
+    /// (0x0F, 0xE0) Move Item From Inventory To Material Storage Request.
     #[Id(0x0F, 0xE0)]
     MoveToMatStorageRequest(MoveToMatStorageRequestPacket),
+    /// (0x0F, 0xE1) Move Item From Inventory To Material Storage.
     #[Id(0x0F, 0xE1)]
     MoveToMatStorage(MoveToMatStoragePacket),
+    /// (0x0F, 0xE2) Move Item From Material Storage To Inventory Request.
     #[Id(0x0F, 0xE2)]
     MoveFromMatStorageRequest(MoveFromMatStorageRequestPacket),
+    /// (0x0F, 0xE3) Move Item From Material Storage To Inventory.
     #[Id(0x0F, 0xE3)]
     MoveFromMatStorage(MoveFromMatStoragePacket),
+    /// (0x0F, 0xE8) Move Item From Material Storage To Storage Request.
     #[Id(0x0F, 0xE8)]
     MoveMSToStorageRequest(MoveMSToStorageRequestPacket),
+    /// (0x0F, 0xE9) Move Item From Material Storage To Storage.
     #[Id(0x0F, 0xE9)]
     MoveMSToStorage(MoveMSToStoragePacket),
     /// (0x0F, 0xEF) Unknown.
