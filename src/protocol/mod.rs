@@ -702,6 +702,7 @@ pub enum Packet {
 
     // Unknown 0x10 packets [0x10]
     #[Category(PacketCategory::Unk10)]
+    /// (0x10, 0x00) Run Lua.
     #[Id(0x10, 0x00)]
     #[Classic]
     RunLua(LuaPacket),
