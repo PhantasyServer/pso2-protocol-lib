@@ -1010,6 +1010,10 @@ pub enum Packet {
 
     // Character packets [0x1C]
     #[Category(PacketCategory::Characters)]
+    /// (0x1C, 0x10) Get Nearby Characters.
+    ///
+    /// (C -> S) Sent when the client wants to get information about nearby characters (e.g when
+    /// clicking on any player or when entering the "nearby characters" window).
     #[Id(0x1C, 0x10)]
     GetNearbyCharacters,
 
