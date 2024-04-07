@@ -712,113 +712,196 @@ pub enum Packet {
 
     // Login packets [0x11]
     #[Category(PacketCategory::Login)]
+    /// (0x11, 0x00) Sega ID Login.
     #[Id(0x11, 0x00)]
     #[Classic]
     SegaIDLogin(SegaIDLoginPacket),
+    /// (0x11, 0x01) Login Result.
     #[Id(0x11, 0x01)]
     #[Classic]
     LoginResponse(LoginResponsePacket),
+    /// (0x11, 0x02) Character List Request.
+    ///
+    /// (C -> S) Sent when the client wants to get the list of available characters.
+    ///
+    /// Respond with:
+    /// [`Packet::CharacterListResponse`]
     #[Id(0x11, 0x02)]
     CharacterListRequest,
+    /// (0x11, 0x03) Character List.
     #[Id(0x11, 0x03)]
     #[Classic]
     CharacterListResponse(CharacterListPacket),
+    /// (0x11, 0x04) Start Game.
     #[Id(0x11, 0x04)]
     StartGame(StartGamePacket),
+    /// (0x11, 0x05) Create New Character Request.
     #[Id(0x11, 0x05)]
     #[Classic]
     CharacterCreate(CharacterCreatePacket),
+    /// (0x11, 0x06) Delete Character Request.
     #[Id(0x11, 0x06)]
     CharacterDeletionRequest(CharacterDeletionRequestPacket),
+    /// (0x11, 0x08) Delete Character.
     #[Id(0x11, 0x08)]
     CharacterDeletion(CharacterDeletionPacket),
+    /// (0x11, 0x0B) Encryption Setup Request.
     #[Id(0x11, 0x0B)]
     EncryptionRequest(EncryptionRequestPacket),
+    /// (0x11, 0x0C) Encryption Setup Response.
     #[Id(0x11, 0x0C)]
     EncryptionResponse(EncryptionResponsePacket),
+    /// (0x11, 0x0D) Client Ping.
     #[Id(0x11, 0x0D)]
     ClientPing(ClientPingPacket),
+    /// (0x11, 0x0E) Client Pong.
     #[Id(0x11, 0x0E)]
     ClientPong(ClientPongPacket),
+    /// (0x11, 0x0F) Block List Request.
+    ///
+    /// (C -> S) Sent when the cilent wants a list of transferable blocks (i.e when the client
+    /// interacts with the block transporter).
+    ///
+    /// Respond with:
+    /// [`Packet::BlockList`],
     #[Id(0x11, 0x0F)]
     BlockListRequest,
+    /// (0x11, 0x10) Block List.
     #[Id(0x11, 0x10)]
     BlockList(BlockListPacket),
+    /// (0x11, 0x11) Block Switch Request.
     #[Id(0x11, 0x11)]
     BlockSwitchRequest(BlockSwitchRequestPacket),
+    /// (0x11, 0x13) Block Switch Response.
     #[Id(0x11, 0x13)]
     #[Classic]
     BlockSwitchResponse(BlockSwitchResponsePacket),
+    /// (0x11, 0x14) Block Login.
     #[Id(0x11, 0x14)]
     #[Classic]
     BlockLogin(BlockLoginPacket),
+    /// (0x11, 0x1B) User Info.
     #[Id(0x11, 0x1B)]
     #[Classic]
     UserInfo(UserInfoPacket),
+    /// (0x11, 0x1B) User Info (NGS).
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[Id(0x11, 0x1B)]
     #[NGS]
     UserInfoNGS(UserInfoNGSPacket),
+    /// (0x11, 0x1E) Set Nickname Request.
     #[Id(0x11, 0x1E)]
     NicknameRequest(NicknameRequestPacket),
+    /// (0x11, 0x1D) Set Nickname Response.
     #[Id(0x11, 0x1D)]
     NicknameResponse(NicknameResponsePacket),
+    /// (0x11, 0x2B) Client Good Bye.
+    ///
+    /// (C -> S) Sent when the client is ready to disconnect.
     #[Id(0x11, 0x2B)]
     ClientGoodbye,
+    /// (0x11, 0x2C) Block Balance.
     #[Id(0x11, 0x2C)]
     #[Classic]
     BlockBalance(BlockBalancePacket),
+    /// (0x11, 0x2D) System Information.
     #[Id(0x11, 0x2D)]
     SystemInformation(SystemInformationPacket),
+    /// (0x11, 0x3D) Ship List.
     #[Id(0x11, 0x3D)]
     ShipList(ShipListPacket),
+    /// (0x11, 0x41) New Character Screen Request.
+    ///
+    /// (C -> S) Sent when a client wants to go to a new character screen to create a new character.
+    ///
+    /// Respond with: [`Packet::CreateCharacter1Response`]
     #[Id(0x11, 0x41)]
     CreateCharacter1,
+    /// (0x11, 0x42) New Character Screen Response.
     #[Id(0x11, 0x42)]
     CreateCharacter1Response(CreateCharacter1ResponsePacket),
+    /// (0x11, 0x54) New Player Referral Request.
+    ///
+    /// (C -> S) Sent when a client wants know if it is possible to be referred by another player
+    /// (part of creating a new character).
+    ///
+    /// Respond with: [`Packet::CreateCharacter2Response`]
     #[Id(0x11, 0x54)]
     CreateCharacter2,
+    /// (0x11, 0x55) New Player Referral Response.
     #[Id(0x11, 0x55)]
     CreateCharacter2Response(CreateCharacter2ResponsePacket),
+    /// (0x11, 0x63) Vita Login.
     #[Id(0x11, 0x63)]
     #[Classic]
     VitaLogin(VitaLoginPacket),
+    /// (0x11, 0x65) Full Block List.
     #[Id(0x11, 0x65)]
     AllBlocksList(AllBlocksListPacket),
+    /// (0x11, 0x66) Salon Entry Request.
+    ///
+    /// (C -> S) Sent when a client wants enter a salon.
+    ///
+    /// Respond with: [`Packet::SalonEntryResponse`]
     #[Id(0x11, 0x66)]
     SalonEntryRequest,
+    /// (0x11, 0x67) Salon Entry Response.
     #[Id(0x11, 0x67)]
     #[Classic]
     SalonEntryResponse(SalonResponse),
+    /// (0x11, 0x68) Anticheat Challenge Request.
     #[Id(0x11, 0x68)]
     ChallengeRequest(ChallengeRequestPacket),
+    /// (0x11, 0x69) Anticheat Challenge Response.
     #[Id(0x11, 0x69)]
     ChallengeResponse(ChallengeResponsePacket),
+    /// (0x11, 0x6B) Linked Sega ID Info Request.
+    ///
+    /// (C -> S) Sent when a client wants information about linked Sega ID (Vita only option?).
+    ///
+    /// Respond with: (0x11, 0x6C)
     #[Id(0x11, 0x6B)]
     #[Classic]
     SegaIDInfoRequest,
     /// (0x11, 0x6F) Unknown.
     #[Id(0x11, 0x6F)]
     Unk116F(Unk116FPacket),
+    /// (0x11, 0x71) Notification Status.
     #[Id(0x11, 0x71)]
     NotificationStatus(NotificationStatusPacket),
+    /// (0x11, 0x86) Login History Request.
+    ///
+    /// (C -> S) Sent when a client wants information about previous logins.
+    ///
+    /// Respond with: [`Packet::LoginHistoryResponse`]
     #[Id(0x11, 0x86)]
     LoginHistoryRequest,
+    /// (0x11, 0x87) Login History.
     #[Id(0x11, 0x87)]
     LoginHistoryResponse(LoginHistoryPacket),
+    /// (0x11, 0x90) Character Undeletion Request.
     #[Id(0x11, 0x90)]
     CharacterUndeletionRequest(CharacterUndeletionRequestPacket),
+    /// (0x11, 0x91) Character Undeletion.
     #[Id(0x11, 0x91)]
     CharacterUndeletion(CharacterUndeletionPacket),
+    /// (0x11, 0x97) Character Rename Request.
     #[Id(0x11, 0x97)]
     CharacterRenameRequest(CharacterRenameRequestPacket),
+    /// (0x11, 0x98) Character Rename Response.
     #[Id(0x11, 0x98)]
     CharacterRename(CharacterRenamePacket),
+    /// (0x11, 0x9B) Set New Character Name Request.
     #[Id(0x11, 0x9B)]
     CharacterNewNameRequest(CharacterNewNameRequestPacket),
+    /// (0x11, 0x9C) Set New Character Name.
     #[Id(0x11, 0x9C)]
     CharacterNewName(CharacterNewNamePacket),
+    /// (0x11, 0x9D) Nickname Change Request.
+    ///
+    /// (C -> S) Sent when a client wants to get nickname changing rights
+    /// (i.e. clicked on "change nickname").
     #[Id(0x11, 0x9D)]
     NicknameChangeRequest,
     /// (0x11, 0xAF) Unknown.
@@ -827,19 +910,25 @@ pub enum Packet {
     /// (0x11, 0xB0) Unknown.
     #[Id(0x11, 0xB0)]
     Unk11B0(Unk11B0Packet),
+    /// (0x11, 0xB8) Character Ship Transfer Rights Request.
     #[Id(0x11, 0xB8)]
     CharacterMoveRequest(CharacterMoveRequestPacket),
+    /// (0x11, 0xB9) Character Ship Transfer Rights.
     #[Id(0x11, 0xB9)]
     CharacterMove(CharacterMovePacket),
     /// (0x11, 0xD7) Unknown.
     #[Id(0x11, 0xD7)]
     Unk11D7(Unk11D7Packet),
+    /// (0x11, 0xDE) Player Report Request
     #[Id(0x11, 0xDE)]
     PlayerReported(PlayerReportedPacket),
+    /// (0x11, 0xEA) Prohibited Nickname Entered.
     #[Id(0x11, 0xEA)]
     NicknameError(NicknameErrorPacket),
+    /// (0x11, 0xED) Banner List.
     #[Id(0x11, 0xED)]
     BannerList(BannerListPacket),
+    /// (0x11, 0xEE) Email 2FA Code Request.
     #[Id(0x11, 0xEE)]
     EmailCodeRequest(EmailCodeRequestPacket),
     /// (0x11, 0xFF) Unknown.
