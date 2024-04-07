@@ -1043,22 +1043,35 @@ pub enum Packet {
 
     // Palette packets [0x21]
     #[Category(PacketCategory::Palette)]
+    /// (0x21, 0x01) Load Palettes.
     #[Id(0x21, 0x01)]
     LoadPalette(LoadPalettePacket),
+    /// (0x21, 0x02) Full Palette Info Request.
+    ///
+    /// (C -> S) Sent when a player wants information about palettes and photon arts.
+    ///
+    /// Respond with: [`Packet::FullPaletteInfo`]
     #[Id(0x21, 0x02)]
     FullPaletteInfoRequest,
+    /// (0x21, 0x03) Full Palette Info.
     #[Id(0x21, 0x03)]
     FullPaletteInfo(FullPaletteInfoPacket),
+    /// (0x21, 0x04) Set Active Palette.
     #[Id(0x21, 0x04)]
     SetPalette(SetPalettePacket),
+    /// (0x21, 0x05) Update Subpalette.
     #[Id(0x21, 0x05)]
     UpdateSubPalette(UpdateSubPalettePacket),
+    /// (0x21, 0x06) Update Palette.
     #[Id(0x21, 0x06)]
     UpdatePalette(UpdatePalettePacket),
+    /// (0x21, 0x08) Set Active Subpalette.
     #[Id(0x21, 0x08)]
     SetSubPalette(SetSubPalettePacket),
+    /// (0x21, 0x0A) Set Default Photon Arts (?)
     #[Id(0x21, 0x0A)]
     SetDefaultPAs(SetDefaultPAsPacket),
+    /// (0x21, 0x0F) New Default Photon Arts (?)
     #[Id(0x21, 0x0F)]
     NewDefaultPAs(NewDefaultPAsPacket),
 
