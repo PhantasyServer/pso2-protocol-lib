@@ -956,12 +956,16 @@ pub enum Packet {
 
     // Friends packets [0x18]
     #[Category(PacketCategory::Friends)]
+    /// (0x18, 0x14) Friend List Request.
     #[Id(0x18, 0x14)]
     FriendListRequest(FriendListRequestPacket),
+    /// (0x18, 0x15) Friend List.
     #[Id(0x18, 0x15)]
     FriendList(FriendListPacket),
+    /// (0x18, 0x18) Send Friend Request.
     #[Id(0x18, 0x18)]
     SendFriendRequest(SendFriendRequestPacket),
+    /// (0x18, 0x1A) Friend Request Sent.
     #[Id(0x18, 0x1A)]
     AddedRequest(AddedRequestPacket),
 
