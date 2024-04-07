@@ -1077,20 +1077,28 @@ pub enum Packet {
 
     // Flag packets [0x23]
     #[Category(PacketCategory::Flag)]
+    /// (0x23, 0x02) Set Flag.
     #[Id(0x23, 0x02)]
     SetFlag(SetFlagPacket),
+    /// (0x23, 0x04) Server Set Flag.
     #[Id(0x23, 0x04)]
     ServerSetFlag(ServerSetFlagPacket),
+    /// (0x23, 0x05) Server Set Parameter.
     #[Id(0x23, 0x05)]
     ServerSetParam(ServerSetParamPacket),
+    /// (0x23, 0x06) Load Account Flags.
     #[Id(0x23, 0x06)]
     AccountFlags(AccountFlagsPacket),
+    /// (0x23, 0x07) Load Character Flags.
     #[Id(0x23, 0x07)]
     CharacterFlags(CharacterFlagsPacket),
+    /// (0x23, 0x0A) Cutscene Ended.
     #[Id(0x23, 0x0A)]
     CutsceneEnd(CutsceneEndPacket),
+    /// (0x23, 0x0B) Skit Item Add Request.
     #[Id(0x23, 0x0B)]
     SkitItemAddRequest(SkitItemAddRequestPacket),
+    /// (0x23, 0x0C) Skit Item Add Response.
     #[Id(0x23, 0x0C)]
     SkitItemAddResponse(SkitItemAddResponsePacket),
     /// (0x23, 0x0D) Unknown.
