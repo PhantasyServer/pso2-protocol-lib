@@ -1028,12 +1028,16 @@ pub enum Packet {
 
     // Daily order packets [0x1F]
     #[Category(PacketCategory::DailyOrders)]
+    /// (0x1F, 0x01) Taken Daily Orders Request.
     #[Id(0x1F, 0x01)]
     TakenOrdersRequest(TakenOrdersRequestPacket),
+    /// (0x1F, 0x02) Daily Orders Request.
     #[Id(0x1F, 0x02)]
     OrderListRequest(OrderListRequestPacket),
+    /// (0x1F, 0x03) Taken Daily Orders.
     #[Id(0x1F, 0x03)]
     OrderList(OrderListPacket),
+    /// (0x1F, 0x08) Taken Daily Orders.
     #[Id(0x1F, 0x08)]
     TakenOrders(TakenOrdersPacket),
 
