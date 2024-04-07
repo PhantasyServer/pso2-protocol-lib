@@ -971,6 +971,7 @@ pub enum Packet {
 
     // Unknown 0x19 packets [0x19]
     #[Category(PacketCategory::Unk19)]
+    /// (0x19, 0x01) System Message (broadcast).
     #[Id(0x19, 0x01)]
     SystemMessage(SystemMessagePacket),
     /// (0x19, 0x04) Unknown.
@@ -983,8 +984,10 @@ pub enum Packet {
     /// (C -> S)
     #[Id(0x19, 0x06)]
     Unk1906,
+    /// (0x19, 0x09) Set Lobby Event (broadcast).
     #[Id(0x19, 0x09)]
     SetLobbyEvent(SetLobbyEventPacket),
+    /// (0x19, 0x0F) Set Lobby Monitor Video (broadcast).
     #[Id(0x19, 0x0F)]
     LobbyMonitor(LobbyMonitorPacket),
 
