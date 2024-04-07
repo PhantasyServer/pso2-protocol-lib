@@ -938,15 +938,19 @@ pub enum Packet {
 
     // Emergency packets [0x15]
     #[Category(PacketCategory::Emergency)]
+    /// (0x15, 0x02) Start Emergency (broadcast).
     #[Id(0x15, 0x02)]
     SpawnEmergency(SpawnEmergencyPacket),
+    /// (0x15, 0x03) End Emergency (broadcast).
     #[Id(0x15, 0x03)]
     EmergencyEnd(EmergencyEndPacket),
+    /// (0x15, 0x05) Emergency Progress (broadcast).
     #[Id(0x15, 0x05)]
     EmergencyProgress(EmergencyProgressPacket),
     /// (0x15, 0x08) Unknown.
     #[Id(0x15, 0x08)]
     Unk1508(Unk1508Packet),
+    /// (0x15, 0x11) Available Emergencies (?).
     #[Id(0x15, 0x11)]
     AvailableEmergencies(AvailableEmergenciesPacket),
 
