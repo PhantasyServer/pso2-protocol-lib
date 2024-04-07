@@ -1096,10 +1096,19 @@ pub enum Packet {
 
     // Settings packets [0x2B]
     #[Category(PacketCategory::Settings)]
+    /// (0x2B, 0x00) Settings Request.
+    ///
+    /// (C -> S) Sent when the client wants to get player settings.
+    ///
+    /// Response to: [`Packet::LoginResponse`]
+    ///
+    /// Respond with: [`Packet::LoadSettings`]
     #[Id(0x2B, 0x00)]
     SettingsRequest,
+    /// (0x2B, 0x01) Save Player Settings.
     #[Id(0x2B, 0x01)]
     SaveSettings(SaveSettingsPacket),
+    /// (0x2B, 0x02) Load Player Settings.
     #[Id(0x2B, 0x02)]
     LoadSettings(LoadSettingsPacket),
 
