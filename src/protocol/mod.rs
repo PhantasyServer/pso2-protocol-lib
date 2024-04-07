@@ -993,18 +993,27 @@ pub enum Packet {
 
     // Mail packets [0x1A]
     #[Category(PacketCategory::Mail)]
+    /// (0x1A, 0x00) Mail List Request.
     #[Id(0x1A, 0x00)]
     MailListRequest(MailListRequestPacket),
+    /// (0x1A, 0x01) Mail List.
     #[Id(0x1A, 0x01)]
     MailList(MailListPacket),
+    /// (0x1A, 0x02) Delete Mail Request.
     #[Id(0x1A, 0x02)]
     DeleteMailRequest(DeleteMailRequestPacket),
+    /// (0x1A, 0x03) Deleted Mail.
     #[Id(0x1A, 0x03)]
     DeletedMail(DeletedMailPacket),
+    /// (0x1A, 0x06) Mail Body Request.
     #[Id(0x1A, 0x06)]
     MailBodyRequest(MailBodyRequestPacket),
+    /// (0x1A, 0x07) Mail Body.
     #[Id(0x1A, 0x07)]
     MailBody(MailBodyPacket),
+    /// (0x1A, 0x0D) New Mail Marker.
+    ///
+    /// (S -> C) Sent when the client receives a new mail message.
     #[Id(0x1A, 0x0D)]
     NewMailMarker,
 
