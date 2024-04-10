@@ -1207,12 +1207,26 @@ pub enum Packet {
 
     // Classic Mission Pass packets [0x4D]
     #[Category(PacketCategory::MissionPass)]
+    /// (0x4D, 0x00) Mission Pass Info Request.
+    ///
+    /// (C -> S) Sent when the client wants to get information about the mission pass (i.e. every
+    /// time the client enters the system menu).
+    ///
+    /// Respond with: [`Packet::MissionPassInfo`]
     #[Id(0x4D, 0x00)]
     MissionPassInfoRequest,
+    /// (0x4D, 0x01) Mission Pass Info.
     #[Id(0x4D, 0x01)]
     MissionPassInfo(MissionPassInfoPacket),
+    /// (0x4D, 0x02) Mission Pass  Request.
+    ///
+    /// (C -> S) Sent when the client wants to get the mission pass (i.e. every time the client
+    /// enters the system menu).
+    ///
+    /// Respond with: [`Packet::MissionPass`]
     #[Id(0x4D, 0x02)]
     MissionPassRequest,
+    /// (0x4D, 0x03) Mission Pass.
     #[Id(0x4D, 0x03)]
     MissionPass(MissionPassPacket),
 
