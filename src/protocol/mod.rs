@@ -1173,13 +1173,21 @@ pub enum Packet {
 
     // ARKS Misions packets [0x4A]
     #[Category(PacketCategory::ARKSMissions)]
+    /// (0x4A, 0x00) ARKS Mission List Request.
+    ///
+    /// (C -> S) Sent when the client wants to get a list of missions (i.e. every time the client
+    /// enters the system menu).
+    ///
+    /// Respond with: [`Packet::MissionList`]
     #[Id(0x4A, 0x00)]
     MissionListRequest,
+    /// (0x4A, 0x01) ARKS Mission List.
     #[Id(0x4A, 0x01)]
     MissionList(MissionListPacket),
     /// (0x4A, 0x03) Unknown.
     #[Id(0x4A, 0x03)]
     Unk4A03(Unk4A03Packet),
+    /// (0x4A, 0x0C) Set Tracked Mission Request.
     #[Id(0x4A, 0x0C)]
     SetTrackedMission(SetTrackedMissionPacket),
 
