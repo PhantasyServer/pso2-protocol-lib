@@ -1139,25 +1139,39 @@ pub enum Packet {
 
     // Symbol art packets [0x2F]
     #[Category(PacketCategory::SymbolArt)]
+    /// (0x2F, 0x00) Request Symbol Art Data (client).
     #[Id(0x2F, 0x00)]
     SymbolArtClientDataRequest(SymbolArtClientDataRequestPacket),
+    /// (0x2F, 0x00) Request Symbol Art Data (server).
     #[Id(0x2F, 0x01)]
     SymbolArtDataRequest(SymbolArtDataRequestPacket),
+    /// (0x2F, 0x02) Symbol Art Data (serverbound).
     #[Id(0x2F, 0x02)]
     SymbolArtData(SymbolArtDataPacket),
+    /// (0x2F, 0x03) Symbol Art Data (clientbound).
     #[Id(0x2F, 0x03)]
     SymbolArtClientData(SymbolArtClientDataPacket),
+    /// (0x2F, 0x04) Change Symbol Art Slot.
     #[Id(0x2F, 0x04)]
     ChangeSymbolArt(ChangeSymbolArtPacket),
+    /// (0x2F, 0x05) Change Symbol Art Slot Result.
     #[Id(0x2F, 0x05)]
     SymbolArtResult(SymbolArtResultPacket),
+    /// (0x2F, 0x06) Request Symbol Art List.
+    ///
+    /// (C -> S) Sent when the client wants to get the list of player's saved symbol arts.
+    ///
+    /// Respond with: [`Packet::SymbolArtList`]
     #[Id(0x2F, 0x06)]
     SymbolArtListRequest,
+    /// (0x2F, 0x07) Saved Symbol Art List.
     #[Id(0x2F, 0x07)]
     SymbolArtList(SymbolArtListPacket),
+    /// (0x2F, 0x08) Send Symbol Art.
     #[Id(0x2F, 0x08)]
     #[Classic]
     SendSymbolArt(SendSymbolArtPacket),
+    /// (0x2F, 0x09) Received Symbol Art.
     #[Id(0x2F, 0x09)]
     #[Classic]
     ReceiveSymbolArt(ReceiveSymbolArtPacket),
