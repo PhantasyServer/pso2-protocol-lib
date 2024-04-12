@@ -1,16 +1,23 @@
+//! Item attribute related structures.
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::protocol::{HelperReadWrite, PacketType};
 
 use super::character::ClassFlags;
 
+/// Item attributes found in the `item_parameter.bin` file in the ICE archive from
+/// [`crate::protocol::Packet::LoadItemAttributes`].
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub enum ItemAttributes {
+    /// NA and JP client version.
     PC(ItemAttributesPC),
+    /// Vita client version.
     Vita(ItemAttributesVita),
 }
 
+/// Item attributes found in the `item_parameter.bin` file in the ICE archive from
+/// [`crate::protocol::Packet::LoadItemAttributes`] (NA and JP client).
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
@@ -18,16 +25,21 @@ pub enum ItemAttributes {
 pub struct ItemAttributesPC {
     pub unk1: u32,
     pub unk2: u128,
+    /// Attributes for weapons.
     #[Len_u16]
     pub weapons: Vec<WeaponAttrs>,
+    /// Attributes for costumes.
     #[Len_u16]
     pub human_costumes: Vec<HumanCostume>,
+    /// Attributes for CAST parts.
     #[Len_u16]
     pub cast_parts: Vec<CastPart>,
+    /// Attributes for consumables.
     #[Len_u16]
     pub consumables: Vec<Consumable>,
     #[Len_u16]
     pub data5: Vec<Data5>,
+    /// Attributes for units.
     #[Len_u16]
     pub data6: Vec<Unit>,
     #[Len_u16]
@@ -60,8 +72,8 @@ pub struct ItemAttributesPC {
     pub data20: Vec<Data20>,
 }
 
-// different struct because of `FixedLen`
-// maybe someday i'll merge them
+/// Item attributes found in the `item_parameter.bin` file in the ICE archive from
+/// [`crate::protocol::Packet::LoadItemAttributes`] (Vita client).
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
@@ -69,16 +81,21 @@ pub struct ItemAttributesPC {
 pub struct ItemAttributesVita {
     pub unk1: u32,
     pub unk2: u128,
+    /// Attributes for weapons.
     #[Len_u16]
     pub weapons: Vec<WeaponAttrs>,
+    /// Attributes for costumes.
     #[Len_u16]
     pub human_costumes: Vec<HumanCostume>,
+    /// Attributes for CAST parts.
     #[Len_u16]
     pub cast_parts: Vec<CastPart>,
+    /// Attributes for consumables.
     #[Len_u16]
     pub consumables: Vec<Consumable>,
     #[Len_u16]
     pub data5: Vec<Data5>,
+    /// Attributes for units.
     #[Len_u16]
     pub data6: Vec<Unit>,
     #[Len_u16]
@@ -112,34 +129,45 @@ pub struct ItemAttributesVita {
     pub data20: Vec<Data20>,
 }
 
+/// Weapon attributes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[NoPadding]
 pub struct WeaponAttrs {
+    /// Item category.
     pub id: u16,
+    /// Item ID.
     pub subid: u16,
     pub unk1: u8,
     pub priority: u8,
     pub unk2: u8,
     pub priority2: u8,
+    /// Item rarity in stars.
     pub rarity: u8,
     pub flags: u16,
     pub unk3: u8,
     pub icon_list: u16,
     pub icon_index: u16,
+    /// Range damage.
     pub range_dmg: u16,
     pub unk4: u8,
+    /// Melee damage.
     pub melee_dmg: u16,
     pub unk5: u8,
     pub unk6: u32,
+    /// Force damage and equipable genders.
     #[cfg_attr(feature = "serde", serde(flatten))]
     pub gender_force_dmg: GenderDmg,
     pub unk8: [u8; 4],
+    /// Equipable races.
     pub race: RaceFlags,
     pub flags2: u8,
+    /// Equipable classes.
     pub class: ClassFlags,
+    /// Required stat value.
     pub req_stat: u16,
+    /// Required stat type.
     pub req_stat_type: StatType,
     pub unk9: u8,
     pub model: u16,
@@ -149,37 +177,47 @@ pub struct WeaponAttrs {
     pub unk12: u16,
 }
 
+/// Costume attributes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[NoPadding]
 pub struct HumanCostume {
+    /// Item category.
     pub id: u16,
+    /// Item ID.
     pub subid: u16,
     pub unk1: u16,
     pub unk2: u16,
+    /// Item rarity in stars.
     pub rarity: u8,
     pub flags: u16,
     pub unk3: u8,
     pub icon_list: u16,
     pub icon_index: u16,
+    /// Equipable genders.
     pub gender_flags: GenderFlags,
     pub color_flags: u8,
+    /// Equipable races.
     pub race_flags: RaceFlags,
     pub unk4: u8,
     pub model: u16,
     pub unk5: [u16; 3],
 }
 
+/// CAST part attributes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[NoPadding]
 pub struct CastPart {
+    /// Item category.
     pub id: u16,
+    /// Item ID.
     pub subid: u16,
     pub unk1: u16,
     pub unk2: u16,
+    /// Item rarity in stars.
     pub rarity: u8,
     pub flags: u16,
     pub unk3: u8,
@@ -193,20 +231,25 @@ pub struct CastPart {
     pub model: u16,
 }
 
+/// Consumable attributes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[NoPadding]
 pub struct Consumable {
+    /// Item category.
     pub id: u16,
+    /// Item ID.
     pub subid: u16,
     pub unk1: u16,
     pub unk2: u16,
+    /// Item rarity in stars.
     pub rarity: u8,
     pub flags: u16,
     pub unk3: u8,
     pub icon_list: u16,
     pub icon_index: u16,
+    /// Max item quantity.
     pub max_qty: u8,
     pub unk4: [u8; 3],
     pub unk5: u32,
@@ -231,22 +274,28 @@ pub struct Data5 {
     pub unk: Vec<u8>,
 }
 
+/// Unit attributes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[NoPadding]
 pub struct Unit {
+    /// Item category.
     pub id: u16,
+    /// Item ID.
     pub subid: u16,
     pub unk1: u16,
     pub unk2: u16,
+    /// Item rarity in stars.
     pub rarity: u8,
     pub flags: u16,
     pub unk3: u8,
     pub icon_list: u16,
     pub icon_index: u16,
+    /// Unit stats.
     #[cfg_attr(feature = "serde", serde(flatten))]
     pub stats: UnitRes,
+    /// Required stat type.
     pub req_stat_type: StatType,
     pub unk4: u8,
     pub unk5: u8,
@@ -254,7 +303,9 @@ pub struct Unit {
     pub unk7: u16,
     pub unk8: u16,
     pub unk9: u16,
+    /// Required stat value.
     pub req_stat: u16,
+    /// Unit attack values.
     #[cfg_attr(feature = "serde", serde(flatten))]
     pub atk: UnitAtk,
     pub unk10: u8,
@@ -409,77 +460,116 @@ pub struct Data20 {
     pub unk: Vec<u8>,
 }
 
+/// Force damage and equipable genders.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct GenderDmg {
+    /// Force damage.
     pub force_dmg: u16,
+    /// Equipable genders.
     pub gender: GenderFlags,
 }
 
+/// Unit stats.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct UnitRes {
+    /// TEC resistance.
     pub tec_res: u8,
+    /// TEC defence.
     pub tec_def: u16,
+    /// RNG defence.
     pub rng_def: u16,
+    /// MEL defence.
     pub mel_def: u16,
+    /// Additional HP.
     pub hp: u16,
+    /// Additional PP.
     pub pp: u8,
+    /// Dark resistance.
     pub dark_res: u8,
+    /// Light resistance.
     pub light_res: u8,
+    /// Wind resistance.
     pub wind_res: u8,
+    /// Lightning resistance.
     pub lightning_res: u8,
+    /// Ice resistance.
     pub ice_res: u8,
+    /// Fire resistance.
     pub fire_res: u8,
+    /// RNG resistance.
     pub rng_res: u8,
+    /// MEL resistance.
     pub mel_res: u8,
 }
 
+/// Unit attack values.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct UnitAtk {
+    /// Additional MEL attack.
     pub mel_atk: u16,
+    /// Additional RNG attack.
     pub rng_atk: u16,
+    /// Additional TEC attack.
     pub tec_atk: u16,
+    /// Additional DEX.
     pub dex: u16,
     pub unk_atk: u8,
 }
 
+/// Equipable genders.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[Flags(u8)]
 pub struct GenderFlags {
+    /// Males can equip.
     pub male: bool,
+    /// Females can equip.
     pub female: bool,
 }
 
+/// Equipable races.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 #[Flags(u8)]
 pub struct RaceFlags {
+    /// Humans can equip.
     pub human: bool,
+    /// Newmans can equip.
     pub newman: bool,
+    /// CASTs can equip.
     pub cast: bool,
+    /// Deumans can equip.
     pub deuman: bool,
 }
 
+/// Required stat type.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
 #[repr(u8)]
 pub enum StatType {
+    /// MEL power.
     #[default]
     #[Read_default]
     MELPwr,
+    /// RNG power.
     RNGPwr,
+    /// TEC power.
     TECPwr,
+    /// DEX.
     DEX,
+    /// MEL defence.
     MELDef,
+    /// RNG defence.
     RNGDef,
+    /// TEC defence.
     TECDef,
 }
 
