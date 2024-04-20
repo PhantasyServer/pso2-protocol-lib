@@ -18,9 +18,9 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 pso2packetlib = { path = "../", features = ["serde"] }
-rmp-serde = { version = "1.1.2", optional = true }
-serde_json = { version = "1.0.111", optional = true }
+rmp-serde = { version = "1.2.0", optional = true }
+serde_json = { version = "1.0.116", optional = true }
 
 [build-dependencies]
 cbindgen = "0.26.0"
-csbindgen = "1.8.3"
+csbindgen = "1.9.1"
