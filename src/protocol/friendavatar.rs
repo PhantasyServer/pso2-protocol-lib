@@ -1,7 +1,8 @@
+//! Friend avatar related packets. \[0x26\]
 use super::{items::Item, ObjectHeader, PacketReadWrite};
 
 // ----------------------------------------------------------------
-// Player shop packets
+// Friend Avatar packets
 // ----------------------------------------------------------------
 
 /// (0x26, 0x00) Friend Avatar Data Request.

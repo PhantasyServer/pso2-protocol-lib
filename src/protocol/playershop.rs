@@ -1,3 +1,4 @@
+//! Player shop related packets. \[0x2D\]
 use super::{items::Item, HelperReadWrite, ObjectHeader, PacketReadWrite};
 
 // ----------------------------------------------------------------

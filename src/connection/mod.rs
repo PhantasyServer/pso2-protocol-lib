@@ -1,3 +1,5 @@
+//! Client <-> Server connection handling.
+
 pub(crate) mod conn_impl;
 #[cfg(feature = "split_connection")]
 use crate::encryption::{DecryptorType, EncryptorType};

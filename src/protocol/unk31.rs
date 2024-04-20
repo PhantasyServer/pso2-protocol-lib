@@ -1,3 +1,4 @@
+//! Unknown \[0x31\] packets.
 use super::{HelperReadWrite, ItemId, PacketReadWrite};
 use crate::AsciiString;
 
@@ -89,6 +90,19 @@ struct PlayAchievementsInternal {
     titles_acquired: u32,
 }
 
+/// Internal representation of the enemy record.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+struct EnemyRecordInternal {
+    /// Offset of the name ID.
+    pub name_offset: u32,
+    /// Length of the name ID.
+    pub name_length: u32,
+    /// Level of the enemy
+    pub level: u32,
+}
+
 // ----------------------------------------------------------------
 // Additional structs
 // ----------------------------------------------------------------
@@ -116,19 +130,6 @@ pub struct QuestRecord {
 pub struct EnemyRecord {
     /// Name ID.
     pub name: AsciiString,
-    /// Level of the enemy
-    pub level: u32,
-}
-
-/// Internal representation of the enemy record.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-pub struct EnemyRecordInternal {
-    /// Offset of the name ID.
-    pub name_offset: u32,
-    /// Length of the name ID.
-    pub name_length: u32,
     /// Level of the enemy
     pub level: u32,
 }
