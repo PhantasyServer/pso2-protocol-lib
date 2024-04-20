@@ -1,10 +1,13 @@
+//! Unknown \[0x2A\] packets.
 use super::{HelperReadWrite, PacketReadWrite};
 
 // ----------------------------------------------------------------
 // Unknown 0x2A packets
 // ----------------------------------------------------------------
 
-// 0x2A, 0x08
+/// (0x2A, 0x08) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]

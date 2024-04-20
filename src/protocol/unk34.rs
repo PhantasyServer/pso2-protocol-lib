@@ -1,10 +1,13 @@
+//! Unknown \[0x34\] packets.
 use super::{items::Item, HelperReadWrite, PacketReadWrite};
 
 // ----------------------------------------------------------------
 // Unknown 0x34 packets
 // ----------------------------------------------------------------
 
-// 0x34, 0x35
+/// (0x34, 0x35) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -16,7 +19,9 @@ pub struct Unk3435Packet {
     pub unk2: Vec<Unk3435_1>,
 }
 
-// 0x34, 0x5C
+/// (0x34, 0x5C) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]

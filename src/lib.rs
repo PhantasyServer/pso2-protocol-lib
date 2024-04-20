@@ -121,3 +121,6 @@ pub use packetlib_impl::PacketRW;
 #[cfg(feature = "derive")]
 #[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub use packetlib_impl::HelperRW;
+
+#[cfg(docsrs)]
+pub mod protocol_docs;

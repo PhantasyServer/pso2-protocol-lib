@@ -1,10 +1,15 @@
+//! ARKS Missions related packets. \[0x4A\]
 use super::{HelperReadWrite, PacketReadWrite};
 
 // ----------------------------------------------------------------
 // ARKS Missions packets
 // ----------------------------------------------------------------
 
-// 0x4A, 0x01
+/// (0x4A, 0x01) ARKS Mission List.
+///
+/// (S -> C) Sent in response to the request.
+///
+/// Respond with: [`crate::protocol::Packet::MissionListRequest`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -13,13 +18,19 @@ use super::{HelperReadWrite, PacketReadWrite};
 #[Magic(0xC691, 0x47)]
 pub struct MissionListPacket {
     pub unk1: u32,
+    /// List of missions.
     pub missions: Vec<Mission>,
+    /// Timestamp of daily missions update.
     pub daily_update: u32,
+    /// Timestamp of weekly missions update.
     pub weekly_update: u32,
+    /// Timestamp of tier missions update.
     pub tier_update: u32,
 }
 
-// 0x4A, 0x03
+/// (0x4A, 0x03) Unknown.
+///
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -34,12 +45,15 @@ pub struct Unk4A03Packet {
     pub unk5: u32,
 }
 
-// 0x4A, 0x0C
+/// (0x4A, 0x0C) Set Tracked Mission Request.
+///
+/// (C -> S) Sent when the client wants to set the currently tracked mission.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x4A, 0x0C)]
 pub struct SetTrackedMissionPacket {
+    /// Mission ID or [`u32::MAX`] if no mission is selected.
     pub id: u32,
 }
 
@@ -47,6 +61,7 @@ pub struct SetTrackedMissionPacket {
 // Additional structs
 // ----------------------------------------------------------------
 
+/// ARKS Mission definition.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
@@ -55,11 +70,16 @@ pub struct Mission {
     1 - daily
     2 - weekly
     7 - tier */
+    /// Mission type.
     pub mission_type: u32,
+    /// Mission start timestamp.
     pub start_date: u32,
+    /// Mission end timestamp.
     pub end_date: u32,
-    pub unk4: u32,
+    /// Mission ID.
+    pub id: u32,
     pub unk5: u32,
+    /// Last completion timestamp.
     pub completion_date: u32,
     pub unk7: u32,
     pub unk8: u32,

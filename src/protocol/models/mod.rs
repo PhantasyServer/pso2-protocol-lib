@@ -1,3 +1,4 @@
+//! Common packet structures.
 pub mod character;
 #[cfg(feature = "item_attrs")]
 #[cfg_attr(docsrs, doc(cfg(feature = "item_attrs")))]
@@ -11,35 +12,54 @@ use half::f16;
 // Structures
 // ----------------------------------------------------------------
 
+/// Generic object position. Almost always followed by one [`u16`] padding.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Copy, Clone, PartialEq, HelperReadWrite)]
 pub struct Position {
+    /// X rotation quaternion.
     pub rot_x: f16,
+    /// Y rotation quaternion.
     pub rot_y: f16,
+    /// Z rotation quaternion.
     pub rot_z: f16,
+    /// W rotation quaternion.
     pub rot_w: f16,
+    /// X position.
     pub pos_x: f16,
+    /// Y position.
     pub pos_y: f16,
+    /// Z position.
     pub pos_z: f16,
 }
 
+/// Euler type position. Not used in game, just for printing.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct EulerPosition {
+    /// Roll angle in radians.
     pub roll: f32,
+    /// Pitch angle in radians.
     pub pitch: f32,
+    /// Yaw angle in radians.
     pub yaw: f32,
+    /// X position.
     pub x: f32,
+    /// Y position.
     pub y: f32,
+    /// Z position.
     pub z: f32,
 }
 
+// For implementation details look at the HelperReadWrite impl.
+/// SG currency value.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct SGValue(pub f32);
 
+// For implementation details look at the HelperReadWrite impl.
+/// Fun currency value.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct FunValue(pub u32);

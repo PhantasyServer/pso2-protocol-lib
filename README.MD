@@ -13,6 +13,5 @@ This library has an [FFI](packetlib_ffi). It allows for working with packets usi
 
 ## Notes
 
- - For more information about the protocol, see [this file](packet_docs/README.MD) (currently unmaintained, contributions are welcome).
  - Because a lot of information about the protocol is unknown, expect breaking changes (such as adding/deleting/renaming of struct's fields).
  - Any contributions are welcome (e.g. code style suggestions, comments, additional packet information, etc.)
