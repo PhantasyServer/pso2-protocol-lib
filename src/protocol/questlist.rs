@@ -148,11 +148,8 @@ pub struct AvailableQuestsPacket {
     #[NotOn(super::PacketType::Vita)]
     pub unk16: [u16; 2],
     pub available_types: AvailableQuestType,
-    pub available_types2: AvailableQuestType2,
     #[NotOn(super::PacketType::Vita)]
     pub unk19: AvailableQuestType,
-    #[NotOn(super::PacketType::Vita)]
-    pub unk20: AvailableQuestType2,
     /// Round boost active flag.
     pub round_boost: u32,
     pub unk21: u32,
@@ -467,112 +464,105 @@ pub struct QuestThing {
     pub unk3: u16,
 }
 
-/// Available quest types flags.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[Flags(u64)]
-pub struct AvailableQuestType {
-    #[Skip]
-    // 0x02
-    pub extreme: bool,
-    // unsure
-    pub storyep1: bool,
-    pub arks: bool,
-    pub limited_time: bool,
-    pub extreme_debug: bool,
-    pub blank1: bool,
-    // unsure
-    pub storyep2: bool,
+bitflags::bitflags!{
+    /// Available quest types flags.
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+    #[BitFlags(u128)]
+    pub struct AvailableQuestType: u128 {
+        const EXTREME = 1 << 1;
+        // unsure
+        const STORY_EP1 = 1 << 2;
+        const ARKS = 1 << 3;
+        const LIMITED_TIME = 1 << 4;
+        const EXTREME_DEBUG = 1 << 5;
+        const BLANK1 = 1 << 6;
+        // unsure
+        const STORY_EP2 = 1 << 7;
 
-    pub net_cafe: bool,
-    pub warming_debug: bool,
-    pub blank2: bool,
-    pub advance: bool,
-    pub expedition: bool,
-    pub free_debug: bool,
-    pub arks_debug: bool,
-    // unsure
-    pub story_debug: bool,
+        const NET_CAFE = 1 << 8;
+        const WARMING_DEBUG = 1 << 9;
+        const BLANK2 = 1 << 10;
+        const ADVANCE = 1 << 11;
+        const EXPEDITION = 1 << 12;
+        const FREE_DEBUG = 1 << 13;
+        const ARKS_DEBUG = 1 << 14;
+        // unsure
+        const STORY_DEBUG = 1 << 15;
 
-    pub challenge: bool,
-    pub urgent: bool,
-    pub urgent_debug: bool,
-    pub time_attack: bool,
-    pub time_debug: bool,
-    pub arks_debug2: bool,
-    pub arks_debug3: bool,
-    pub arks_debug4: bool,
+        const CHALLENGE = 1 << 16;
+        const URGENT = 1 << 17;
+        const URGENT_DEBUG = 1 << 18;
+        const TIME_ATTACK = 1 << 19;
+        const TIME_DEBUG = 1 << 20;
+        const ARKS_DEBUG2 = 1 << 21;
+        const ARKS_DEBUG3 = 1 << 22;
+        const ARKS_DEBUG4 = 1 << 23;
 
-    pub arks_debug5: bool,
-    pub arks_debug6: bool,
-    pub arks_debug7: bool,
-    pub arks_debug8: bool,
-    pub arks_debug9: bool,
-    pub arks_debug10: bool,
-    pub blank3: bool,
-    // unsure
-    pub storyep3: bool,
+        const ARKS_DEBUG5 = 1 << 24;
+        const ARKS_DEBUG6 = 1 << 25;
+        const ARKS_DEBUG7 = 1 << 26;
+        const ARKS_DEBUG8 = 1 << 27;
+        const ARKS_DEBUG9 = 1 << 28;
+        const ARKS_DEBUG10 = 1 << 29;
+        const BLANK3 = 1 << 30;
+        // unsure
+        const STORY_EP3 = 1 << 31;
 
-    pub recommended: bool,
-    pub ultimate: bool,
-    pub ultimate_debug: bool,
-    pub agp: bool,
-    pub bonus: bool,
-    // storyep4?
-    pub unk1: bool,
-    pub standard_training: bool,
-    pub hunter_training: bool,
+        const RECOMMENDED = 1 << 32;
+        const ULTIMATE = 1 << 33;
+        const ULTIMATE_DEBUG = 1 << 34;
+        const AGP = 1 << 35;
+        const BONUS = 1 << 36;
+        const UNK1 = 1 << 37;
+        const STANDARD_TRAINING = 1 << 38;
+        const HUNTER_TRAINING = 1 << 39;
 
-    pub ranger_training: bool,
-    pub force_training: bool,
-    pub fighter_training: bool,
-    pub gunner_training: bool,
-    pub techter_training: bool,
-    pub braver_training: bool,
-    pub bouncer_training: bool,
-    pub summoner_training: bool,
+        const RANGER_TRAINING = 1 << 40;
+        const FORCE_TRAINING = 1 << 41;
+        const FIGHTER_TRAINING = 1 << 42;
+        const GUNNER_TRAINING = 1 << 43;
+        const TECHTER_TRAINING = 1 << 44;
+        const BRAVER_TRAINING = 1 << 45;
+        const BOUNCER_TRAINING = 1 << 46;
+        const SUMMONER_TRAINING = 1 << 47;
 
-    // if set the client auto selects this category(48)
-    pub auto_accept: bool,
-    pub ridroid: bool,
-    pub net_cafe_agp: bool,
-    pub battle_broken: bool,
-    pub buster_debug: bool,
-    pub poka12: bool,
-    pub unk2: bool,
-    pub unk3: bool,
+        // if set the client auto selects this category(48)
+        const AUTO_ACCEPT = 1 << 48;
+        const RIDROID = 1 << 49;
+        const NET_CAFE_AGP = 1 << 50;
+        const BATTLE_BROKEN = 1 << 51;
+        const BUSTER_DEBUG = 1 << 52;
+        const POKA12 = 1 << 53;
+        const UNK2 = 1 << 54;
+        const UNK3 = 1 << 55;
 
-    pub buster: bool,
-    pub hero_training: bool,
-    pub amplified: bool,
-    pub unk4: bool,
-    pub unk5: bool,
-    pub dark_blast_training: bool,
-    pub endless: bool,
-    pub unk6: bool,
+        const BUSTER = 1 << 56;
+        const HERO_TRAINING = 1 << 57;
+        const AMPLIFIED = 1 << 58;
+        const UNK4 = 1 << 59;
+        const UNK5 = 1 << 60;
+        const DARK_BLAST_TRAINING = 1 << 61;
+        const ENDLESS = 1 << 62;
+        const UNK6 = 1 << 63;
+
+        const BLANK4 = 1 << 64;
+        const PHANTOM_TRAINING = 1 << 65;
+        const AIS_TRAINING = 1 << 66;
+        const UNK7 = 1 << 67;
+        const DAMAGE_CALC = 1 << 68;
+        const ETOILE_TRAINING = 1 << 69;
+        const DIVIDE = 1 << 70;
+        const STARS1 = 1 << 71;
+
+        const STARS2 = 1 << 72;
+        const STARS3 = 1 << 73;
+        const STARS4 = 1 << 74;
+        const STARS5 = 1 << 75;
+        const STARS6 = 1 << 76;
+    }
 }
 
-/// Available quest types flags (continuation).
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[Flags(u64)]
-pub struct AvailableQuestType2 {
-    pub blank4: bool,
-    pub phantom_training: bool,
-    pub ais_training: bool,
-    pub unk1: bool,
-    pub damage_calc: bool,
-    pub etoile_training: bool,
-    pub divide: bool,
-    pub stars1: bool,
-
-    pub stars2: bool,
-    pub stars3: bool,
-    pub stars4: bool,
-    pub stars5: bool,
-    pub stars6: bool,
-    pub unk2: bool,
-}
 
 /// Type of the quest.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -650,17 +640,18 @@ pub enum QuestType {
     Stars6,
 }
 
-/// Available quest difficulties.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[Flags(u8)]
-pub struct QuestDifficultyType {
-    pub normal: bool,
-    pub hard: bool,
-    pub very_hard: bool,
-    pub super_hard: bool,
-    pub ex_hard: bool,
-    pub ultra_hard: bool,
-    pub unnamed1: bool,
-    pub unnamed2: bool,
+bitflags::bitflags!{
+    /// Available quest difficulties.
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+    #[BitFlags(u8)]
+    pub struct QuestDifficultyType: u8 {
+        const NORMAL = 1 << 0;
+        const HARD = 1 << 1;
+        const VERY_HARD = 1 << 2;
+        const SUPER_HARD = 1 << 3;
+        const EX_HARD = 1 << 4;
+        const ULTRA_HARD = 1 << 5;
+    }
 }
+

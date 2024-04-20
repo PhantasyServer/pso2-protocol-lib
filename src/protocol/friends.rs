@@ -144,21 +144,22 @@ pub struct FriendListEntry {
     pub unk13: Duration,
 }
 
-/// Friend flags.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Copy, Clone, Default, PartialEq, HelperReadWrite)]
-#[Flags(u8)]
-pub struct FriendFlags {
-    /// Is the friend online.
-    pub is_online: bool,
-    /// Are login notifications enabled for this friend.
-    #[Skip]
-    #[Skip]
-    pub login_notif: bool,
-    /// Did the player not log in for a while.
-    #[Skip]
-    pub no_recent_logins: bool,
+bitflags::bitflags!{
+    /// Friend flags.
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[cfg_attr(feature = "serde", serde(default))]
+    #[derive(Debug, Copy, Clone, Default, PartialEq, HelperReadWrite)]
+    #[BitFlags(u8)]
+    pub struct FriendFlags: u8 {
+        /// Is the friend online.
+        const IS_ONLINE = 1 << 0;
+        /// Are login notifications enabled for this friend.
+        const LOGIN_NOTIF = 1 << 3;
+        /// Did the player not log in for a while.
+        const NO_RECENT_LOGINS = 1 << 5;
+
+        const _ = !0;
+    }
 }
 
 /// Friend map location.

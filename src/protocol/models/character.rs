@@ -261,27 +261,29 @@ pub enum Class {
     Unknown = 0xFF,
 }
 
-/// Enabled classes flags.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[Flags(u16)]
-pub struct ClassFlags {
-    pub hunter: bool,
-    pub ranger: bool,
-    pub force: bool,
-    pub fighter: bool,
-    pub gunner: bool,
-    pub techer: bool,
-    pub braver: bool,
-    pub bouncer: bool,
-    pub challenger: bool,
-    pub summoner: bool,
-    pub battlewarrior: bool,
-    pub hero: bool,
-    pub phantom: bool,
-    pub etole: bool,
-    pub luster: bool,
+bitflags::bitflags!{
+    /// Enabled classes flags.
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[cfg_attr(feature = "serde", serde(default))]
+    #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+    #[BitFlags(u16)]
+    pub struct ClassFlags: u16 {
+        const Hunter = 1 << 0;
+        const Ranger = 1 << 1;
+        const Force = 1 << 2;
+        const Fighter = 1 << 3;
+        const Gunner = 1 << 4;
+        const Techer = 1 << 5;
+        const Braver = 1 << 6;
+        const Bouncer = 1 << 7;
+        const Challenger = 1 << 8;
+        const Summoner = 1 << 9;
+        const BattleWarrior = 1 << 10;
+        const Hero = 1 << 11;
+        const Phantom = 1 << 12;
+        const Etole = 1 << 13;
+        const Luster = 1 << 14;
+    }
 }
 
 /// Character class level.

@@ -522,32 +522,36 @@ pub struct UnitAtk {
     pub unk_atk: u8,
 }
 
-/// Equipable genders.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[Flags(u8)]
-pub struct GenderFlags {
-    /// Males can equip.
-    pub male: bool,
-    /// Females can equip.
-    pub female: bool,
+bitflags::bitflags!{
+    /// Equipable genders.
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[cfg_attr(feature = "serde", serde(default))]
+    #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+    #[BitFlags(u8)]
+    pub struct GenderFlags: u8 {
+        /// Males can equip.
+        const MALE = 1 << 0;
+        /// Females can equip.
+        const FEMALE = 1 << 1;
+    }
 }
 
-/// Equipable races.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[Flags(u8)]
-pub struct RaceFlags {
-    /// Humans can equip.
-    pub human: bool,
-    /// Newmans can equip.
-    pub newman: bool,
-    /// CASTs can equip.
-    pub cast: bool,
-    /// Deumans can equip.
-    pub deuman: bool,
+bitflags::bitflags!{
+    /// Equipable races.
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[cfg_attr(feature = "serde", serde(default))]
+    #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+    #[BitFlags(u8)]
+    pub struct RaceFlags: u8 {
+        /// Humans can equip.
+        const HUMAN = 1 << 0;
+        /// Newmans can equip.
+        const NEWMAN = 1 << 1;
+        /// CASTs can equip.
+        const CAST = 1 << 2;
+        /// Deumans can equip.
+        const DEUMAN = 1 << 3;
+    }
 }
 
 /// Required stat type.

@@ -634,26 +634,29 @@ pub enum ShortLanguage {
     Unknown,
 }
 
-/// Party flags.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[Flags(u8)]
-pub struct PartyFlags {
-    /// Is the party only for friends.
-    pub friends_only: bool,
-    /// Is the party only for alliance members.
-    pub alliance_only: bool,
-    /// Limit multiplayer requests from other parties.
-    pub limit_others: bool,
-    /// Is the party only for a single run.
-    pub single_run: bool,
-    /// Is the party actively looking for members.
-    pub open: bool,
-    pub unk6: bool,
-    /// Is the party voice chat focused.
-    pub vc_focus: bool,
-    pub unk8: bool,
+bitflags::bitflags!{
+    /// Party flags.
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[cfg_attr(feature = "serde", serde(default))]
+    #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+    #[BitFlags(u8)]
+    pub struct PartyFlags: u8 {
+        /// Is the party only for friends.
+        const FRIENDS_ONLY = 1 << 0;
+        /// Is the party only for alliance members.
+        const ALLIANCE_ONLY = 1 << 1;
+        /// Limit multiplayer requests from other parties.
+        const LIMIT_OTHERS = 1 << 2;
+        /// Is the party only for a single run.
+        const SINGLE_RUN = 1 << 3;
+        /// Is the party actively looking for members.
+        const OPEN = 1 << 4;
+        /// Is the party voice chat focused.
+        const VC_FOCUS = 1 << 6;
+
+        const _ = !0;
+    }
+
 }
 
 /// Party info.
