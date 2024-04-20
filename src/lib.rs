@@ -21,3 +21,6 @@ pub use connection::{Connection, PrivateKey};
 pub use proxy_connection::{ProxyConnection, PublicKey};
 
 pub use asciistring::AsciiString;
+
+#[cfg(docsrs)]
+pub mod protocol_docs;
