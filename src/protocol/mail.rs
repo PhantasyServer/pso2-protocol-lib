@@ -30,7 +30,7 @@ pub struct MailListRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1A, 0x01)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x36A1, 0xBF)]
 pub struct MailListPacket {
     pub unk1: u16,
@@ -56,7 +56,7 @@ pub struct MailListPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1A, 0x02)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xBC5F, 0x0B)]
 pub struct DeleteMailRequestPacket {
     /// IDs of messages to delete.
@@ -72,7 +72,7 @@ pub struct DeleteMailRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1A, 0x03)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x421C, 0x56)]
 pub struct DeletedMailPacket {
     /// Deleted messages IDs.
@@ -103,7 +103,7 @@ pub struct MailBodyRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1A, 0x07)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x5913, 0x82)]
 pub struct MailBodyPacket {
     /// Message ID.

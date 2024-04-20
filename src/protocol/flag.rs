@@ -169,7 +169,7 @@ pub struct Unk230DPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x23, 0x0E)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xAC40, 0x99)]
 pub struct Unk230EPacket {
     pub unk: Vec<Unk230EThing>,

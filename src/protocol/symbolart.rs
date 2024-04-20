@@ -42,7 +42,7 @@ pub struct SymbolArtDataRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2F, 0x02)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x4B58, 0x76)]
 pub struct SymbolArtDataPacket {
     /// Symbol Art UUID.
@@ -62,7 +62,7 @@ pub struct SymbolArtDataPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2F, 0x03)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xD116, 0xC1)]
 pub struct SymbolArtClientDataPacket {
     /// Symbol Art UUID.
@@ -80,7 +80,7 @@ pub struct SymbolArtClientDataPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2F, 0x04)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x56D3, 0x0C)]
 pub struct ChangeSymbolArtPacket {
     /// Symbol Art UUIDs and slot indexes.
@@ -96,7 +96,7 @@ pub struct ChangeSymbolArtPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2F, 0x05)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xDC91, 0x57)]
 pub struct SymbolArtResultPacket {
     pub unk1: u32,
@@ -112,7 +112,7 @@ pub struct SymbolArtResultPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2F, 0x07)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xE80C, 0xED)]
 pub struct SymbolArtListPacket {
     /// Player object.
@@ -132,7 +132,7 @@ pub struct SymbolArtListPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2F, 0x08)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct SendSymbolArtPacket {
     /// Sender object (unset).
     pub object: ObjectHeader,

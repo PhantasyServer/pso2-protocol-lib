@@ -14,7 +14,7 @@ use super::{HelperReadWrite, PacketReadWrite};
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x4A, 0x01)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xC691, 0x47)]
 pub struct MissionListPacket {
     pub unk1: u32,
@@ -35,7 +35,7 @@ pub struct MissionListPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x4A, 0x03)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xD20D, 0xDD)]
 pub struct Unk4A03Packet {
     pub unk1: u32,

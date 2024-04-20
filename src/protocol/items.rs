@@ -21,7 +21,7 @@ use std::time::Duration;
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x00)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x8A92, 0x30)]
 pub struct ItemAttributesPacket {
     /// Attribute ID (?) (seen only 0 or 1).
@@ -122,7 +122,7 @@ pub struct AddedItemPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x06)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xAD04, 0xF3)]
 pub struct UpdateInventoryPacket {
     /// Items being updated.
@@ -139,7 +139,7 @@ pub struct UpdateInventoryPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x0C)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xCF76, 0xB5)]
 pub struct LoadEquipedPacket {
     /// Player whose equipment is loaded.
@@ -169,7 +169,7 @@ pub struct LoadEquipedPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x0D)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x5533, 0x1)]
 pub struct LoadPlayerInventoryPacket {
     /// Player object.
@@ -193,7 +193,7 @@ pub struct LoadPlayerInventoryPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x0F)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x60AF, 0x97)]
 pub struct MoveToStorageRequestPacket {
     /// Information about items being moved.
@@ -209,7 +209,7 @@ pub struct MoveToStorageRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x10)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xE66C, 0xE2)]
 pub struct MoveToStoragePacket {
     /// New item status in the players inventory.
@@ -229,7 +229,7 @@ pub struct MoveToStoragePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x11)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x6C2A, 0x2D)]
 pub struct MoveToInventoryRequestPacket {
     /// Information about items being moved.
@@ -245,7 +245,7 @@ pub struct MoveToInventoryRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x12)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xF1E8, 0x78)]
 pub struct MoveToInventoryPacket {
     /// New item status in the players storage.
@@ -263,7 +263,7 @@ pub struct MoveToInventoryPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x13)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x77A5, 0xC3)]
 pub struct LoadStoragesPacket {
     /// Currently stored meseta.
@@ -326,7 +326,7 @@ pub struct StorageMesetaPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x17)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x8E9C, 0xF0)]
 pub struct DiscardItemRequestPacket {
     /// UUIDs and amount of items being discarded.
@@ -342,7 +342,7 @@ pub struct DiscardItemRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x18)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x145A, 0x3B)]
 pub struct MoveStoragesRequestPacket {
     /// Old storage ID.
@@ -362,7 +362,7 @@ pub struct MoveStoragesRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x19)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x9A17, 0x86)]
 pub struct MoveStoragesPacket {
     /// New items in the receiving storage.
@@ -396,7 +396,7 @@ pub struct GetItemDescriptionPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x1D)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xB10E, 0xB2)]
 pub struct LoadItemDescriptionPacket {
     pub unk1: u32,
@@ -432,7 +432,7 @@ pub struct EquipedWeaponPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x22)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x4DC2, 0x2A)]
 pub struct UpdateStoragePacket {
     pub unk: Vec<UpdatedStorageItem>,
@@ -453,7 +453,7 @@ pub struct UpdateStoragePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x25)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xDEFB, 0x0B)]
 pub struct DiscardStorageItemRequestPacket {
     /// Items being discarded.
@@ -499,7 +499,7 @@ pub struct LearnedPAPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x65)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x4E66, 0xD3)]
 pub struct PotentialListPacket {
     pub unk1: u16,
@@ -522,7 +522,7 @@ pub struct PotentialListPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x70)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x0D8C, 0x0D)]
 pub struct AccountCampaignsPacket {
     pub unk1: u32,
@@ -541,7 +541,7 @@ pub struct AccountCampaignsPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x71)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x934A, 0x58)]
 pub struct CampaignItemsRequestPacket {
     /// Campaign IDs.
@@ -557,7 +557,7 @@ pub struct CampaignItemsRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x72)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x1908, 0xA3)]
 pub struct CampaignItemListPacket {
     pub unk1: u32,
@@ -586,7 +586,7 @@ pub struct ReceiveCampaignRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x9C)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xA25, 0xF6)]
 pub struct Unk0F9CPacket {
     pub ids: Vec<Unk0f9c>,
@@ -620,7 +620,7 @@ pub struct ChangeWeaponPalettePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xDF)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xAC9, 0x9F)]
 pub struct LoadMaterialStoragePacket {
     pub player_id: u32,
@@ -639,7 +639,7 @@ pub struct LoadMaterialStoragePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xE0)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x9087, 0xEA)]
 pub struct MoveToMatStorageRequestPacket {
     /// Information about items being moved.
@@ -655,7 +655,7 @@ pub struct MoveToMatStorageRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xE1)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x1644, 0x35)]
 pub struct MoveToMatStoragePacket {
     /// Items updated in the inventory.
@@ -673,7 +673,7 @@ pub struct MoveToMatStoragePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xE2)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x9C02, 0x80)]
 pub struct MoveFromMatStorageRequestPacket {
     /// Information about items being moved.
@@ -689,7 +689,7 @@ pub struct MoveFromMatStorageRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xE3)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x21C0, 0xCB)]
 pub struct MoveFromMatStoragePacket {
     /// Items updated in the material storage.
@@ -707,7 +707,7 @@ pub struct MoveFromMatStoragePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xE8)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xBE74, 0x43)]
 pub struct MoveMSToStorageRequestPacket {
     /// New storage ID.
@@ -725,7 +725,7 @@ pub struct MoveMSToStorageRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xE9)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x4432, 0x8E)]
 pub struct MoveMSToStoragePacket {
     /// Items updated in the material storage.
@@ -743,7 +743,7 @@ pub struct MoveMSToStoragePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xEF)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x66A4, 0x51)]
 pub struct Unk0FEFPacket {
     pub ids: Vec<ItemId>,
@@ -756,7 +756,7 @@ pub struct Unk0FEFPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0xFC)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x3145, 0x21)]
 pub struct Unk0FFCPacket {
     pub ids: Vec<Unk0ffc>,
@@ -772,7 +772,7 @@ pub struct Unk0FFCPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0F, 0x30)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x9E22, 0x46)]
 struct LoadItemInternal {
     ids: Vec<ItemId>,

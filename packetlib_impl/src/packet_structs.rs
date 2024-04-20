@@ -11,7 +11,7 @@ pub fn packet_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
     let (id, subid) = get_packet_id(&ast.attrs)?;
     let xor_sub = get_magic(&ast.attrs)?;
     let flags = get_flags(&ast.attrs)?;
-    if flags.to_string().contains("packed") && xor_sub.is_none() {
+    if flags.to_string().contains("PACKED") && xor_sub.is_none() {
         return Err(syn::Error::new(ast.ident.span(), "No magic provided"));
     }
     let (xor, sub) = xor_sub.unwrap_or((0, 0));

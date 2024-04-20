@@ -12,7 +12,7 @@ use super::{items::Item, HelperReadWrite, PacketReadWrite};
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x34, 0x35)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xA475, 0x100)]
 pub struct Unk3435Packet {
     pub unk1: u32,
@@ -39,7 +39,7 @@ pub struct Unk345CPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x34, 0x71)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xFCE8, 0x9B)]
 pub struct PlayerShopListResponsePacket {
     pub unk1: u32,

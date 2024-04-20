@@ -31,7 +31,7 @@ use std::{
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x00)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x5E6, 0x6B)]
 pub struct SegaIDLoginPacket {
     //FIXME: fix data sizes
@@ -96,7 +96,7 @@ pub struct SegaIDLoginPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x01)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x8BA4, 0xB6)]
 pub struct LoginResponsePacket {
     /// Login status.
@@ -221,7 +221,7 @@ pub struct CharacterDeletionRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x08)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x33D4, 0xC4)]
 pub struct CharacterDeletionPacket {
     /// Deletion request status.
@@ -373,7 +373,7 @@ pub struct BlockSwitchResponsePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, Default, PacketReadWrite)]
 #[Id(0x11, 0x14)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x78B8, 0x49)]
 pub struct BlockLoginPacket {
     /// Player ID.
@@ -542,7 +542,7 @@ pub struct BlockBalancePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x2D)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x883D, 0x9F)]
 pub struct SystemInformationPacket {
     /// CPU Model.
@@ -577,7 +577,7 @@ pub struct SystemInformationPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x3D)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xE418, 0x51)]
 pub struct ShipListPacket {
     /// Known ship infos.
@@ -634,7 +634,7 @@ pub struct CreateCharacter2ResponsePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x63)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xBE3F, 0x77)]
 pub struct VitaLoginPacket {
     pub unk1: u8,
@@ -707,7 +707,7 @@ pub struct AllBlocksListPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x67)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xD536, 0xA4)]
 pub struct SalonResponse {
     /// Available edit pass time.
@@ -729,7 +729,7 @@ pub struct SalonResponse {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x68)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x5AF4, 0xEF)]
 pub struct ChallengeRequestPacket {
     /// Challenge data.
@@ -745,7 +745,7 @@ pub struct ChallengeRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x69)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xE0B1, 0x3A)]
 pub struct ChallengeResponsePacket {
     /// Response data.
@@ -759,7 +759,7 @@ pub struct ChallengeResponsePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x6F)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x0323, 0xFD)]
 pub struct Unk116FPacket {
     pub unk1: String,
@@ -796,7 +796,7 @@ pub struct NotificationStatusPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x87)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x8CEB, 0x8)]
 pub struct LoginHistoryPacket {
     /// List of login attempts (max 50).
@@ -987,7 +987,7 @@ pub struct Unk11D7Packet {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0xDE)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x60, 0x8F)]
 pub struct PlayerReportedPacket {
     /// Reported player ID.
@@ -1006,7 +1006,7 @@ pub struct PlayerReportedPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0xEA)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x4544, 0x14)]
 pub struct NicknameErrorPacket {
     pub unk1: u32,
@@ -1021,7 +1021,7 @@ pub struct NicknameErrorPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0xED)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xD67D, 0xF5)]
 pub struct BannerListPacket {
     /// Banner names (semicolon delimited).
@@ -1044,7 +1044,7 @@ pub struct BannerListPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0xEE)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x5C3B, 0x40)]
 pub struct EmailCodeRequestPacket {
     pub unk1: u32,
@@ -1059,7 +1059,7 @@ pub struct EmailCodeRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0xFF)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x3DD3, 0x3D)]
 pub struct Unk11FFPacket {
     pub unk1: u8,

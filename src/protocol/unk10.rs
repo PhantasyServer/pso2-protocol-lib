@@ -28,7 +28,7 @@ pub struct LuaPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x10, 0x03)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xD975, 0x2F)]
 pub struct Unk1003Packet {
     pub unk1: u16,

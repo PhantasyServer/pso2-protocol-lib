@@ -182,7 +182,7 @@ pub struct ObjectSpawnPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x08, 0x0C)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x9FCD, 0xE7)]
 pub struct NPCSpawnPacket {
     /// Spawned NPC object.
@@ -214,7 +214,7 @@ pub struct NPCSpawnPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x08, 0x0D)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x258B, 0x32)]
 pub struct EnemySpawnPacket {
     /// Spawned enemy object.

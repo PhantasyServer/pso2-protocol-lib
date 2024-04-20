@@ -39,7 +39,7 @@ struct Numbers {
 
 #[derive(Debug, PartialEq, packetlib_impl::PacketRW)]
 #[Id(1, 2)]
-#[Flags(pso2packetlib::protocol::Flags{packed: true, ..Default::default()})]
+#[Flags(pso2packetlib::protocol::Flags::PACKED)]
 #[Magic(0x10, 0x10)]
 struct Variables {
     vec: Vec<u8>,

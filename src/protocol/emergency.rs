@@ -14,7 +14,7 @@ use crate::AsciiString;
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x15, 0x02)]
 #[Magic(0x080B, 0x77)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 pub struct SpawnEmergencyPacket {
     /// Emergency object.
     pub object: ObjectHeader,
@@ -56,7 +56,7 @@ pub struct SpawnEmergencyPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x15, 0x03)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x8DC9, 0xC2)]
 pub struct EmergencyEndPacket {
     /// Emergency object.
@@ -111,7 +111,7 @@ pub struct Unk1508Packet {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x15, 0x11)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xDE28, 0xDE)]
 pub struct AvailableEmergenciesPacket {
     /// Emergency definitions.

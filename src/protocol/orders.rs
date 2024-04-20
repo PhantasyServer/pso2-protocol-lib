@@ -31,7 +31,7 @@ pub struct TakenOrdersRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x1F, 0x02)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x70B2, 0x9E)]
 pub struct OrderListRequestPacket {
     pub unk1: u32,

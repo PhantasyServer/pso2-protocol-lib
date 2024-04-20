@@ -28,7 +28,7 @@ pub struct MissionPassInfoPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x4D, 0x03)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xB0C, 0x35)]
 pub struct MissionPassPacket {
     pub unk1: u32,

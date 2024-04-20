@@ -21,7 +21,7 @@ use super::questlist::{Quest, QuestDifficulty, QuestType};
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x00)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xCCE7, 0x13)]
 pub struct AddMemberPacket {
     /// New player object.
@@ -93,7 +93,7 @@ pub struct RemoveMemberPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x02)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xD863, 0xA9)]
 pub struct PartyInitPacket {
     /// Party object.
@@ -142,7 +142,7 @@ pub struct PartyInviteRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x06)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xEF59, 0xD5)]
 pub struct NewInvitePacket {
     /// Invited party object.
@@ -182,7 +182,7 @@ pub struct AcceptInvitePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x0C)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x11CB, 0x98)]
 pub struct NewPartySettingsPacket {
     /// Name of the party.
@@ -215,7 +215,7 @@ pub struct NewPartySettingsPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x0D)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x9789, 0xE3)]
 pub struct PartySettingsPacket {
     /// Name of the party.
@@ -320,7 +320,7 @@ pub struct DisbandPartyPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x19)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct ChatStatusPacket {
     /// Object of the player (not set for C -> S).
     pub object: ObjectHeader,
@@ -353,7 +353,7 @@ pub struct Unk0E1APacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x1B)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xE7E8, 0xFF)]
 pub struct PartyInfoPacket {
     /// Number of populated party infos.
@@ -384,7 +384,7 @@ pub struct PartyInfoStopperPacker {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x1D)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xF364, 0x95)]
 pub struct GetPartyDetailsPacket {
     /// Requested party objects.
@@ -403,7 +403,7 @@ pub struct GetPartyDetailsPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x1E)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x7921, 0xE0)]
 pub struct PartyDetailsPacket {
     /// Number of populated party details.
@@ -420,7 +420,7 @@ pub struct PartyDetailsPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x21)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x0A5A, 0xC1)]
 pub struct Unk0E21Packet {
     pub people_amount: u32,
@@ -495,7 +495,7 @@ pub struct InviteDeclinePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0E, 0x2E)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xD4FC, 0x92)]
 pub struct GetPartyInfoPacket {
     /// Requested party objects.

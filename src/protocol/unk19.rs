@@ -15,7 +15,7 @@ use std::time::Duration;
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x19, 0x01)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x78F7, 0xA2)]
 pub struct SystemMessagePacket {
     /// Message to be broadcast.
@@ -33,7 +33,7 @@ pub struct SystemMessagePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x19, 0x09)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xA6E4, 0xFB)]
 pub struct SetLobbyEventPacket {
     /// Event string ID.

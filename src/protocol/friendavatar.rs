@@ -28,7 +28,7 @@ pub struct FriendAvatarDataRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x26, 0x08)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xC2CD, 0x2F)]
 pub struct FriendAvatarDataResponsePacket {
     pub unk1: u32,

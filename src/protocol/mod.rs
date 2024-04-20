@@ -1487,23 +1487,20 @@ impl PacketHeader {
     }
 }
 
-/// Packet flags.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[Flags(u8)]
-pub struct Flags {
-    #[Skip]
-    #[Skip]
-    // 0x04
-    /// Set when the packet contains variable length data.
-    pub packed: bool,
-    #[Skip]
-    // 0x10
-    pub flag10: bool,
-    /// Set when the [`Packet::Movement`] has all fields set.
-    pub full_movement: bool,
-    /// Set for all (?) of (0x04) packets.
-    pub object_related: bool,
+bitflags::bitflags!{
+    /// Packet flags.
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+    #[BitFlags(u8)]
+    pub struct Flags: u8 {
+        /// Set when the packet contains variable length data.
+        const PACKED = 1 << 2;
+        const FLAG_10 = 1 << 4;
+        /// Set when the [`Packet::Movement`] has all fields set.
+        const FULL_MOVEMENT = 1 << 5;
+        /// Set for all (?) of (0x04) packets.
+        const OBJECT_RELATED = 1 << 6;
+    }
 }
 
 /// Known object types.

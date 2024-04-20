@@ -54,7 +54,7 @@ pub struct PlayAchievementsResponsePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x31, 0x09)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x6EDC, 0xBE)]
 struct PlayAchievementsInternal {
     unk1: u32,

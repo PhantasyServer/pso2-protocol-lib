@@ -15,7 +15,7 @@ use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x07, 0x00)]
-#[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
+#[Flags(Flags::PACKED | Flags::OBJECT_RELATED)]
 #[Magic(0x9D3F, 0x44)]
 pub struct ChatMessage {
     /// Sender of the message.

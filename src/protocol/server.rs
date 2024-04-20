@@ -119,7 +119,7 @@ pub struct CampshipDownPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x03, 0x24)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x7542, 0x5E)]
 pub struct LoadLevelPacket {
     /// Initial zone object.

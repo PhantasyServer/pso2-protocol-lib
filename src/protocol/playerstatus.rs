@@ -58,7 +58,7 @@ pub struct DealDamagePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x06, 0x05)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x7C49, 0x9E)]
 pub struct GainedEXPPacket {
     /// Packet receiver.

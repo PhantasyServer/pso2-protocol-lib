@@ -14,7 +14,7 @@ use super::{items::Item, HelperReadWrite, ObjectHeader, PacketReadWrite};
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2D, 0x02)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xD003, 0x3B)]
 pub struct ProductSearchRequestPacket {
     pub unk1: u16,
@@ -39,7 +39,7 @@ pub struct ProductSearchRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2D, 0x03)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x55C1, 0x86)]
 pub struct ProductSearchResponsePacket {
     /// All listings of the queried item.
@@ -69,7 +69,7 @@ pub struct PlayerShopDetailsRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2D, 0x0C)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x096C, 0x2A)]
 pub struct PlayerShopDetailsResponsePacket {
     /// Queried shop's owner.
@@ -93,7 +93,7 @@ pub struct PlayerShopDetailsResponsePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2D, 0x0D)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x8F2A, 0x75)]
 pub struct CharacterSearchRequestPacket {
     /// Searched character name.
@@ -109,7 +109,7 @@ pub struct CharacterSearchRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2D, 0x0E)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x14E7, 0xC0)]
 pub struct CharacterSearchResponsePacket {
     pub unk1: u8,
@@ -141,7 +141,7 @@ pub struct RecruitingAlliancesRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2D, 0x13)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xB19C, 0x38)]
 pub struct RecruitingAlliancesResponsePacket {
     pub unk1: u32,

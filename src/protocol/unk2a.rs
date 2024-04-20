@@ -12,7 +12,7 @@ use super::{HelperReadWrite, PacketReadWrite};
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x2A, 0x08)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xB976, 0xA5)]
 pub struct Unk2A08Packet {
     pub unk1: Vec<Unk2A08_1>,

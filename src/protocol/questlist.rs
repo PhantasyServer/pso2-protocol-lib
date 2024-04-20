@@ -14,7 +14,7 @@ use half::f16;
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x06)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xB65A, 0x7D)]
 pub struct StartCutscenePacket {
     /// Name of the cutscene.
@@ -183,7 +183,7 @@ pub struct QuestCategoryRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x18)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x1DB0, 0xC5)]
 pub struct QuestCategoryPacket {
     /// List of quests in a requested category.
@@ -199,7 +199,7 @@ pub struct QuestCategoryPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x19)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0xA36E, 0x10)]
 pub struct QuestDifficultyRequestPacket {
     /// List of object of requested quests.
@@ -218,7 +218,7 @@ pub struct QuestDifficultyRequestPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x1A)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x292C, 0x5B)]
 pub struct QuestDifficultyPacket {
     /// List of difficulties for requested quests.
@@ -330,7 +330,7 @@ pub struct Unk0BAFPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0xD0)]
-#[Flags(Flags {packed: true, ..Default::default()})]
+#[Flags(Flags::PACKED)]
 #[Magic(0x3E03, 0xC2)]
 pub struct Unk0BD0Packet {
     #[FixedLen(0x23)]
@@ -560,6 +560,7 @@ bitflags::bitflags!{
         const STARS4 = 1 << 74;
         const STARS5 = 1 << 75;
         const STARS6 = 1 << 76;
+        const UNK8 = 1 << 77;
     }
 }
 

@@ -21,7 +21,7 @@ use std::{
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x02)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct TeleportTransferPacket {
     pub unk1: [u8; 0xC],
     /// Object that started the teleportation.
@@ -40,7 +40,7 @@ pub struct TeleportTransferPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x06)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct ItemPickedUpPacket {
     /// Player that picked up the item. (?)
     pub player: ObjectHeader,
@@ -99,7 +99,7 @@ pub struct MovementPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x08)]
-#[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
+#[Flags(Flags::PACKED | Flags::OBJECT_RELATED)]
 #[Magic(0x922D, 0x45)]
 pub struct MovementActionPacket {
     pub unk1: ObjectHeader,
@@ -124,7 +124,7 @@ pub struct MovementActionPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x0F)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct Unk040FPacket {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -153,7 +153,7 @@ pub struct Unk040FPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x13)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct Unk0413Packet {
     pub unk1: [u8; 0xC],
     pub unk2: ObjectHeader,
@@ -170,7 +170,7 @@ pub struct Unk0413Packet {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x14)]
-#[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
+#[Flags(Flags::PACKED | Flags::OBJECT_RELATED)]
 #[Magic(0xD711, 0xCA)]
 pub struct InteractPacket {
     pub unk1: [u8; 0xC],
@@ -192,7 +192,7 @@ pub struct InteractPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x15)]
-#[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
+#[Flags(Flags::PACKED | Flags::OBJECT_RELATED)]
 #[Magic(0x5CCF, 0x15)]
 pub struct SetTagPacket {
     /// Player that receives this packet.
@@ -217,7 +217,7 @@ pub struct SetTagPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x22)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct Unk0422Packet {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -233,7 +233,7 @@ pub struct Unk0422Packet {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x23)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct Unk0423Packet {
     pub unk1: [u8; 0xC],
     pub unk2: ObjectHeader,
@@ -248,7 +248,7 @@ pub struct Unk0423Packet {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x24)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct Unk0424Packet {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -266,7 +266,7 @@ pub struct Unk0424Packet {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x25)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct Unk0425Packet {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -282,7 +282,7 @@ pub struct Unk0425Packet {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x2B)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct Unk042BPacket {
     pub unk1: [u8; 0xC],
     pub unk2: ObjectHeader,
@@ -295,7 +295,7 @@ pub struct Unk042BPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x2E)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct LoadPAsPacket {
     /// Player that receives this packet.
     pub receiver: ObjectHeader,
@@ -315,7 +315,7 @@ pub struct LoadPAsPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x3B)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct RemoveObjectPacket {
     /// Player that receives this packet.
     pub receiver: ObjectHeader,
@@ -332,7 +332,7 @@ pub struct RemoveObjectPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x3C)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct ActionUpdatePacket {
     pub unk1: ObjectHeader,
     /// Object that performed this action.
@@ -349,7 +349,7 @@ pub struct ActionUpdatePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x52)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct DamageReceivePacket {
     /// Player that receives this packet.
     pub receiver: ObjectHeader,
@@ -384,7 +384,7 @@ pub struct DamageReceivePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x71)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct MovementEndPacket {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -409,7 +409,7 @@ pub struct MovementEndPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x75)]
-#[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
+#[Flags(Flags::PACKED | Flags::OBJECT_RELATED)]
 #[Magic(0x83EF, 0x40)]
 pub struct ActionEndPacket {
     pub unk1: [u8; 0xC],
@@ -430,7 +430,7 @@ pub struct ActionEndPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x79)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct Unk0479Packet {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -446,7 +446,7 @@ pub struct Unk0479Packet {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x80)]
-#[Flags(Flags {packed: true, object_related: true, ..Default::default()})]
+#[Flags(Flags::PACKED | Flags::OBJECT_RELATED)]
 #[Magic(0x4315, 0x7A)]
 pub struct MovementActionServerPacket {
     /// Player that receives this packet.
@@ -474,7 +474,7 @@ pub struct MovementActionServerPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x81)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct ActionUpdateServerPacket {
     /// Player that receives this packet.
     pub receiver: ObjectHeader,
@@ -490,7 +490,7 @@ pub struct ActionUpdateServerPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x86)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct Unk0486Packet {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -503,7 +503,7 @@ pub struct Unk0486Packet {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0xB0)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct Unk04B0Packet {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -518,7 +518,7 @@ pub struct Unk04B0Packet {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0xEA)]
-#[Flags(Flags {object_related: true, ..Default::default()})]
+#[Flags(Flags::OBJECT_RELATED)]
 pub struct Unk04EAPacket {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -545,7 +545,7 @@ impl PacketReadWrite for MovementPacket {
     ) -> std::io::Result<Self> {
         let mut packet = Self::default();
         reader.read_exact(&mut packet.unk)?;
-        if flags.full_movement {
+        if flags.contains(Flags::FULL_MOVEMENT) {
             packet.ent1_id = Some(reader.read_u64::<LittleEndian>()?);
             packet.ent1_type = Some(reader.read_u16::<LittleEndian>()?);
             packet.ent1_unk = Some(reader.read_u16::<LittleEndian>()?);
@@ -729,23 +729,14 @@ impl PacketReadWrite for MovementPacket {
             PacketHeader::new(
                 0x04,
                 0x07,
-                Flags {
-                    object_related: true,
-                    full_movement: true,
-                    flag10: true,
-                    ..Default::default()
-                },
+                Flags::OBJECT_RELATED | Flags::FLAG_10 | Flags::FULL_MOVEMENT,
             )
             .write(packet_type)
         } else {
             PacketHeader::new(
                 0x04,
                 0x07,
-                Flags {
-                    object_related: true,
-                    flag10: true,
-                    ..Default::default()
-                },
+                Flags::OBJECT_RELATED | Flags::FLAG_10,
             )
             .write(packet_type)
         };
