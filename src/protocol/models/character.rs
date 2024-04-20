@@ -235,7 +235,6 @@ pub enum SkinColor {
     Cast,
 }
 
-
 /// Character class.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]

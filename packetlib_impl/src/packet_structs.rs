@@ -63,6 +63,7 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
     let mut write = quote! {};
     let repr_type = get_repr(&ast.attrs)?;
     let is_flags = get_flags_struct(&ast.attrs)?;
+    let is_bitflags = get_bitflags_struct(&ast.attrs)?;
     let no_seek = get_no_seek(&ast.attrs);
 
     let crate_location = if is_internal {
@@ -72,6 +73,12 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
     };
 
     match &ast.data {
+        Data::Struct(_) if is_bitflags.is_some() => {
+            let Some(repr_type) = is_bitflags else {
+                unreachable!()
+            };
+            parse_bitflags_struct(&mut read, &mut write, repr_type)?
+        }
         Data::Struct(data) if is_flags.is_some() => {
             let Some(repr_type) = is_flags else {
                 unreachable!()
@@ -121,31 +128,46 @@ fn parse_enum_field(
 ) -> syn::Result<()> {
     let mut default_token = quote! {};
     let mut match_expr = quote! {};
-    match repr_type {
+    let mut discriminant = match repr_type {
         Size::U8 => {
-            read.extend(quote! {let num = reader.read_u8()? as u32;});
+            read.extend(quote! {let num = reader.read_u8()?;});
             write.extend(quote! {writer.write_u8(*self as u8)?;});
+            Discriminant::U8(0)
         }
         Size::U16 => {
-            read.extend(quote! {let num = reader.read_u16::<LittleEndian>()? as u32;});
+            read.extend(quote! {let num = reader.read_u16::<LittleEndian>()?;});
             write.extend(quote! {writer.write_u16::<LittleEndian>(*self as u16)?;});
+            Discriminant::U16(0)
         }
         Size::U32 => {
             read.extend(quote! {let num = reader.read_u32::<LittleEndian>()?;});
             write.extend(quote! {writer.write_u32::<LittleEndian>(*self as u32)?;});
+            Discriminant::U32(0)
         }
         Size::U64 => {
             read.extend(quote! {let num = reader.read_u64::<LittleEndian>()?;});
             write.extend(quote! {writer.write_u64::<LittleEndian>(*self as u64)?;});
+            Discriminant::U64(0)
         }
-    }
-    let mut discriminant: u32 = 0;
+        Size::U128 => {
+            read.extend(quote! {let num = reader.read_u128::<LittleEndian>()?;});
+            write.extend(quote! {writer.write_u128::<LittleEndian>(*self as u128)?;});
+            Discriminant::U128(0)
+        }
+    };
+    
     for variant in &data.variants {
         let name = &variant.ident;
         let mut settings = Settings::default();
         if let Some((_, Expr::Lit(x))) = &variant.discriminant {
-            if let Lit::Int(x) = &x.lit {
-                discriminant = x.base10_parse()?;
+            if let Lit::Int(int) = &x.lit {
+                match &mut discriminant {
+                    Discriminant::U8(d) => *d = int.base10_parse()?,
+                    Discriminant::U16(d) => *d = int.base10_parse()?,
+                    Discriminant::U32(d) => *d = int.base10_parse()?,
+                    Discriminant::U64(d) => *d = int.base10_parse()?,
+                    Discriminant::U128(d) => *d = int.base10_parse()?,
+                }
             }
         }
         for attr in &variant.attrs {
@@ -157,11 +179,11 @@ fn parse_enum_field(
         }
         if settings.is_default {
             default_token = quote! {_ => Self::#name,};
-            discriminant = discriminant.overflowing_add(1).0;
+            discriminant.increase();
             continue;
         }
         match_expr.extend(quote! {#discriminant => Self::#name,});
-        discriminant = discriminant.overflowing_add(1).0;
+        discriminant.increase();
     }
     read.extend(quote! {Ok(match num {
         #match_expr
@@ -177,24 +199,33 @@ fn parse_flags_struct(
     repr: Size,
 ) -> syn::Result<()> {
     let mut return_token = quote! {};
-    let mut discriminant = 1u64;
+    let mut discriminant;
     write.extend(quote! {let mut num = 0;});
     let write_after = match repr {
         Size::U8 => {
-            read.extend(quote! {let num = reader.read_u8()? as u64;});
-            quote! {writer.write_u8(num as u8)?;}
+            read.extend(quote! {let num = reader.read_u8()?;});
+            discriminant = Discriminant::U8(1);
+            quote! {writer.write_u8(num)?;}
         }
         Size::U16 => {
-            read.extend(quote! {let num = reader.read_u16::<LittleEndian>()? as u64;});
-            quote! {writer.write_u16::<LittleEndian>(num as u16)?;}
+            read.extend(quote! {let num = reader.read_u16::<LittleEndian>()?;});
+            discriminant = Discriminant::U16(1);
+            quote! {writer.write_u16::<LittleEndian>(num)?;}
         }
         Size::U32 => {
-            read.extend(quote! {let num = reader.read_u32::<LittleEndian>()? as u64;});
-            quote! {writer.write_u32::<LittleEndian>(num as u32)?;}
+            read.extend(quote! {let num = reader.read_u32::<LittleEndian>()?;});
+            discriminant = Discriminant::U32(1);
+            quote! {writer.write_u32::<LittleEndian>(num)?;}
         }
         Size::U64 => {
-            read.extend(quote! {let num = reader.read_u64::<LittleEndian>()? as u64;});
-            quote! {writer.write_u64::<LittleEndian>(num as u64)?;}
+            read.extend(quote! {let num = reader.read_u64::<LittleEndian>()?;});
+            discriminant = Discriminant::U64(1);
+            quote! {writer.write_u64::<LittleEndian>(num)?;}
+        }
+        Size::U128 => {
+            read.extend(quote! {let num = reader.read_u128::<LittleEndian>()?;});
+            discriminant = Discriminant::U128(1);
+            quote! {writer.write_u128::<LittleEndian>(num)?;}
         }
     };
     for field in data.fields.iter() {
@@ -207,7 +238,7 @@ fn parse_flags_struct(
             };
             let string = path.get_ident().unwrap().to_string();
             if string == "Skip" {
-                discriminant <<= 1;
+                discriminant.skip_flag();
             }
         }
 
@@ -222,9 +253,38 @@ fn parse_flags_struct(
                 num += #discriminant;
             }
         });
-        discriminant <<= 1;
+        discriminant.skip_flag();
     }
     read.extend(quote! {Ok(Self{#return_token})});
+    write.extend(write_after);
+    Ok(())
+}
+
+fn parse_bitflags_struct(read: &mut TS2, write: &mut TS2, repr: Size) -> syn::Result<()> {
+    write.extend(quote! {let mut num = 0;});
+    let write_after = match repr {
+        Size::U8 => {
+            read.extend(quote! {let num = reader.read_u8()?;});
+            quote! {writer.write_u8(self.bits())?;}
+        }
+        Size::U16 => {
+            read.extend(quote! {let num = reader.read_u16::<LittleEndian>()?;});
+            quote! {writer.write_u16::<LittleEndian>(self.bits())?;}
+        }
+        Size::U32 => {
+            read.extend(quote! {let num = reader.read_u32::<LittleEndian>()?;});
+            quote! {writer.write_u32::<LittleEndian>(self.bits())?;}
+        }
+        Size::U64 => {
+            read.extend(quote! {let num = reader.read_u64::<LittleEndian>()?;});
+            quote! {writer.write_u64::<LittleEndian>(self.bits())?;}
+        }
+        Size::U128 => {
+            read.extend(quote! {let num = reader.read_u128::<LittleEndian>()?;});
+            quote! {writer.write_u128::<LittleEndian>(self.bits())?;}
+        }
+    };
+    read.extend(quote! {Ok(Self::from_bits_truncate(num))});
     write.extend(write_after);
     Ok(())
 }
@@ -463,6 +523,7 @@ fn check_syn_type(
                     Size::U16 => quote! { reader.read_u16::<LittleEndian>()? },
                     Size::U32 => quote! { reader.read_u32::<LittleEndian>()? },
                     Size::U64 => quote! { reader.read_u64::<LittleEndian>()? },
+                    Size::U128 => quote! { reader.read_u128::<LittleEndian>()? },
                 }
             } else {
                 quote! { read_magic(reader, sub, xor)? as usize }
@@ -480,6 +541,9 @@ fn check_syn_type(
                     }
                     Size::U64 => {
                         quote! { writer.write_u64::<LittleEndian>(self.#name.len() as u64)? }
+                    }
+                    Size::U128 => {
+                        quote! { writer.write_u128::<LittleEndian>(self.#name.len() as u128)? }
                     }
                 }
             } else {
@@ -820,6 +884,34 @@ fn get_magic(attrs: &[Attribute]) -> syn::Result<Option<(u32, u32)>> {
     Ok(None)
 }
 
+fn get_bitflags_struct(attrs: &[Attribute]) -> syn::Result<Option<Size>> {
+    for attr in attrs.iter() {
+        if !attr.path().is_ident("BitFlags") {
+            continue;
+        }
+        match &attr.meta {
+            syn::Meta::NameValue(_) => {}
+            syn::Meta::Path(_) => {
+                return Err(syn::Error::new(
+                    attr.span(),
+                    "Invalid syntax \nPerhaps you ment BitFlags(..)?",
+                ));
+            }
+            syn::Meta::List(x) => {
+                return Ok(match x.tokens.to_string().as_str() {
+                    "u8" => Some(Size::U8),
+                    "u16" => Some(Size::U16),
+                    "u32" => Some(Size::U32),
+                    "u64" => Some(Size::U64),
+                    "u128" => Some(Size::U128),
+                    _ => None,
+                })
+            }
+        }
+    }
+    Ok(None)
+}
+
 fn get_flags_struct(attrs: &[Attribute]) -> syn::Result<Option<Size>> {
     for attr in attrs.iter() {
         if !attr.path().is_ident("Flags") {
@@ -864,6 +956,7 @@ enum Size {
     U16,
     U32,
     U64,
+    U128,
 }
 
 #[derive(Default)]
@@ -893,5 +986,47 @@ impl Parse for FnList {
         Ok(Self {
             fields: Punctuated::parse_separated_nonempty(input)?,
         })
+    }
+}
+
+#[derive(Debug)]
+enum Discriminant {
+    U8(u8),
+    U16(u16),
+    U32(u32),
+    U64(u64),
+    U128(u128),
+}
+
+impl ToTokens for Discriminant {
+    fn to_tokens(&self, tokens: &mut TS2) {
+        match self {
+            Discriminant::U8(x) => x.to_tokens(tokens),
+            Discriminant::U16(x) => x.to_tokens(tokens),
+            Discriminant::U32(x) => x.to_tokens(tokens),
+            Discriminant::U64(x) => x.to_tokens(tokens),
+            Discriminant::U128(x) => x.to_tokens(tokens),
+        }
+    }
+}
+
+impl Discriminant {
+    fn increase(&mut self) {
+        match self {
+            Discriminant::U8(x) => *x = x.overflowing_add(1).0,
+            Discriminant::U16(x) => *x = x.overflowing_add(1).0,
+            Discriminant::U32(x) => *x = x.overflowing_add(1).0,
+            Discriminant::U64(x) => *x = x.overflowing_add(1).0,
+            Discriminant::U128(x) => *x = x.overflowing_add(1).0,
+        }
+    }
+    fn skip_flag(&mut self) {
+        match self {
+            Discriminant::U8(x) => *x <<= 1,
+            Discriminant::U16(x) => *x <<= 1,
+            Discriminant::U32(x) => *x <<= 1,
+            Discriminant::U64(x) => *x <<= 1,
+            Discriminant::U128(x) => *x <<= 1,
+        }
     }
 }

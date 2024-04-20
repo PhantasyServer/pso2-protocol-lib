@@ -98,6 +98,7 @@ pub use packetlib_impl::PacketRW;
 /// # Attribute explanation
 /// ## Container attributes
 /// - `#[Flags(u*)]` makes the struct into a flags struct with the specified length.
+/// - `#[BitFlags(u*)]` adds read/write support for [`bitflags`] flags containers.
 /// - `#[NoPadding]` disables the 4-byte alligning padding after the type.
 /// ## Field attributes
 /// - `#[Seek(_seek-amount_)]` sets the padding before the field data.

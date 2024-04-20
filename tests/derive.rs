@@ -85,6 +85,7 @@ struct Attributes {
 #[Id(1, 5)]
 struct Helpers {
     flags: HelperFlags,
+    bitflags: HelperBitFlags,
     e: Enum,
 }
 
@@ -102,6 +103,16 @@ enum Enum {
     #[Read_default]
     A,
     B,
+}
+
+bitflags::bitflags! {
+    #[derive(packetlib_impl::HelperRW, PartialEq, Debug)]
+    #[BitFlags(u16)]
+    struct HelperBitFlags: u16 {
+        const A = 1 << 0;
+        const B = 1 << 1;
+        const C = 1 << 2;
+    }
 }
 
 impl pso2packetlib::protocol::PacketEncryption for Packet {
@@ -287,8 +298,8 @@ fn test_helpers() {
         0, 0, 0, 0, // len
         1, 5, 0, 0, // id
         6, // flags,
+        5, 0, // bitflags,
         1, // enum,
-        0, 0, // padding
     ];
     let len = data.len() as u32;
     data[..4].copy_from_slice(&len.to_le_bytes());
@@ -301,6 +312,7 @@ fn test_helpers() {
     };
     let expected_packet = Helpers {
         flags: HelperFlags { a: true, b: true },
+        bitflags: HelperBitFlags::A | HelperBitFlags::C,
         e: Enum::B,
     };
     assert_eq!(packet, expected_packet);

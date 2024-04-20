@@ -1,5 +1,5 @@
 pub use crate::{
-    asciistring::{StringRW, AsciiString},
+    asciistring::{AsciiString, StringRW},
     protocol::{
         duration_to_psotime, psotime_to_duration, read_magic, write_magic, Flags, HelperReadWrite,
         PacketHeader, PacketReadWrite, PacketType,
