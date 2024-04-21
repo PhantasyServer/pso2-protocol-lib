@@ -4,7 +4,7 @@ pub mod character;
 #[cfg_attr(docsrs, doc(cfg(feature = "item_attrs")))]
 pub mod item_attrs;
 
-use super::PacketType;
+use super::{PacketError, PacketType};
 use crate::protocol::HelperReadWrite;
 use half::f16;
 
@@ -74,7 +74,7 @@ impl HelperReadWrite for EulerPosition {
         packet_type: PacketType,
         xor: u32,
         sub: u32,
-    ) -> std::io::Result<Self> {
+    ) -> Result<Self, PacketError> {
         let pos = Position::read(reader, packet_type, xor, sub)?;
         Ok(pos.into())
     }
@@ -85,7 +85,7 @@ impl HelperReadWrite for EulerPosition {
         packet_type: PacketType,
         xor: u32,
         sub: u32,
-    ) -> std::io::Result<()> {
+    ) -> Result<(), PacketError> {
         let pos: Position = (*self).into();
         pos.write(writer, packet_type, xor, sub)
     }
@@ -97,10 +97,20 @@ impl HelperReadWrite for SGValue {
         _: PacketType,
         _: u32,
         _: u32,
-    ) -> std::io::Result<Self> {
+    ) -> Result<Self, PacketError> {
         let mut buf = [0u8; 4];
-        reader.read_exact(&mut buf[2..4])?;
-        reader.read_exact(&mut buf[0..2])?;
+        reader
+            .read_exact(&mut buf[2..4])
+            .map_err(|e| PacketError::ValueError {
+                packet_name: "SGValue",
+                error: e,
+            })?;
+        reader
+            .read_exact(&mut buf[0..2])
+            .map_err(|e| PacketError::ValueError {
+                packet_name: "SGValue",
+                error: e,
+            })?;
         let value = u32::from_le_bytes(buf);
         let value = value as f32 / 5.0;
         Ok(Self(value))
@@ -112,11 +122,21 @@ impl HelperReadWrite for SGValue {
         _: PacketType,
         _: u32,
         _: u32,
-    ) -> std::io::Result<()> {
+    ) -> Result<(), PacketError> {
         let value = (self.0 * 5.0) as u32;
         let buf = value.to_le_bytes();
-        writer.write_all(&buf[2..4])?;
-        writer.write_all(&buf[0..2])?;
+        writer
+            .write_all(&buf[2..4])
+            .map_err(|e| PacketError::ValueError {
+                packet_name: "SGValue",
+                error: e,
+            })?;
+        writer
+            .write_all(&buf[0..2])
+            .map_err(|e| PacketError::ValueError {
+                packet_name: "SGValue",
+                error: e,
+            })?;
         Ok(())
     }
 }
@@ -127,10 +147,20 @@ impl HelperReadWrite for FunValue {
         _: PacketType,
         _: u32,
         _: u32,
-    ) -> std::io::Result<Self> {
+    ) -> Result<Self, PacketError> {
         let mut buf = [0u8; 4];
-        reader.read_exact(&mut buf[2..4])?;
-        reader.read_exact(&mut buf[0..2])?;
+        reader
+            .read_exact(&mut buf[2..4])
+            .map_err(|e| PacketError::ValueError {
+                packet_name: "FunValue",
+                error: e,
+            })?;
+        reader
+            .read_exact(&mut buf[0..2])
+            .map_err(|e| PacketError::ValueError {
+                packet_name: "FunValue",
+                error: e,
+            })?;
         let value = u32::from_le_bytes(buf);
         Ok(Self(value))
     }
@@ -141,10 +171,20 @@ impl HelperReadWrite for FunValue {
         _: PacketType,
         _: u32,
         _: u32,
-    ) -> std::io::Result<()> {
+    ) -> Result<(), PacketError> {
         let buf = self.0.to_le_bytes();
-        writer.write_all(&buf[2..4])?;
-        writer.write_all(&buf[0..2])?;
+        writer
+            .write_all(&buf[2..4])
+            .map_err(|e| PacketError::ValueError {
+                packet_name: "FunValue",
+                error: e,
+            })?;
+        writer
+            .write_all(&buf[0..2])
+            .map_err(|e| PacketError::ValueError {
+                packet_name: "FunValue",
+                error: e,
+            })?;
         Ok(())
     }
 }
@@ -210,7 +250,8 @@ fn quat_to_euler(qx: f32, qy: f32, qz: f32, qw: f32) -> (f32, f32, f32) {
         let pitch = std::f32::consts::PI / 2.0;
         let roll = 0.0;
         return (roll, pitch, yaw);
-    } else if test < -0.499 * unit {
+    }
+    if test < -0.499 * unit {
         let yaw = -2.0 * qx.atan2(qw);
         let pitch = -std::f32::consts::PI / 2.0;
         let roll = 0.0;

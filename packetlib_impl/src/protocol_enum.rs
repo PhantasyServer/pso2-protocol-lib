@@ -45,9 +45,10 @@ pub fn protocol_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Resul
         impl #crate_location::protocol::ProtocolRW for #name {
             fn write(&self, packet_type: #crate_location::protocol::PacketType) -> Vec<u8> {
                 use #crate_location::derive_reexports::*;
+                use #crate_location::protocol::PacketError;
 
                 let mut buf: Vec<u8> = vec![0; 4];
-                let packet_out: Result<Vec<u8>, std::io::Error> = match self {
+                let packet_out: Result<Vec<u8>, PacketError> = match self {
                     #write
                 };
                 buf.extend(packet_out.expect("Writing to a Vec shouldn't fail"));
@@ -60,8 +61,10 @@ pub fn protocol_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Resul
             fn read(
                 input: &[u8],
                 packet_type: #crate_location::protocol::PacketType,
-            ) -> ::std::io::Result<Vec<Self>> {
+            ) -> Result<Vec<Self>, #crate_location::protocol::PacketError> {
                 use #crate_location::derive_reexports::*;
+                use #crate_location::protocol::PacketError;
+                let packet_name = stringify!(#name);
 
                 let mut packets: Vec<Self> = vec![];
                 let buffer_length = input.len();
@@ -73,14 +76,26 @@ pub fn protocol_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Resul
                     if input[pointer..].len() <= 4 {
                         break;
                     }
-                    let len = (&input[pointer..pointer + 4]).read_u32::<LittleEndian>()? as usize - 4;
+                    let len = (&input[pointer..pointer + 4]).read_u32::<LittleEndian>().map_err(|e| {
+                        PacketError::PacketLengthError{
+                            error: e,
+                        }
+                    })? as usize - 4;
                     pointer += 4;
                     if input[pointer..].len() < len {
-                        return Err(std::io::ErrorKind::UnexpectedEof.into());
+                        return Err(PacketError::PacketLengthError{
+                            error: std::io::ErrorKind::UnexpectedEof.into()
+                        });
                     }
                     #read_raw
                     let mut buf_tmp = std::io::Cursor::new(&input[pointer..pointer + len]);
-                    let header = PacketHeader::read(&mut buf_tmp, packet_type)?;
+                    let header = PacketHeader::read(&mut buf_tmp, packet_type).map_err(|e| {
+                        PacketError::CompositeFieldError {
+                            packet_name: stringify!(#name),
+                            field_name: "header",
+                            error: Box::new(e),
+                        }
+                    })?;
                     let flags = &header.flag;
 
                     pointer += len;
@@ -194,7 +209,11 @@ fn parse_enum_field(out_code: &mut OutputCode, data: &DataEnum) -> syn::Result<(
                     push_string = quote! {
                         packets.push(Self::#name({
                             let mut data = vec![];
-                            buf_tmp.read_to_end(&mut data)?;
+                            buf_tmp.read_to_end(&mut data).map_err(|e| PacketError::FieldError{
+                                packet_name: packet_name,
+                                field_name: stringify!(#name),
+                                error: e
+                            })?;
                             (header, data)
                         }));
                     };

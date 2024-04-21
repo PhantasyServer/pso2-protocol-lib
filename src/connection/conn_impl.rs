@@ -1,5 +1,6 @@
 use crate::encryption::{Decryptor, Encryptor, LengthType};
 use std::io::{Read, Write};
+use super::ConnectionError;
 
 pub trait ConnReadAsync {
     fn readable_conn(&self) -> impl std::future::Future<Output = std::io::Result<()>> + Send;
@@ -81,7 +82,7 @@ impl ConnectionReader {
         &mut self,
         stream: &mut (impl ConnReadAsync + Send),
         dec: &mut impl Decryptor,
-    ) -> std::io::Result<Vec<u8>> {
+    ) -> Result<Vec<u8>, ConnectionError> {
         if !self.read_buffer.is_empty() {
             if let Some(packet) = self.get_packet_data(dec)? {
                 return Ok(packet);
@@ -100,7 +101,7 @@ impl ConnectionReader {
         &mut self,
         stream: &mut (impl ConnReadAsync + Send),
         dec: &mut (impl Decryptor + Send),
-    ) -> std::io::Result<Vec<u8>> {
+    ) -> Result<Vec<u8>, ConnectionError> {
         if !self.read_buffer.is_empty() {
             if let Some(packet) = self.get_packet_data(dec)? {
                 return Ok(packet);
@@ -110,10 +111,10 @@ impl ConnectionReader {
             stream.readable_conn().await?;
             let mut buf = [0; 4096];
             let read_bytes = match stream.try_read_conn(&mut buf) {
-                Ok(0) => return Err(std::io::ErrorKind::ConnectionAborted.into()),
+                Ok(0) => return Err(ConnectionError::Io(std::io::ErrorKind::ConnectionAborted.into())),
                 Ok(n) => n,
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => continue,
-                Err(e) => return Err(e),
+                Err(e) => return Err(e.into()),
             };
             if let Some(packet) = self.handle_data(dec, &buf[..read_bytes])? {
                 return Ok(packet);
@@ -124,7 +125,7 @@ impl ConnectionReader {
         &mut self,
         dec: &mut impl Decryptor,
         buf: &[u8],
-    ) -> std::io::Result<Option<Vec<u8>>> {
+    ) -> Result<Option<Vec<u8>>, ConnectionError> {
         if dec.is_rc4() {
             let mut decrypted_stream = dec.decrypt(buf)?;
             self.read_buffer.append(&mut decrypted_stream);
@@ -133,7 +134,7 @@ impl ConnectionReader {
         }
         self.get_packet_data(dec)
     }
-    fn get_packet_data(&mut self, dec: &mut impl Decryptor) -> std::io::Result<Option<Vec<u8>>> {
+    fn get_packet_data(&mut self, dec: &mut impl Decryptor) -> Result<Option<Vec<u8>>, ConnectionError> {
         let mut output_data = vec![0u8; 0];
         if self.packet_length == 0 {
             self.get_length(dec);
@@ -167,7 +168,7 @@ impl ConnectionReader {
 }
 
 impl ConnectionWriter {
-    pub fn prepare_data(&mut self, data: &[u8], enc: &mut impl Encryptor) -> std::io::Result<()> {
+    pub fn prepare_data(&mut self, data: &[u8], enc: &mut impl Encryptor) -> Result<(), ConnectionError> {
         self.write_buffer.extend_from_slice(&enc.encrypt(data)?);
         Ok(())
     }

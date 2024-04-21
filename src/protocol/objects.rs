@@ -1,5 +1,7 @@
 //! Object related packets. \[0x04\]
-use super::{models::Position, Flags, ObjectHeader, PacketHeader, PacketReadWrite, PacketType};
+use super::{
+    models::Position, Flags, ObjectHeader, PacketError, PacketHeader, PacketReadWrite, PacketType,
+};
 use crate::AsciiString;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use half::f16;
@@ -537,192 +539,612 @@ pub struct Unk04EAPacket {
 // Read/Write implementations
 // ----------------------------------------------------------------
 
+//yikes
 impl PacketReadWrite for MovementPacket {
     fn read(
         reader: &mut (impl Read + Seek),
         flags: &Flags,
         _: PacketType,
-    ) -> std::io::Result<Self> {
+    ) -> Result<Self, PacketError> {
         let mut packet = Self::default();
-        reader.read_exact(&mut packet.unk)?;
+        reader
+            .read_exact(&mut packet.unk)
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "MovementPacket",
+                field_name: "unk",
+                error: e,
+            })?;
         if flags.contains(Flags::FULL_MOVEMENT) {
-            packet.ent1_id = Some(reader.read_u64::<LittleEndian>()?);
-            packet.ent1_type = Some(reader.read_u16::<LittleEndian>()?);
-            packet.ent1_unk = Some(reader.read_u16::<LittleEndian>()?);
-            packet.ent2_id = Some(reader.read_u64::<LittleEndian>()?);
-            packet.ent2_type = Some(reader.read_u16::<LittleEndian>()?);
-            packet.ent2_unk = Some(reader.read_u16::<LittleEndian>()?);
+            packet.ent1_id =
+                Some(
+                    reader
+                        .read_u64::<LittleEndian>()
+                        .map_err(|e| PacketError::FieldError {
+                            packet_name: "MovementPacket",
+                            field_name: "ent1_id",
+                            error: e,
+                        })?,
+                );
+            packet.ent1_type =
+                Some(
+                    reader
+                        .read_u16::<LittleEndian>()
+                        .map_err(|e| PacketError::FieldError {
+                            packet_name: "MovementPacket",
+                            field_name: "ent1_type",
+                            error: e,
+                        })?,
+                );
+            packet.ent1_unk =
+                Some(
+                    reader
+                        .read_u16::<LittleEndian>()
+                        .map_err(|e| PacketError::FieldError {
+                            packet_name: "MovementPacket",
+                            field_name: "ent1_unk",
+                            error: e,
+                        })?,
+                );
+            packet.ent2_id =
+                Some(
+                    reader
+                        .read_u64::<LittleEndian>()
+                        .map_err(|e| PacketError::FieldError {
+                            packet_name: "MovementPacket",
+                            field_name: "ent2_id",
+                            error: e,
+                        })?,
+                );
+            packet.ent2_type =
+                Some(
+                    reader
+                        .read_u16::<LittleEndian>()
+                        .map_err(|e| PacketError::FieldError {
+                            packet_name: "MovementPacket",
+                            field_name: "ent2_type",
+                            error: e,
+                        })?,
+                );
+            packet.ent2_unk =
+                Some(
+                    reader
+                        .read_u16::<LittleEndian>()
+                        .map_err(|e| PacketError::FieldError {
+                            packet_name: "MovementPacket",
+                            field_name: "ent2_unk",
+                            error: e,
+                        })?,
+                );
             packet.timestamp = Some(Duration::from_secs(
-                reader.read_u32::<LittleEndian>()? as u64
+                reader
+                    .read_u32::<LittleEndian>()
+                    .map_err(|e| PacketError::FieldError {
+                        packet_name: "MovementPacket",
+                        field_name: "timestamp",
+                        error: e,
+                    })? as u64,
             ));
-            packet.rot_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
-            packet.rot_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
-            packet.rot_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
-            packet.rot_w = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
-            packet.cur_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
-            packet.cur_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
-            packet.cur_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
-            packet.unk1 = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
-            packet.unk_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
-            packet.unk_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
-            packet.unk_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
-            packet.unk2 = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
-            packet.unk3 = Some(reader.read_u32::<LittleEndian>()?);
+            packet.rot_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "rot_x",
+                    error: e,
+                },
+            )?));
+            packet.rot_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "rot_y",
+                    error: e,
+                },
+            )?));
+            packet.rot_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "rot_z",
+                    error: e,
+                },
+            )?));
+            packet.rot_w = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "rot_w",
+                    error: e,
+                },
+            )?));
+            packet.cur_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "cur_x",
+                    error: e,
+                },
+            )?));
+            packet.cur_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "cur_y",
+                    error: e,
+                },
+            )?));
+            packet.cur_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "cur_z",
+                    error: e,
+                },
+            )?));
+            packet.unk1 = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk1",
+                    error: e,
+                },
+            )?));
+            packet.unk_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk_x",
+                    error: e,
+                },
+            )?));
+            packet.unk_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk_y",
+                    error: e,
+                },
+            )?));
+            packet.unk_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk_z",
+                    error: e,
+                },
+            )?));
+            packet.unk2 = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk2",
+                    error: e,
+                },
+            )?));
+            packet.unk3 =
+                Some(
+                    reader
+                        .read_u32::<LittleEndian>()
+                        .map_err(|e| PacketError::FieldError {
+                            packet_name: "MovementPacket",
+                            field_name: "unk3",
+                            error: e,
+                        })?,
+                );
             return Ok(packet);
         }
-        let flags = reader.read_u24::<LittleEndian>()?;
+        let flags = reader
+            .read_u24::<LittleEndian>()
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "MovementPacket",
+                field_name: "flags",
+                error: e,
+            })?;
         if flags & 0x1 != 0 {
-            packet.ent1_id = Some(reader.read_u64::<LittleEndian>()?);
+            packet.ent1_id =
+                Some(
+                    reader
+                        .read_u64::<LittleEndian>()
+                        .map_err(|e| PacketError::FieldError {
+                            packet_name: "MovementPacket",
+                            field_name: "ent1_id",
+                            error: e,
+                        })?,
+                );
         }
         if flags & 0x2 != 0 {
-            packet.ent1_type = Some(reader.read_u16::<LittleEndian>()?);
+            packet.ent1_type =
+                Some(
+                    reader
+                        .read_u16::<LittleEndian>()
+                        .map_err(|e| PacketError::FieldError {
+                            packet_name: "MovementPacket",
+                            field_name: "ent1_type",
+                            error: e,
+                        })?,
+                );
         }
         if flags & 0x4 != 0 {
-            packet.ent1_unk = Some(reader.read_u16::<LittleEndian>()?);
+            packet.ent1_unk =
+                Some(
+                    reader
+                        .read_u16::<LittleEndian>()
+                        .map_err(|e| PacketError::FieldError {
+                            packet_name: "MovementPacket",
+                            field_name: "ent1_unk",
+                            error: e,
+                        })?,
+                );
         }
         if flags & 0x8 != 0 {
-            packet.ent2_id = Some(reader.read_u64::<LittleEndian>()?);
+            packet.ent2_id =
+                Some(
+                    reader
+                        .read_u64::<LittleEndian>()
+                        .map_err(|e| PacketError::FieldError {
+                            packet_name: "MovementPacket",
+                            field_name: "ent2_id",
+                            error: e,
+                        })?,
+                );
         }
         if flags & 0x10 != 0 {
-            packet.ent2_type = Some(reader.read_u16::<LittleEndian>()?);
+            packet.ent2_type =
+                Some(
+                    reader
+                        .read_u16::<LittleEndian>()
+                        .map_err(|e| PacketError::FieldError {
+                            packet_name: "MovementPacket",
+                            field_name: "ent2_type",
+                            error: e,
+                        })?,
+                );
         }
         if flags & 0x20 != 0 {
-            packet.ent2_unk = Some(reader.read_u16::<LittleEndian>()?);
+            packet.ent2_unk =
+                Some(
+                    reader
+                        .read_u16::<LittleEndian>()
+                        .map_err(|e| PacketError::FieldError {
+                            packet_name: "MovementPacket",
+                            field_name: "ent2_unk",
+                            error: e,
+                        })?,
+                );
         }
         if flags & 0x40 != 0 {
             packet.timestamp = Some(Duration::from_secs(
-                reader.read_u32::<LittleEndian>()? as u64
+                reader
+                    .read_u32::<LittleEndian>()
+                    .map_err(|e| PacketError::FieldError {
+                        packet_name: "MovementPacket",
+                        field_name: "timestamp",
+                        error: e,
+                    })? as u64,
             ));
         }
         if flags & 0x80 != 0 {
-            packet.rot_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
+            packet.rot_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "rot_x",
+                    error: e,
+                },
+            )?));
         }
         if flags & 0x100 != 0 {
-            packet.rot_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
+            packet.rot_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "rot_y",
+                    error: e,
+                },
+            )?));
         }
         if flags & 0x200 != 0 {
-            packet.rot_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
+            packet.rot_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "rot_z",
+                    error: e,
+                },
+            )?));
         }
         if flags & 0x400 != 0 {
-            packet.rot_w = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
+            packet.rot_w = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "rot_w",
+                    error: e,
+                },
+            )?));
         }
         if flags & 0x800 != 0 {
-            packet.cur_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
+            packet.cur_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "cur_x",
+                    error: e,
+                },
+            )?));
         }
         if flags & 0x1000 != 0 {
-            packet.cur_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
+            packet.cur_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "cur_y",
+                    error: e,
+                },
+            )?));
         }
         if flags & 0x2000 != 0 {
-            packet.cur_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
+            packet.cur_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "cur_z",
+                    error: e,
+                },
+            )?));
         }
         if flags & 0x4000 != 0 {
-            packet.unk1 = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
+            packet.unk1 = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk1",
+                    error: e,
+                },
+            )?));
         }
         if flags & 0x8000 != 0 {
-            packet.unk_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
+            packet.unk_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk_x",
+                    error: e,
+                },
+            )?));
         }
         if flags & 0x10000 != 0 {
-            packet.unk_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
+            packet.unk_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk_y",
+                    error: e,
+                },
+            )?));
         }
         if flags & 0x20000 != 0 {
-            packet.unk_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
+            packet.unk_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk_z",
+                    error: e,
+                },
+            )?));
         }
         if flags & 0x40000 != 0 {
-            packet.unk2 = Some(f16::from_bits(reader.read_u16::<LittleEndian>()?));
+            packet.unk2 = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
+                |e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk2",
+                    error: e,
+                },
+            )?));
         }
         if flags & 0x80000 != 0 {
             if flags & 0x100000 != 0 {
-                packet.unk4 = Some(reader.read_u8()?);
+                packet.unk4 = Some(reader.read_u8().map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk4",
+                    error: e,
+                })?);
             } else {
-                packet.unk3 = Some(reader.read_u32::<LittleEndian>()?);
+                packet.unk3 = Some(reader.read_u32::<LittleEndian>().map_err(|e| {
+                    PacketError::FieldError {
+                        packet_name: "MovementPacket",
+                        field_name: "unk3",
+                        error: e,
+                    }
+                })?);
             }
         }
         Ok(packet)
     }
-    fn write(&self, packet_type: PacketType) -> std::io::Result<Vec<u8>> {
+    fn write(&self, packet_type: PacketType) -> Result<Vec<u8>, PacketError> {
         let mut tmp_buf = vec![];
         let mut flags = 0u32;
         if let Some(n) = self.ent1_id {
-            tmp_buf.write_u64::<LittleEndian>(n)?;
+            tmp_buf
+                .write_u64::<LittleEndian>(n)
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent1_id",
+                    error: e,
+                })?;
             flags += 0x1;
         }
         if let Some(n) = self.ent1_type {
-            tmp_buf.write_u16::<LittleEndian>(n)?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n)
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent1_type",
+                    error: e,
+                })?;
             flags += 0x2;
         }
         if let Some(n) = self.ent1_unk {
-            tmp_buf.write_u16::<LittleEndian>(n)?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n)
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent1_unk",
+                    error: e,
+                })?;
             flags += 0x4;
         }
         if let Some(n) = self.ent2_id {
-            tmp_buf.write_u64::<LittleEndian>(n)?;
+            tmp_buf
+                .write_u64::<LittleEndian>(n)
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent2_id",
+                    error: e,
+                })?;
             flags += 0x8;
         }
         if let Some(n) = self.ent2_type {
-            tmp_buf.write_u16::<LittleEndian>(n)?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n)
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent2_type",
+                    error: e,
+                })?;
             flags += 0x10;
         }
         if let Some(n) = self.ent2_unk {
-            tmp_buf.write_u16::<LittleEndian>(n)?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n)
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent2_unk",
+                    error: e,
+                })?;
             flags += 0x20;
         }
         if let Some(x) = self.timestamp {
-            tmp_buf.write_u32::<LittleEndian>(x.as_secs() as u32)?;
+            tmp_buf
+                .write_u32::<LittleEndian>(x.as_secs() as u32)
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "timestamp",
+                    error: e,
+                })?;
             flags += 0x40;
         }
         if let Some(n) = self.rot_x {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n.to_bits())
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "rot_x",
+                    error: e,
+                })?;
             flags += 0x80;
         }
         if let Some(n) = self.rot_y {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n.to_bits())
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "rot_y",
+                    error: e,
+                })?;
             flags += 0x100;
         }
         if let Some(n) = self.rot_z {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n.to_bits())
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "rot_z",
+                    error: e,
+                })?;
             flags += 0x200;
         }
         if let Some(n) = self.rot_w {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n.to_bits())
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "rot_w",
+                    error: e,
+                })?;
             flags += 0x400;
         }
         if let Some(n) = self.cur_x {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n.to_bits())
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "cur_x",
+                    error: e,
+                })?;
             flags += 0x800;
         }
         if let Some(n) = self.cur_y {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n.to_bits())
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "cur_y",
+                    error: e,
+                })?;
             flags += 0x1000;
         }
         if let Some(n) = self.cur_z {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n.to_bits())
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "cur_z",
+                    error: e,
+                })?;
             flags += 0x2000;
         }
         if let Some(n) = self.unk1 {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n.to_bits())
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk1",
+                    error: e,
+                })?;
             flags += 0x4000;
         }
         if let Some(n) = self.unk_x {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n.to_bits())
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk_x",
+                    error: e,
+                })?;
             flags += 0x8000;
         }
         if let Some(n) = self.unk_y {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n.to_bits())
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk_y",
+                    error: e,
+                })?;
             flags += 0x10000;
         }
         if let Some(n) = self.unk_z {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n.to_bits())
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk_z",
+                    error: e,
+                })?;
             flags += 0x20000;
         }
         if let Some(n) = self.unk2 {
-            tmp_buf.write_u16::<LittleEndian>(n.to_bits())?;
+            tmp_buf
+                .write_u16::<LittleEndian>(n.to_bits())
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk2",
+                    error: e,
+                })?;
             flags += 0x40000;
         }
         if let Some(n) = self.unk4 {
-            tmp_buf.write_u8(n)?;
+            tmp_buf.write_u8(n).map_err(|e| PacketError::FieldError {
+                packet_name: "MovementPacket",
+                field_name: "unk4",
+                error: e,
+            })?;
             flags += 0x180000;
         } else if let Some(n) = self.unk3 {
-            tmp_buf.write_u32::<LittleEndian>(n)?;
+            tmp_buf
+                .write_u32::<LittleEndian>(n)
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk3",
+                    error: e,
+                })?;
             flags += 0x80000;
         }
         let mut buf = if flags == 0xFFFFF {
@@ -733,16 +1155,21 @@ impl PacketReadWrite for MovementPacket {
             )
             .write(packet_type)
         } else {
-            PacketHeader::new(
-                0x04,
-                0x07,
-                Flags::OBJECT_RELATED | Flags::FLAG_10,
-            )
-            .write(packet_type)
+            PacketHeader::new(0x04, 0x07, Flags::OBJECT_RELATED | Flags::FLAG_10).write(packet_type)
         };
-        buf.write_all(&self.unk)?;
+        buf.write_all(&self.unk)
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "MovementPacket",
+                field_name: "unk",
+                error: e,
+            })?;
         if flags != 0xFFFFF {
-            buf.write_u24::<LittleEndian>(flags)?;
+            buf.write_u24::<LittleEndian>(flags)
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "flags",
+                    error: e,
+                })?;
         }
         buf.append(&mut tmp_buf);
         Ok(buf)

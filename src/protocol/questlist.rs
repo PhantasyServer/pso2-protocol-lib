@@ -464,7 +464,7 @@ pub struct QuestThing {
     pub unk3: u16,
 }
 
-bitflags::bitflags!{
+bitflags::bitflags! {
     /// Available quest types flags.
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
@@ -564,7 +564,6 @@ bitflags::bitflags!{
     }
 }
 
-
 /// Type of the quest.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
@@ -641,7 +640,7 @@ pub enum QuestType {
     Stars6,
 }
 
-bitflags::bitflags!{
+bitflags::bitflags! {
     /// Available quest difficulties.
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
@@ -655,4 +654,3 @@ bitflags::bitflags!{
         const ULTRA_HARD = 1 << 5;
     }
 }
-

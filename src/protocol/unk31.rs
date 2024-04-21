@@ -1,5 +1,5 @@
 //! Unknown \[0x31\] packets.
-use super::{HelperReadWrite, ItemId, PacketReadWrite};
+use super::{HelperReadWrite, ItemId, PacketError, PacketReadWrite};
 use crate::AsciiString;
 
 // ----------------------------------------------------------------
@@ -143,7 +143,7 @@ impl PacketReadWrite for PlayAchievementsResponsePacket {
         reader: &mut (impl std::io::Read + std::io::Seek),
         flags: &super::Flags,
         packet_type: super::PacketType,
-    ) -> std::io::Result<Self> {
+    ) -> Result<Self, PacketError> {
         let packet = PlayAchievementsInternal::read(reader, flags, packet_type)?;
         let mut names = packet.enemy_ids.chars();
         let mut boss_enemies = vec![];
@@ -185,7 +185,7 @@ impl PacketReadWrite for PlayAchievementsResponsePacket {
         })
     }
 
-    fn write(&self, packet_type: super::PacketType) -> std::io::Result<Vec<u8>> {
+    fn write(&self, packet_type: super::PacketType) -> Result<Vec<u8>, PacketError> {
         let mut names = String::new();
         let mut total_len = 0;
         let mut boss_enemies = vec![];

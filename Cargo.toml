@@ -36,6 +36,7 @@ packetlib_impl = { path = "packetlib_impl" }
 half = "2.4.1"
 tokio = { version = "1.37.0", optional = true, features = ["net", "sync", "io-util", "macros"] }
 bitflags = "2.5.0"
+thiserror = "1.0.59"
 
 [package.metadata.docs.rs]
 all-features = true

@@ -1,7 +1,7 @@
 //! Character related structures.
 use crate::{
     asciistring::StringRW,
-    protocol::{HelperReadWrite, PacketType},
+    protocol::{HelperReadWrite, PacketError, PacketType},
 };
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Read, Seek, Write};
@@ -261,7 +261,7 @@ pub enum Class {
     Unknown = 0xFF,
 }
 
-bitflags::bitflags!{
+bitflags::bitflags! {
     /// Enabled classes flags.
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[cfg_attr(feature = "serde", serde(default))]
@@ -360,26 +360,104 @@ impl HelperReadWrite for Character {
         packet_type: PacketType,
         xor: u32,
         sub: u32,
-    ) -> std::io::Result<Self> {
-        let character_id = reader.read_u32::<LittleEndian>()?;
-        let player_id = reader.read_u32::<LittleEndian>()?;
-        let unk1 = reader.read_u32::<LittleEndian>()?;
-        let voice_type = reader.read_u32::<LittleEndian>()?;
-        let unk2 = reader.read_u16::<LittleEndian>()?;
-        let voice_pitch = reader.read_i16::<LittleEndian>()?;
-        let name = String::read(reader, 16)?;
+    ) -> Result<Self, PacketError> {
+        let character_id =
+            reader
+                .read_u32::<LittleEndian>()
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "Character",
+                    field_name: "character_id",
+                    error: e,
+                })?;
+        let player_id = reader
+            .read_u32::<LittleEndian>()
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "Character",
+                field_name: "player_id",
+                error: e,
+            })?;
+        let unk1 = reader
+            .read_u32::<LittleEndian>()
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "Character",
+                field_name: "unk1",
+                error: e,
+            })?;
+        let voice_type =
+            reader
+                .read_u32::<LittleEndian>()
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "Character",
+                    field_name: "voice_type",
+                    error: e,
+                })?;
+        let unk2 = reader
+            .read_u16::<LittleEndian>()
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "Character",
+                field_name: "unk2",
+                error: e,
+            })?;
+        let voice_pitch =
+            reader
+                .read_i16::<LittleEndian>()
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "Character",
+                    field_name: "voice_pitch",
+                    error: e,
+                })?;
+        let name = String::read(reader, 16).map_err(|e| PacketError::FieldError {
+            packet_name: "Character",
+            field_name: "name",
+            error: e,
+        })?;
 
         if matches!(packet_type, PacketType::Vita) {
-            reader.seek(std::io::SeekFrom::Current(4))?;
+            reader
+                .seek(std::io::SeekFrom::Current(4))
+                .map_err(|e| PacketError::PaddingError {
+                    packet_name: "Character",
+                    field_name: "look",
+                    error: e,
+                })?;
         }
 
-        let look = Look::read(reader, packet_type, xor, sub)?;
-        let classes = ClassInfo::read(reader, packet_type, xor, sub)?;
-        let unk3 = String::read(reader, 32)?;
+        let look = Look::read(reader, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "Character",
+                field_name: "look",
+                error: Box::new(e),
+            }
+        })?;
+        let classes = ClassInfo::read(reader, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "Character",
+                field_name: "classes",
+                error: Box::new(e),
+            }
+        })?;
 
-        reader.seek(std::io::SeekFrom::Current(0x56))?;
+        let unk3 = String::read(reader, 32).map_err(|e| PacketError::FieldError {
+            packet_name: "Character",
+            field_name: "unk3",
+            error: e,
+        })?;
+
+        reader
+            .seek(std::io::SeekFrom::Current(0x56))
+            .map_err(|e| PacketError::PaddingError {
+                packet_name: "Character",
+                field_name: "unk3",
+                error: e,
+            })?;
         if matches!(packet_type, PacketType::NA) {
-            reader.seek(std::io::SeekFrom::Current(4))?;
+            reader
+                .seek(std::io::SeekFrom::Current(4))
+                .map_err(|e| PacketError::PaddingError {
+                    packet_name: "Character",
+                    field_name: "unk3",
+                    error: e,
+                })?;
         }
 
         Ok(Self {
@@ -401,25 +479,103 @@ impl HelperReadWrite for Character {
         packet_type: PacketType,
         xor: u32,
         sub: u32,
-    ) -> std::io::Result<()> {
-        writer.write_u32::<LittleEndian>(self.character_id)?;
-        writer.write_u32::<LittleEndian>(self.player_id)?;
-        writer.write_u32::<LittleEndian>(self.unk1)?;
-        writer.write_u32::<LittleEndian>(self.voice_type)?;
-        writer.write_u16::<LittleEndian>(self.unk2)?;
-        writer.write_i16::<LittleEndian>(self.voice_pitch)?;
-        writer.write_all(&self.name.write(16))?;
+    ) -> Result<(), PacketError> {
+        writer
+            .write_u32::<LittleEndian>(self.character_id)
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "Character",
+                field_name: "character_id",
+                error: e,
+            })?;
+        writer
+            .write_u32::<LittleEndian>(self.player_id)
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "Character",
+                field_name: "player_id",
+                error: e,
+            })?;
+        writer
+            .write_u32::<LittleEndian>(self.unk1)
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "Character",
+                field_name: "unk1",
+                error: e,
+            })?;
+        writer
+            .write_u32::<LittleEndian>(self.voice_type)
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "Character",
+                field_name: "voice_type",
+                error: e,
+            })?;
+        writer
+            .write_u16::<LittleEndian>(self.unk2)
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "Character",
+                field_name: "unk2",
+                error: e,
+            })?;
+        writer
+            .write_i16::<LittleEndian>(self.voice_pitch)
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "Character",
+                field_name: "voice_pitch",
+                error: e,
+            })?;
+        writer
+            .write_all(&self.name.write(16))
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "Character",
+                field_name: "name",
+                error: e,
+            })?;
 
         if matches!(packet_type, PacketType::Vita) {
-            writer.write_u32::<LittleEndian>(0)?;
+            writer
+                .write_u32::<LittleEndian>(0)
+                .map_err(|e| PacketError::PaddingError {
+                    packet_name: "Character",
+                    field_name: "look",
+                    error: e,
+                })?;
         }
-        self.look.write(writer, packet_type, xor, sub)?;
-        self.classes.write(writer, packet_type, xor, sub)?;
-        writer.write_all(&self.unk3.write(32))?;
+        self.look
+            .write(writer, packet_type, xor, sub)
+            .map_err(|e| PacketError::CompositeFieldError {
+                packet_name: "Character",
+                field_name: "look",
+                error: Box::new(e),
+            })?;
+        self.classes
+            .write(writer, packet_type, xor, sub)
+            .map_err(|e| PacketError::CompositeFieldError {
+                packet_name: "Character",
+                field_name: "classes",
+                error: Box::new(e),
+            })?;
+        writer
+            .write_all(&self.unk3.write(32))
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "Character",
+                field_name: "unk3",
+                error: e,
+            })?;
 
-        writer.write_all(&[0u8; 0x56])?;
+        writer
+            .write_all(&[0u8; 0x56])
+            .map_err(|e| PacketError::PaddingError {
+                packet_name: "Character",
+                field_name: "unk3",
+                error: e,
+            })?;
         if matches!(packet_type, PacketType::NA) {
-            writer.write_u32::<LittleEndian>(0)?;
+            writer
+                .write_u32::<LittleEndian>(0)
+                .map_err(|e| PacketError::PaddingError {
+                    packet_name: "Character",
+                    field_name: "unk3",
+                    error: e,
+                })?;
         }
 
         Ok(())

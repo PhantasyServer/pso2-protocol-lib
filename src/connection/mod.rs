@@ -1,5 +1,7 @@
 //! Client <-> Server connection handling.
 
+pub use crate::encryption::EncryptionError;
+
 pub(crate) mod conn_impl;
 #[cfg(feature = "split_connection")]
 use crate::encryption::{DecryptorType, EncryptorType};
@@ -23,6 +25,19 @@ use tokio::{
     net::tcp::{OwnedReadHalf, OwnedWriteHalf},
     sync::mpsc::{UnboundedReceiver as Receiver, UnboundedSender as Sender},
 };
+
+#[derive(Debug, thiserror::Error)]
+pub enum ConnectionError {
+    #[error("packet error occured: {0}")]
+    PacketError(#[from] crate::protocol::PacketError),
+    #[error("encryption error occured: {0}")]
+    EncryptionError(#[from] crate::encryption::EncryptionError),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[cfg(feature = "ppac")]
+    #[error("error occured while storing a packet: {0}")]
+    PPACError(#[from] crate::ppac::PPACError),
+}
 
 /// Represents a connection between a client and a server.
 #[derive(Debug)]
@@ -239,7 +254,7 @@ impl<P: ProtocolRW + Send> Connection<P> {
     /// # Note
     ///
     /// If `tokio` feature is enabled this function becomes nonblocking
-    pub fn read_packet(&mut self) -> std::io::Result<P> {
+    pub fn read_packet(&mut self) -> Result<P, ConnectionError> {
         if !self.read_packets.is_empty() {
             return Ok(self.read_packets.remove(0));
         }
@@ -260,7 +275,7 @@ impl<P: ProtocolRW + Send> Connection<P> {
     /// Reads a packet from the stream.
     #[cfg(feature = "tokio")]
     #[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
-    pub async fn read_packet_async(&mut self) -> std::io::Result<P> {
+    pub async fn read_packet_async(&mut self) -> Result<P, ConnectionError> {
         if !self.read_packets.is_empty() {
             return Ok(self.read_packets.remove(0));
         }
@@ -278,7 +293,7 @@ impl<P: ProtocolRW + Send> Connection<P> {
         }
         self.parse_packet(&data)
     }
-    fn parse_packet(&mut self, data: &[u8]) -> std::io::Result<P> {
+    fn parse_packet(&mut self, data: &[u8]) -> Result<P, ConnectionError> {
         let mut packets = P::read(data, self.packet_type)?;
         let mut packet = packets.remove(0);
         self.read_packets.append(&mut packets);
@@ -303,7 +318,7 @@ impl<P: ProtocolRW + Send> Connection<P> {
         &mut self,
         path: PT,
         direction: Direction,
-    ) -> std::io::Result<()> {
+    ) -> Result<(), ConnectionError> {
         self.ppac = Some(PPACWriter::new(
             std::fs::File::create(path)?,
             self.packet_type,
@@ -318,7 +333,7 @@ impl<P: ProtocolRW + Send> Connection<P> {
     /// # Note
     ///
     /// If `tokio` feature is enabled this function becomes nonblocking
-    pub fn write_packet(&mut self, packet: &impl ProtocolRW) -> std::io::Result<()> {
+    pub fn write_packet(&mut self, packet: &impl ProtocolRW) -> Result<(), ConnectionError> {
         self.prepare_data(packet)?;
         self.write.flush(&mut self.stream)?;
         Ok(())
@@ -330,13 +345,13 @@ impl<P: ProtocolRW + Send> Connection<P> {
     pub async fn write_packet_async(
         &mut self,
         packet: &(impl ProtocolRW + Sync),
-    ) -> std::io::Result<()> {
+    ) -> Result<(), ConnectionError> {
         self.prepare_data(packet)?;
         self.write.flush_async(&mut self.stream).await?;
         Ok(())
     }
 
-    fn prepare_data(&mut self, packet: &impl ProtocolRW) -> std::io::Result<()> {
+    fn prepare_data(&mut self, packet: &impl ProtocolRW) -> Result<(), ConnectionError> {
         let _packet = if packet.is_enc_data() && !matches!(&self.out_keyfile, PublicKey::None) {
             let rsa_data = packet
                 .as_enc_data()
@@ -473,7 +488,7 @@ impl<P: ProtocolRW + Send> ConnectionRead<P> {
     /// If the encryption was not yet setup (i.e [`Packet::EncryptionResponse`] was not
     /// sent) and the stream is in a blocking mode then this function might not setup
     /// encryption correctly  
-    pub fn read_packet(&mut self) -> std::io::Result<P> {
+    pub fn read_packet(&mut self) -> Result<P, ConnectionError> {
         if !self.read_packets.is_empty() {
             return Ok(self.get_one_packet());
         }
@@ -500,7 +515,7 @@ impl<P: ProtocolRW + Send> ConnectionRead<P> {
     /// Reads a packet from stream.
     #[cfg(feature = "tokio")]
     #[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
-    pub async fn read_packet_async(&mut self) -> std::io::Result<P> {
+    pub async fn read_packet_async(&mut self) -> Result<P, ConnectionError> {
         if !self.read_packets.is_empty() {
             return Ok(self.get_one_packet());
         }
@@ -534,7 +549,7 @@ impl<P: ProtocolRW + Send> ConnectionRead<P> {
         }
         self.parse_packet(&data)
     }
-    fn parse_packet(&mut self, data: &[u8]) -> std::io::Result<P> {
+    fn parse_packet(&mut self, data: &[u8]) -> Result<P, ConnectionError> {
         let mut packets = P::read(data, self.packet_type)?;
         let mut packet = packets.remove(0);
         self.read_packets.append(&mut packets);
@@ -619,7 +634,7 @@ impl ConnectionWrite {
     /// # Note
     ///
     /// If `tokio` feature is enabled this function becomes nonblocking
-    pub fn write_packet(&mut self, packet: &impl ProtocolRW) -> std::io::Result<()> {
+    pub fn write_packet(&mut self, packet: &impl ProtocolRW) -> Result<(), ConnectionError> {
         self.prepare_data(packet)?;
         self.write.flush(&mut self.stream)?;
         Ok(())
@@ -631,12 +646,12 @@ impl ConnectionWrite {
     pub async fn write_packet_async(
         &mut self,
         packet: &(impl ProtocolRW + Sync),
-    ) -> std::io::Result<()> {
+    ) -> Result<(), ConnectionError> {
         self.prepare_data(packet)?;
         self.write.flush_async(&mut self.stream).await?;
         Ok(())
     }
-    fn prepare_data(&mut self, packet: &impl ProtocolRW) -> std::io::Result<()> {
+    fn prepare_data(&mut self, packet: &impl ProtocolRW) -> Result<(), ConnectionError> {
         if matches!(self.encryption, EncryptorType::None) {
             if let Ok(enc) = self.enc_channel.1.try_recv() {
                 self.encryption = enc

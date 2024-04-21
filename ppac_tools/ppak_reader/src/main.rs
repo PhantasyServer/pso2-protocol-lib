@@ -31,6 +31,7 @@ fn main() {
         direction,
         packet,
         data,
+        parse_error,
         ..
     })) = ppac.read()
     {
@@ -65,9 +66,10 @@ fn main() {
                 let header = u32::from_be_bytes(data[4..8].try_into().unwrap());
                 writeln!(
                     &mut out_file,
-                    "{dir} {} RAW {{ header: {:X} }}",
+                    "{dir} {} RAW {{ header: {:X} }}: {}",
                     timestamp.format("%H-%M-%S"),
-                    header
+                    header,
+                    parse_error.unwrap(),
                 )
                 .unwrap();
                 let out_name = format!("{out_dir}/{}_{:X}", time, header);

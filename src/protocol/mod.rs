@@ -3,9 +3,13 @@
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use packetlib_impl::{HelperReadWrite, PacketReadWrite, ProtocolReadWrite};
 use std::{
-    io::{Read, Seek, Write},
+    io::{Read, Seek},
     time::Duration,
 };
+
+// Packet traits
+mod traits;
+pub use traits::*;
 
 // Packet definitions modules
 pub mod chat;
@@ -64,6 +68,66 @@ use unk34::*;
 
 // Code is getting really messy.
 
+/// Error type returned by packet parsing operations.
+#[derive(Debug, thiserror::Error)]
+pub enum PacketError {
+    /// Failed to read or write packet field.
+    #[error("failed to read/write field {field_name} from {packet_name}: {error}")]
+    FieldError {
+        packet_name: &'static str,
+        field_name: &'static str,
+        #[source]
+        error: std::io::Error,
+    },
+    /// Failed to read or write flags or enum value.
+    #[error("failed to read/write value of {packet_name}: {error}")]
+    ValueError {
+        packet_name: &'static str,
+        #[source]
+        error: std::io::Error,
+    },
+    /// Failed to read or write variable packet field length.
+    #[error("failed to read/write length of field {field_name} from {packet_name}: {error}")]
+    FieldLengthError {
+        packet_name: &'static str,
+        field_name: &'static str,
+        #[source]
+        error: std::io::Error,
+    },
+    /// Failed to read or write packet field (i.e. field implementing [`HelperReadWrite`]).
+    #[error("failed to read/write field {field_name} from {packet_name}: {error}")]
+    CompositeFieldError {
+        packet_name: &'static str,
+        field_name: &'static str,
+        #[source]
+        error: Box<Self>,
+    },
+    /// Failed to add padding to packet field.
+    #[error("failed to pad field {field_name} from {packet_name}: {error}")]
+    PaddingError {
+        packet_name: &'static str,
+        field_name: &'static str,
+        #[source]
+        error: std::io::Error,
+    },
+    /// Failed to read/write constant value.
+    #[error("failed to read/write constant {const_val} from {packet_name}: {error}")]
+    ConstantError {
+        packet_name: &'static str,
+        const_val: u64,
+        #[source]
+        error: std::io::Error,
+    },
+    /// Failed to read/write length of [`Packet`].
+    #[error("failed to read/write length for Packet: {error}")]
+    PacketLengthError {
+        #[source]
+        error: std::io::Error,
+    },
+    // #[error(transparent)]
+    // Io(#[from] std::io::Error),
+}
+
 /// Type of the packet.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(u8)]
@@ -82,57 +146,6 @@ pub enum PacketType {
     Vita,
     /// Raw packet. (i.e. don't parse the packet)
     Raw,
-}
-
-/// Trait for manipulating encryption data.
-pub trait PacketEncryption {
-    /// Returns `true` is the packet contains RSA data (i.e is [`Packet::EncryptionRequest`]).
-    fn is_enc_data(&self) -> bool;
-    /// Returns a refrence to the RSA encrypted data.
-    fn as_enc_data(&self) -> Option<&[u8]>;
-    /// Returns a mutable refrence to the RSA encrypted data.
-    fn mut_enc_data(&mut self) -> Option<&mut Vec<u8>>;
-}
-
-/// Read/Write trait for packet enums.
-pub trait ProtocolRW: PacketEncryption + Sized {
-    /// Reads packets from an input slice.
-    fn read(input: &[u8], packet_type: PacketType) -> std::io::Result<Vec<Self>>;
-    /// Writes a packet to a byte vector.
-    fn write(&self, packet_type: PacketType) -> Vec<u8>;
-    /// Returns category of the packet.
-    fn get_category(&self) -> PacketCategory;
-}
-
-/// Read/Write trait for packet data containing structs.
-pub trait PacketReadWrite: Sized {
-    /// Reads a packet from a stream.
-    fn read(
-        reader: &mut (impl Read + Seek),
-        flags: &Flags,
-        packet_type: PacketType,
-    ) -> std::io::Result<Self>;
-    /// Writes a packet to a Vec.
-    fn write(&self, packet_type: PacketType) -> std::io::Result<Vec<u8>>;
-}
-
-/// Read/Write trait for aditional data structs/enums.
-pub trait HelperReadWrite: Sized {
-    /// Reads data from a stream.
-    fn read(
-        reader: &mut (impl Read + Seek),
-        packet_type: PacketType,
-        xor: u32,
-        sub: u32,
-    ) -> std::io::Result<Self>;
-    /// Writes data to a stream.
-    fn write(
-        &self,
-        writer: &mut impl Write,
-        packet_type: PacketType,
-        xor: u32,
-        sub: u32,
-    ) -> std::io::Result<()>;
 }
 
 /// All known packets
@@ -1455,17 +1468,42 @@ impl PacketHeader {
     pub fn new(id: u8, subid: u16, flag: Flags) -> Self {
         Self { id, subid, flag }
     }
-    pub fn read(reader: &mut (impl Read + Seek), packet_type: PacketType) -> std::io::Result<Self> {
+    pub fn read(
+        reader: &mut (impl Read + Seek),
+        packet_type: PacketType,
+    ) -> Result<Self, PacketError> {
         let (id, subid, flag) = if !matches!(packet_type, PacketType::NGS) {
-            let id = reader.read_u8()?;
-            let subid = reader.read_u8()? as u16;
+            let id = reader.read_u8().map_err(|e| PacketError::FieldError {
+                packet_name: "PacketHeader",
+                field_name: "id",
+                error: e,
+            })?;
+            let subid = reader.read_u8().map_err(|e| PacketError::FieldError {
+                packet_name: "PacketHeader",
+                field_name: "subid",
+                error: e,
+            })? as u16;
             let flag = Flags::read(reader, packet_type, 0, 0)?;
-            reader.read_u8()?;
+            reader.read_u8().map_err(|e| PacketError::PaddingError {
+                packet_name: "PacketHeader",
+                field_name: "flag",
+                error: e,
+            })?;
             (id, subid, flag)
         } else {
             let flag = Flags::read(reader, packet_type, 0, 0)?;
-            let id = reader.read_u8()?;
-            let subid = reader.read_u16::<LittleEndian>()?;
+            let id = reader.read_u8().map_err(|e| PacketError::FieldError {
+                packet_name: "PacketHeader",
+                field_name: "id",
+                error: e,
+            })?;
+            let subid = reader
+                .read_u16::<LittleEndian>()
+                .map_err(|e| PacketError::FieldError {
+                    packet_name: "PacketHeader",
+                    field_name: "subid",
+                    error: e,
+                })?;
             (id, subid, flag)
         };
 
@@ -1487,7 +1525,7 @@ impl PacketHeader {
     }
 }
 
-bitflags::bitflags!{
+bitflags::bitflags! {
     /// Packet flags.
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
@@ -1620,7 +1658,8 @@ mod tests {
                     let packet = match packet.packet {
                         Some(x) => x,
                         None => {
-                            println!("{entry:?}, {id} - FAIL (can't read)");
+                            let error = packet.parse_error.unwrap();
+                            println!("{entry:?}, {id} - FAIL (can't read): {error}");
                             *is_failed = true;
                             let path = format!(
                                 "failed_tests/{}/{id}_unreadable",

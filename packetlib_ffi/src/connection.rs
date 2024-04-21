@@ -4,7 +4,7 @@ use std::{
     net::{TcpListener, TcpStream},
 };
 
-use pso2packetlib::{PrivateKey, PublicKey};
+use pso2packetlib::{connection::ConnectionError, PrivateKey, PublicKey};
 
 use crate::protocol::{DataBuffer, Packet};
 
@@ -520,7 +520,9 @@ pub extern "C" fn get_conn_error(conn: Option<&Connection>) -> *const u8 {
 fn conn_read_packet_failable(conn: &mut Connection) -> Result<SocketResult, Box<dyn Error>> {
     let packet = match conn.con.as_mut().unwrap().read_packet() {
         Ok(p) => p,
-        Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => return Ok(SocketResult::Blocked),
+        Err(ConnectionError::Io(e)) if e.kind() == std::io::ErrorKind::WouldBlock => {
+            return Ok(SocketResult::Blocked)
+        }
         Err(e) => return Err(e.into()),
     };
     conn.data = Some(packet.into());
@@ -537,7 +539,9 @@ fn conn_write_packet_failable(
     };
     match conn.con.as_mut().unwrap().write_packet(data) {
         Ok(_) => {}
-        Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => return Ok(SocketResult::Blocked),
+        Err(ConnectionError::Io(e)) if e.kind() == std::io::ErrorKind::WouldBlock => {
+            return Ok(SocketResult::Blocked)
+        }
         Err(e) => return Err(e.into()),
     };
     Ok(SocketResult::Ready)

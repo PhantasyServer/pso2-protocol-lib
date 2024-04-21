@@ -36,16 +36,21 @@ pub fn packet_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
                 reader: &mut (impl std::io::Read + std::io::Seek),
                 flags: &#crate_location::protocol::Flags,
                 packet_type: #crate_location::protocol::PacketType
-            ) -> std::io::Result<Self> {
+            ) -> Result<Self, #crate_location::protocol::PacketError> {
                 use #crate_location::derive_reexports::*;
-                let packet_name = "#name";
+                use #crate_location::protocol::PacketError as Error;
+                let packet_name = stringify!(#name);
 
                 let (xor, sub) = (#xor, #sub);
                 #read
             }
-            fn write(&self, packet_type: #crate_location::protocol::PacketType) -> std::io::Result<Vec<u8>> {
+            fn write(
+                &self,
+                packet_type: #crate_location::protocol::PacketType
+            ) -> Result<Vec<u8>, #crate_location::protocol::PacketError> {
                 use #crate_location::derive_reexports::*;
-                let packet_name = "#name";
+                use #crate_location::protocol::PacketError as Error;
+                let packet_name = stringify!(#name);
 
                 let mut buf = PacketHeader::new(#id, #subid, #flags).write(packet_type);
                 let writer = &mut buf;
@@ -100,9 +105,10 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
                 packet_type: #crate_location::protocol::PacketType,
                 xor: u32,
                 sub: u32
-            ) -> std::io::Result<Self> {
+            ) -> Result<Self, #crate_location::protocol::PacketError> {
                 use #crate_location::derive_reexports::*;
-                let packet_name = "#name";
+                use #crate_location::protocol::PacketError as Error;
+                let packet_name = stringify!(#name);
 
                 #read
             }
@@ -112,9 +118,10 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
                 packet_type: #crate_location::protocol::PacketType,
                 xor: u32,
                 sub: u32
-            ) -> std::io::Result<()> {
+            ) -> Result<(), #crate_location::protocol::PacketError> {
                 use #crate_location::derive_reexports::*;
-                let packet_name = "#name";
+                use #crate_location::protocol::PacketError as Error;
+                let packet_name = stringify!(#name);
 
                 #write
                 Ok(())
@@ -159,8 +166,16 @@ fn parse_enum(
             Discriminant::U128(0)
         }
     };
-    read.extend(quote! {?;});
-    write.extend(quote! {?;});
+    read.extend(quote! {.map_err(|e| Error::ValueError{
+            packet_name,
+            error: e,
+        })?;
+    });
+    write.extend(quote! {.map_err(|e| Error::ValueError{
+            packet_name,
+            error: e,
+        })?;
+    });
 
     for variant in &data.variants {
         let variant_name = &variant.ident;
@@ -247,8 +262,16 @@ fn parse_flags_struct(
             quote! {writer.write_u128::<LittleEndian>(num)}
         }
     };
-    read.extend(quote! {?;});
-    write_after.extend(quote! {?;});
+    read.extend(quote! {.map_err(|e| Error::ValueError{
+            packet_name,
+            error: e,
+        })?;
+    });
+    write_after.extend(quote! {.map_err(|e| Error::ValueError{
+            packet_name,
+            error: e,
+        })?;
+    });
 
     for field in data.fields.iter() {
         let field_name = field.ident.as_ref().unwrap();
@@ -307,8 +330,16 @@ fn parse_bitflags(read: &mut TS2, write: &mut TS2, repr: Size) -> syn::Result<()
             write.extend(quote! {writer.write_u128::<LittleEndian>(self.bits())});
         }
     };
-    read.extend(quote! {?;});
-    write.extend(quote! {?;});
+    read.extend(quote! {.map_err(|e| Error::ValueError{
+            packet_name,
+            error: e,
+        })?;
+    });
+    write.extend(quote! {.map_err(|e| Error::ValueError{
+            packet_name,
+            error: e,
+        })?;
+    });
 
     read.extend(quote! {Ok(Self::from_bits_truncate(num))});
     Ok(())
@@ -405,8 +436,20 @@ fn parse_struct_field(
 
         if settings.seek_after != 0 {
             let seek_after = settings.seek_after;
-            read.extend(quote! {reader.seek(std::io::SeekFrom::Current(#seek_after))?;});
-            write.extend(quote! {writer.write_all(&[0u8; #seek_after as usize])?;});
+            read.extend(quote! {reader.seek(std::io::SeekFrom::Current(#seek_after))
+                .map_err(|e| Error::PaddingError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
+            write.extend(quote! {writer.write_all(&[0u8; #seek_after as usize])
+                .map_err(|e| Error::PaddingError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
         }
     }
     read.extend(quote! {Ok(Self{#return_token})});
@@ -465,8 +508,20 @@ fn get_attrs(
         }
         "Seek" => {
             let amount: i64 = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
-            read.extend(quote! {reader.seek(std::io::SeekFrom::Current(#amount))?;});
-            write.extend(quote! {writer.write_all(&[0u8; #amount as usize]).unwrap();});
+            read.extend(quote! {reader.seek(std::io::SeekFrom::Current(#amount))
+                .map_err(|e| Error::PaddingError{
+                    packet_name,
+                    field_name: "unknown",
+                    error: e,
+                })?;
+            });
+            write.extend(quote! {writer.write_all(&[0u8; #amount as usize])
+                .map_err(|e| Error::PaddingError{
+                    packet_name,
+                    field_name: "unknown",
+                    error: e,
+                })?;
+            });
         }
         "SeekAfter" => {
             set.seek_after = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
@@ -477,8 +532,20 @@ fn get_attrs(
         }
         "Const_u16" => {
             let num: u16 = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
-            read.extend(quote! {reader.seek(std::io::SeekFrom::Current(2))?;});
-            write.extend(quote! {writer.write_u16::<LittleEndian>(#num).unwrap();});
+            read.extend(quote! {reader.seek(std::io::SeekFrom::Current(2))
+                .map_err(|e| Error::ConstantError{
+                    packet_name,
+                    const_val: #num as _,
+                    error: e,
+                })?;
+            });
+            write.extend(quote! {writer.write_u16::<LittleEndian>(#num)
+                .map_err(|e| Error::ConstantError{
+                    packet_name,
+                    const_val: #num as _,
+                    error: e,
+                })?;
+            });
         }
         "Len_u16" => {
             set.len_size = Some(Size::U16);
@@ -535,12 +602,24 @@ fn parse_field_type(
             let read_padding = if no_seek {
                 quote! {}
             } else {
-                quote! { reader.seek(std::io::SeekFrom::Current((len.next_multiple_of(4) - len) as i64))?; }
+                quote! { reader.seek(std::io::SeekFrom::Current((len.next_multiple_of(4) - len) as i64))
+                    .map_err(|e| Error::PaddingError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: e,
+                    })?;
+                }
             };
             let write_padding = if no_seek {
                 quote! {}
             } else {
-                quote! { writer.write_all(&vec![0u8; len.next_multiple_of(4) - len])?; }
+                quote! { writer.write_all(&vec![0u8; len.next_multiple_of(4) - len])
+                    .map_err(|e| Error::PaddingError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: e,
+                    })?;
+                }
             };
 
             let mut read_len = if let Some(size) = &set.len_size {
@@ -554,7 +633,13 @@ fn parse_field_type(
             } else {
                 quote! { read_magic(reader, sub, xor)}
             };
-            read_len.extend(quote! {?;});
+            read_len.extend(quote! {
+                .map_err(|e| Error::FieldLengthError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
 
             let mut write_len = if let Some(size) = &set.len_size {
                 match size {
@@ -577,18 +662,34 @@ fn parse_field_type(
             } else {
                 quote! { writer.write_u32::<LittleEndian>(write_magic(self.#field_name.len() as _, sub, xor)) }
             };
-            write_len.extend(quote! {?;});
+            write_len.extend(quote! {
+                .map_err(|e| Error::FieldLengthError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
 
             if set.fixed_len == 0 {
                 read.extend(quote! {
                     let len = #read_len;
                     let mut #field_name = vec![];
-                    let seek1 = reader.seek(std::io::SeekFrom::Current(0))?;
+                    let seek1 = reader.seek(std::io::SeekFrom::Current(0))
+                        .map_err(|e| Error::PaddingError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
                     for _ in 0..len {
                         #tmp_read;
                         #field_name.push(#tmp_name);
                     }
-                    let seek2 = reader.seek(std::io::SeekFrom::Current(0))?;
+                    let seek2 = reader.seek(std::io::SeekFrom::Current(0))
+                        .map_err(|e| Error::PaddingError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
                     let len = (seek2 - seek1) as usize;
                     #read_padding
                 });
@@ -601,7 +702,12 @@ fn parse_field_type(
                             #tmp_write;
                         }
                     }
-                    writer.write_all(&tmp_buf)?;
+                    writer.write_all(&tmp_buf)
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
                     let len = tmp_buf.len();
                     #write_padding
                 });
@@ -609,12 +715,22 @@ fn parse_field_type(
                 let len = set.fixed_len;
                 read.extend(quote! {
                     let mut #field_name = vec![];
-                    let seek1 = reader.seek(std::io::SeekFrom::Current(0))?;
+                    let seek1 = reader.seek(std::io::SeekFrom::Current(0))
+                        .map_err(|e| Error::PaddingError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
                     for _ in 0..#len {
                         #tmp_read
                         #field_name.push(#tmp_name);
                     }
-                    let seek2 = reader.seek(std::io::SeekFrom::Current(0))?;
+                    let seek2 = reader.seek(std::io::SeekFrom::Current(0))
+                        .map_err(|e| Error::PaddingError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
                     let len = (seek2 - seek1) as usize;
                     #read_padding
                 });
@@ -626,7 +742,12 @@ fn parse_field_type(
                             #tmp_write
                         }
                     };
-                    writer.write_all(&tmp_buf)?;
+                    writer.write_all(&tmp_buf)
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
                     let len = tmp_buf.len();
                     #write_padding
                 });
@@ -659,10 +780,20 @@ fn parse_field_type(
             } else if tmp_read.to_string().contains("read_u8()") {
                 read.extend(quote! {
                     let mut #field_name = [Default::default(); #len];
-                    reader.read_exact(&mut #field_name)?;
+                    reader.read_exact(&mut #field_name)
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e
+                        })?;
                 });
                 write.extend(quote! {
-                    writer.write_all(&self.#field_name)?;
+                    writer.write_all(&self.#field_name)
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e
+                        })?;
                 });
             } else {
                 read.extend(quote! {
@@ -701,8 +832,23 @@ fn type_read_write(
     };
 
     if let Some((read_fn, write_fn)) = &set.manual_rw {
-        read.extend(quote! { let #field_name = #read_fn(reader, packet_type, xor, sub)?; });
-        write.extend(quote! {#write_fn(&#write_name, writer, packet_type, xor, sub)?;});
+        read.extend(
+            quote! { let #field_name = #read_fn(reader, packet_type, xor, sub)
+                .map_err(|e| Error::CompositeFieldError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: Box::new(e)
+                })?;
+            },
+        );
+        write.extend(quote! {
+            #write_fn(&#write_name, writer, packet_type, xor, sub)
+                .map_err(|e| Error::CompositeFieldError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: Box::new(e)
+                })?;
+        });
         return Ok((read, write));
     }
 
@@ -710,113 +856,390 @@ fn type_read_write(
 
     match type_str {
         "u8" => {
-            read.extend(quote! {let #field_name = reader.read_u8()?;});
-            write.extend(quote! {writer.write_u8(#write_name.clone())?;});
+            read.extend(quote! {let #field_name = reader.read_u8()
+                .map_err(|e| Error::FieldError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
+            write.extend(quote! {writer.write_u8(#write_name.clone())
+                .map_err(|e| Error::FieldError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
         }
         "i8" => {
-            read.extend(quote! {let #field_name = reader.read_i8()?;});
-            write.extend(quote! {writer.write_i8(#write_name.clone())?;});
+            read.extend(quote! {let #field_name = reader.read_i8()
+                .map_err(|e| Error::FieldError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
+            write.extend(quote! {writer.write_i8(#write_name.clone())
+                .map_err(|e| Error::FieldError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
         }
         "u16" => {
-            read.extend(quote! {let #field_name = reader.read_u16::<LittleEndian>()?;});
-            write.extend(quote! {writer.write_u16::<LittleEndian>(#write_name.clone())?;});
+            read.extend(quote! {let #field_name = reader.read_u16::<LittleEndian>()
+                .map_err(|e| Error::FieldError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
+            write.extend(
+                quote! {writer.write_u16::<LittleEndian>(#write_name.clone())
+                    .map_err(|e| Error::FieldError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: e,
+                    })?;
+                },
+            );
         }
         "i16" => {
-            read.extend(quote! {let #field_name = reader.read_i16::<LittleEndian>()?;});
-            write.extend(quote! {writer.write_i16::<LittleEndian>(#write_name.clone())?;});
+            read.extend(quote! {let #field_name = reader.read_i16::<LittleEndian>()
+                .map_err(|e| Error::FieldError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
+            write.extend(
+                quote! {writer.write_i16::<LittleEndian>(#write_name.clone())
+                    .map_err(|e| Error::FieldError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: e,
+                    })?;
+                },
+            );
         }
         "u32" => {
-            read.extend(quote! {let #field_name = reader.read_u32::<LittleEndian>()?;});
-            write.extend(quote! {writer.write_u32::<LittleEndian>(#write_name.clone())?;});
+            read.extend(quote! {let #field_name = reader.read_u32::<LittleEndian>()
+                .map_err(|e| Error::FieldError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
+            write.extend(
+                quote! {writer.write_u32::<LittleEndian>(#write_name.clone())
+                    .map_err(|e| Error::FieldError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: e,
+                    })?;
+                },
+            );
         }
         "i32" => {
-            read.extend(quote! {let #field_name = reader.read_i32::<LittleEndian>()?;});
-            write.extend(quote! {writer.write_i32::<LittleEndian>(#write_name.clone())?;});
+            read.extend(quote! {let #field_name = reader.read_i32::<LittleEndian>()
+                .map_err(|e| Error::FieldError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
+            write.extend(
+                quote! {writer.write_i32::<LittleEndian>(#write_name.clone())
+                    .map_err(|e| Error::FieldError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: e,
+                    })?;
+                },
+            );
         }
         "u64" => {
-            read.extend(quote! {let #field_name = reader.read_u64::<LittleEndian>()?;});
-            write.extend(quote! {writer.write_u64::<LittleEndian>(#write_name.clone())?;});
+            read.extend(quote! {let #field_name = reader.read_u64::<LittleEndian>()
+                .map_err(|e| Error::FieldError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
+            write.extend(
+                quote! {writer.write_u64::<LittleEndian>(#write_name.clone())
+                    .map_err(|e| Error::FieldError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: e,
+                    })?;
+                },
+            );
         }
         "i64" => {
-            read.extend(quote! {let #field_name = reader.read_i64::<LittleEndian>()?;});
-            write.extend(quote! {writer.write_i64::<LittleEndian>(#write_name.clone())?;});
+            read.extend(quote! {let #field_name = reader.read_i64::<LittleEndian>()
+                .map_err(|e| Error::FieldError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
+            write.extend(
+                quote! {writer.write_i64::<LittleEndian>(#write_name.clone())
+                    .map_err(|e| Error::FieldError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: e,
+                    })?;
+                },
+            );
         }
         "u128" => {
-            read.extend(quote! {let #field_name = reader.read_u128::<LittleEndian>()?;});
-            write.extend(quote! {writer.write_u128::<LittleEndian>(#write_name.clone())?;});
+            read.extend(quote! {let #field_name = reader.read_u128::<LittleEndian>()
+                .map_err(|e| Error::FieldError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
+            write.extend(
+                quote! {writer.write_u128::<LittleEndian>(#write_name.clone())
+                    .map_err(|e| Error::FieldError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: e,
+                    })?;
+                },
+            );
         }
         "i128" => {
-            read.extend(quote! {let #field_name = reader.read_i128::<LittleEndian>()?;});
-            write.extend(quote! {writer.write_i128::<LittleEndian>(#write_name.clone())?;});
+            read.extend(quote! {let #field_name = reader.read_i128::<LittleEndian>()
+                .map_err(|e| Error::FieldError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?;
+            });
+            write.extend(
+                quote! {writer.write_i128::<LittleEndian>(#write_name.clone())
+                    .map_err(|e| Error::FieldError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: e,
+                    })?;
+                },
+            );
         }
         "f16" => {
             read.extend(
-                quote! {let #field_name = f16::from_bits(reader.read_u16::<LittleEndian>()?);},
+                quote! {let #field_name = f16::from_bits(reader.read_u16::<LittleEndian>()
+                .map_err(|e| Error::FieldError{
+                    packet_name,
+                    field_name: stringify!(#field_name),
+                    error: e,
+                })?);
+                },
             );
-            write
-                .extend(quote! {writer.write_u16::<LittleEndian>(#write_name.clone().to_bits())?;});
+            write.extend(
+                quote! {writer.write_u16::<LittleEndian>(#write_name.clone().to_bits())
+                    .map_err(|e| Error::FieldError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: e,
+                    })?;
+                },
+            );
         }
         "f32" => {
-            read.extend(quote! {let #field_name = reader.read_f32::<LittleEndian>()?;});
-            write.extend(quote! {writer.write_f32::<LittleEndian>(#write_name.clone())?;});
+            read.extend(quote! {let #field_name = reader.read_f32::<LittleEndian>()
+                    .map_err(|e| Error::FieldError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: e,
+                    })?;
+            });
+            write.extend(
+                quote! {writer.write_f32::<LittleEndian>(#write_name.clone())
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
+                },
+            );
         }
         "f64" => {
-            read.extend(quote! {let #field_name = reader.read_f64::<LittleEndian>()?;});
-            write.extend(quote! {writer.write_f64::<LittleEndian>(#write_name.clone())?;});
+            read.extend(quote! {let #field_name = reader.read_f64::<LittleEndian>()
+                    .map_err(|e| Error::FieldError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: e,
+                    })?;
+            });
+            write.extend(
+                quote! {writer.write_f64::<LittleEndian>(#write_name.clone())
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
+                },
+            );
         }
         "Ipv4Addr" => {
             read.extend(quote! {
                 let mut ip_buf = [0u8; 4];
-                reader.read_exact(&mut ip_buf)?;
+                reader.read_exact(&mut ip_buf)
+                    .map_err(|e| Error::FieldError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: e,
+                    })?;
+
                 let #field_name = std::net::Ipv4Addr::from(ip_buf);
             });
             write.extend(quote! {
-                writer.write_all(&#write_name.octets())?;
-            })
+                writer.write_all(&#write_name.octets())
+                    .map_err(|e| Error::FieldError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: e,
+                    })?;
+            });
         }
         "Duration" => {
             if set.is_psotime {
                 read.extend(
-                    quote! {let #field_name = psotime_to_duration(reader.read_u64::<LittleEndian>()?);},
+                    quote! {let #field_name = psotime_to_duration(reader.read_u64::<LittleEndian>()
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?);
+                    },
                 );
                 write.extend(
-                    quote! {writer.write_u64::<LittleEndian>(duration_to_psotime(#write_name))?;},
+                    quote! {writer.write_u64::<LittleEndian>(duration_to_psotime(#write_name))
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
+                    },
                 );
             } else {
                 read.extend(
-                    quote! {let #field_name = core::time::Duration::from_secs(reader.read_u32::<LittleEndian>()? as u64);}
+                    quote! {let #field_name = core::time::Duration::from_secs(reader.read_u32::<LittleEndian>()
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })? 
+                        as u64);
+                    }
                 );
                 write.extend(
-                    quote! {writer.write_u32::<LittleEndian>(#write_name.as_secs() as u32)?;},
+                    quote! {writer.write_u32::<LittleEndian>(#write_name.as_secs() as u32)
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
+                    },
                 );
             }
         }
         "String" => match set.str_type {
             StringType::Unknown => {
-                read.extend(quote! {let #field_name = String::read_variable(reader, sub, xor)?;});
-                write.extend(quote! {writer.write_all(&#write_name.write_variable(sub, xor))?;});
+                read.extend(quote! {let #field_name = String::read_variable(reader, sub, xor)
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
+                });
+                write.extend(quote! {writer.write_all(&#write_name.write_variable(sub, xor))
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
+                });
             }
             StringType::Fixed(len) => {
-                read.extend(quote! {let #field_name = String::read(reader, #len)?;});
-                write.extend(quote! {writer.write_all(&#write_name.write(#len as usize))?;});
+                read.extend(quote! {let #field_name = String::read(reader, #len)
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
+                });
+                write.extend(quote! {writer.write_all(&#write_name.write(#len as usize))
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
+                });
             }
         },
         "AsciiString" => match set.str_type {
             StringType::Unknown => {
                 read.extend(
-                    quote! {let #field_name = AsciiString::read_variable(reader, sub, xor)?;},
+                    quote! {let #field_name = AsciiString::read_variable(reader, sub, xor)
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
+                    },
                 );
-                write.extend(quote! {writer.write_all(&#write_name.write_variable(sub, xor))?;});
+                write.extend(quote! {writer.write_all(&#write_name.write_variable(sub, xor))
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
+                });
             }
             StringType::Fixed(len) => {
-                read.extend(quote! {let #field_name = AsciiString::read(reader, #len)?;});
-                write.extend(quote! {writer.write_all(&#write_name.write(#len as usize))?;});
+                read.extend(quote! {let #field_name = AsciiString::read(reader, #len)
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
+                });
+                write.extend(quote! {writer.write_all(&#write_name.write(#len as usize))
+                        .map_err(|e| Error::FieldError{
+                            packet_name,
+                            field_name: stringify!(#field_name),
+                            error: e,
+                        })?;
+                });
             }
         },
         _ => {
             let out_type = Ident::new(&full_type_path, Span::call_site());
-            read.extend(quote! {let #field_name = <#out_type as HelperReadWrite>::read(reader, packet_type, xor, sub)?;});
-            write.extend(quote! {#write_name.write(writer, packet_type, xor, sub)?;});
+            read.extend(quote! {let #field_name = <#out_type as HelperReadWrite>::read(reader, packet_type, xor, sub)
+                .map_err(|e| {
+                    Error::CompositeFieldError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: Box::new(e),
+                    }
+                })?;
+            });
+            write.extend(quote! {#write_name.write(writer, packet_type, xor, sub)
+                .map_err(|e| {
+                    Error::CompositeFieldError{
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        error: Box::new(e),
+                    }
+                })?;
+            });
         }
     }
     Ok((read, write))

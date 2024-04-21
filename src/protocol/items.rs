@@ -1,7 +1,7 @@
 //! Item related packets. \[0x0F\]
 use super::{
     models::{character::HSVColor, Position},
-    HelperReadWrite, ObjectHeader, PacketReadWrite, PacketType,
+    HelperReadWrite, ObjectHeader, PacketError, PacketReadWrite, PacketType,
 };
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::time::Duration;
@@ -1283,8 +1283,14 @@ impl PacketReadWrite for LoadItemPacket {
         reader: &mut (impl std::io::Read + std::io::Seek),
         flags: &super::Flags,
         packet_type: PacketType,
-    ) -> std::io::Result<Self> {
-        let packet = LoadItemInternal::read(reader, flags, packet_type)?;
+    ) -> Result<Self, PacketError> {
+        let packet = LoadItemInternal::read(reader, flags, packet_type).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "LoadItemPacket",
+                field_name: "internal",
+                error: Box::new(e),
+            }
+        })?;
         let mut names = packet.names.chars();
         let mut items = vec![];
         for (id, name_length) in packet.ids.into_iter().zip(packet.name_length.into_iter()) {
@@ -1294,7 +1300,7 @@ impl PacketReadWrite for LoadItemPacket {
         Ok(Self { items })
     }
 
-    fn write(&self, packet_type: PacketType) -> std::io::Result<Vec<u8>> {
+    fn write(&self, packet_type: PacketType) -> Result<Vec<u8>, PacketError> {
         let mut names = String::new();
         let mut name_length = vec![];
         let mut ids = vec![];
@@ -1309,6 +1315,11 @@ impl PacketReadWrite for LoadItemPacket {
             name_length,
         }
         .write(packet_type)
+        .map_err(|e| PacketError::CompositeFieldError {
+            packet_name: "LoadItemPacket",
+            field_name: "internal",
+            error: Box::new(e),
+        })
     }
 }
 
@@ -1318,16 +1329,41 @@ impl HelperReadWrite for Item {
         packet_type: PacketType,
         xor: u32,
         sub: u32,
-    ) -> std::io::Result<Self> {
-        let uuid = reader.read_u64::<LittleEndian>()?;
-        let unk5 = ItemId::read(reader, packet_type, xor, sub)?;
-        let unk6 = ItemType::read(reader, &unk5, packet_type)?;
+    ) -> Result<Self, PacketError> {
+        let uuid = reader
+            .read_u64::<LittleEndian>()
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "Item",
+                field_name: "uuid",
+                error: e,
+            })?;
+        let id = ItemId::read(reader, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "Item",
+                field_name: "id",
+                error: Box::new(e),
+            }
+        })?;
+        let data = ItemType::read(reader, &id, packet_type).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "Item",
+                field_name: "data",
+                error: Box::new(e),
+            }
+        })?;
         #[cfg(feature = "ngs_packets")]
         let unk = match packet_type {
             PacketType::NGS => {
                 let mut data = [0u16; 12];
                 for byte in data.iter_mut() {
-                    *byte = reader.read_u16::<LittleEndian>()?;
+                    *byte =
+                        reader
+                            .read_u16::<LittleEndian>()
+                            .map_err(|e| PacketError::FieldError {
+                                packet_name: "Item",
+                                field_name: "unk",
+                                error: e,
+                            })?;
                 }
                 data
             }
@@ -1335,8 +1371,8 @@ impl HelperReadWrite for Item {
         };
         Ok(Self {
             uuid,
-            id: unk5,
-            data: unk6,
+            id,
+            data,
             #[cfg(feature = "ngs_packets")]
             unk,
         })
@@ -1347,14 +1383,38 @@ impl HelperReadWrite for Item {
         packet_type: PacketType,
         xor: u32,
         sub: u32,
-    ) -> std::io::Result<()> {
-        writer.write_u64::<LittleEndian>(self.uuid)?;
-        self.id.write(writer, packet_type, xor, sub)?;
-        self.data.write(writer, packet_type)?;
+    ) -> Result<(), PacketError> {
+        writer
+            .write_u64::<LittleEndian>(self.uuid)
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "Item",
+                field_name: "uuid",
+                error: e,
+            })?;
+        self.id.write(writer, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "Item",
+                field_name: "id",
+                error: Box::new(e),
+            }
+        })?;
+        self.data
+            .write(writer, packet_type)
+            .map_err(|e| PacketError::CompositeFieldError {
+                packet_name: "Item",
+                field_name: "data",
+                error: Box::new(e),
+            })?;
         #[cfg(feature = "ngs_packets")]
         if packet_type == PacketType::NGS {
             for byte in self.unk {
-                writer.write_u16::<LittleEndian>(byte)?;
+                writer
+                    .write_u16::<LittleEndian>(byte)
+                    .map_err(|e| PacketError::FieldError {
+                        packet_name: "Item",
+                        field_name: "unk",
+                        error: e,
+                    })?;
             }
         }
         Ok(())
@@ -1366,7 +1426,7 @@ impl ItemType {
         reader: &mut (impl std::io::Read + std::io::Seek),
         item: &ItemId,
         packet_type: PacketType,
-    ) -> std::io::Result<Self> {
+    ) -> Result<Self, PacketError> {
         Ok(match (item.item_type, packet_type) {
             #[cfg(feature = "ngs_packets")]
             (1, PacketType::NGS) => {
@@ -1387,7 +1447,13 @@ impl ItemType {
             #[cfg(feature = "ngs_packets")]
             (_, PacketType::NGS) => Self::UnknownNGS({
                 let mut tmp = [0u8; 0x38];
-                reader.read_exact(&mut tmp)?;
+                reader
+                    .read_exact(&mut tmp)
+                    .map_err(|e| PacketError::FieldError {
+                        packet_name: "ItemType",
+                        field_name: "field_0",
+                        error: e,
+                    })?;
                 tmp.into()
             }),
             (1, _) => Self::Weapon(WeaponItem::read(reader, packet_type, 0, 0)?),
@@ -1397,7 +1463,14 @@ impl ItemType {
             (10, _) => Self::Camo(CamoItem::read(reader, packet_type, 0, 0)?),
             _ => Self::Unknown({
                 let mut tmp = [0u8; 0x28];
-                reader.read_exact(&mut tmp)?;
+                reader
+                    .read_exact(&mut tmp)
+                    .map_err(|e| PacketError::FieldError {
+                        packet_name: "ItemType",
+                        field_name: "field_0",
+                        error: e,
+                    })?;
+
                 tmp.into()
             }),
         })
@@ -1406,7 +1479,7 @@ impl ItemType {
         &self,
         writer: &mut impl std::io::Write,
         packet_type: PacketType,
-    ) -> std::io::Result<()> {
+    ) -> Result<(), PacketError> {
         match self {
             Self::Weapon(x) => x.write(writer, packet_type, 0, 0)?,
             Self::Clothing(x) => x.write(writer, packet_type, 0, 0)?,
@@ -1416,7 +1489,13 @@ impl ItemType {
             Self::Unknown(x) => {
                 let mut data = x.to_vec();
                 data.resize(0x28, 0);
-                writer.write_all(&data)?
+                writer
+                    .write_all(&data)
+                    .map_err(|e| PacketError::FieldError {
+                        packet_name: "ItemType",
+                        field_name: "field_0",
+                        error: e,
+                    })?;
             }
             #[cfg(feature = "ngs_packets")]
             Self::WeaponNGS(x) => x.write(writer, packet_type, 0, 0)?,
@@ -1432,7 +1511,13 @@ impl ItemType {
             Self::UnknownNGS(x) => {
                 let mut data = x.to_vec();
                 data.resize(0x38, 0);
-                writer.write_all(&data)?
+                writer
+                    .write_all(&data)
+                    .map_err(|e| PacketError::FieldError {
+                        packet_name: "ItemType",
+                        field_name: "field_0",
+                        error: e,
+                    })?;
             }
         }
         Ok(())
@@ -1444,10 +1529,16 @@ fn read_packed_affixes(
     _: PacketType,
     _: u32,
     _: u32,
-) -> std::io::Result<[u16; 8]> {
+) -> Result<[u16; 8], PacketError> {
     let mut packed = [0u8; 12];
     let mut affixes = vec![];
-    reader.read_exact(&mut packed)?;
+    reader
+        .read_exact(&mut packed)
+        .map_err(|e| PacketError::FieldError {
+            packet_name: "PackedAffixes",
+            field_name: "affixes",
+            error: e,
+        })?;
     for i in 0..4 {
         let affix_1 = u16::from_le_bytes([packed[i * 3], (packed[i * 3 + 2] & 0xF0) >> 4]);
         let affix_2 = u16::from_le_bytes([packed[i * 3 + 1], (packed[i * 3 + 2] & 0xF)]);
@@ -1463,7 +1554,7 @@ fn write_packed_affixes(
     _: PacketType,
     _: u32,
     _: u32,
-) -> std::io::Result<()> {
+) -> Result<(), PacketError> {
     let mut packed = vec![];
     for i in 0..4 {
         let affix_1 = affixes[i * 2].to_le_bytes();
@@ -1473,7 +1564,13 @@ fn write_packed_affixes(
         let packed_int = (affix_1[1] << 4 & 0xF0) | (affix_2[1] & 0xF);
         packed.push(packed_int);
     }
-    writer.write_all(&packed)?;
+    writer
+        .write_all(&packed)
+        .map_err(|e| PacketError::FieldError {
+            packet_name: "PackedAffixes",
+            field_name: "affixes",
+            error: e,
+        })?;
     Ok(())
 }
 

@@ -144,7 +144,7 @@ pub struct FriendListEntry {
     pub unk13: Duration,
 }
 
-bitflags::bitflags!{
+bitflags::bitflags! {
     /// Friend flags.
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[cfg_attr(feature = "serde", serde(default))]

@@ -16,11 +16,37 @@ use std::{
     io::{Error, ErrorKind},
 };
 
+/// Error type returned by encryption methods.
+#[derive(Debug, thiserror::Error)]
+pub enum EncryptionError {
+    /// Error has occured in [`rsa`] functions.
+    #[error("RSA error occured: {0}")]
+    RSAError(#[from] rsa::errors::Error),
+    /// No private key was provided for decryption.
+    #[error("no private key provided")]
+    NoPrivateKey,
+    /// No public key was provided for encryption.
+    #[error("no public key provided")]
+    NoPublicKey,
+    /// AES encryption padding failed.
+    #[error("AES encryption padding failed")]
+    PadError,
+    /// AES decryption unpadding failed.
+    #[error("AES decryption unpadding failed")]
+    UnpadError,
+    /// Error occured during ZSTD operations.
+    #[error("error occured while performing ZSTD operations: {error}")]
+    ZSTDError {
+        #[source]
+        error: std::io::Error,
+    },
+}
+
 pub trait Encryptor {
-    fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>>;
+    fn encrypt(&mut self, data: &[u8]) -> Result<Vec<u8>, EncryptionError>;
 }
 pub trait Decryptor {
-    fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>>;
+    fn decrypt(&mut self, data: &[u8]) -> Result<Vec<u8>, EncryptionError>;
     fn is_rc4(&self) -> bool {
         false
     }
@@ -71,29 +97,21 @@ pub enum DecryptorType {
 }
 
 impl Encryption {
-    pub fn decrypt_rsa_data(packet: &[u8], key: &PrivateKey) -> std::io::Result<Vec<u8>> {
+    pub fn decrypt_rsa_data(packet: &[u8], key: &PrivateKey) -> Result<Vec<u8>, EncryptionError> {
         #[cfg(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"))]
-        let private_key = match key.into_key() {
-            Ok(Some(x)) => x,
-            Ok(None) => {
-                return Err(Error::new(ErrorKind::Other, "No key provided".to_string()));
-            }
-            Err(x) => {
-                return Err(Error::new(ErrorKind::Other, format!("{x}")));
+        let private_key = match key.into_key()? {
+            Some(x) => x,
+            None => {
+                return Err(EncryptionError::NoPrivateKey);
             }
         };
         #[cfg(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"))]
-        let dec_data = match private_key.decrypt(Pkcs1v15Encrypt, packet) {
-            Ok(x) => x,
-            Err(x) => {
-                return Err(Error::new(ErrorKind::Other, format!("{x}")));
-            }
-        };
+        let dec_data = private_key.decrypt(Pkcs1v15Encrypt, packet)?;
         #[cfg(not(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc")))]
         let dec_data = packet.to_vec();
         Ok(dec_data)
     }
-    pub fn from_dec_data(data: &[u8], is_ngs: bool) -> std::io::Result<Self> {
+    pub fn from_dec_data(data: &[u8], is_ngs: bool) -> Result<Self, EncryptionError> {
         #[cfg(any(feature = "base_enc", feature = "ngs_enc"))]
         if data.len() > 0x30 {
             let mut iv: [u8; 0x10] = [
@@ -105,12 +123,8 @@ impl Encryption {
             key_d.copy_from_slice(&data[0x0..0x30]);
             key.copy_from_slice(&data[0x30..0x50]);
             let aes = cbc::Decryptor::<aes::Aes256>::new(&key.into(), &iv.into());
-            match aes.decrypt_padded_mut::<Pkcs7>(&mut key_d) {
-                Ok(_) => {}
-                Err(x) => {
-                    return Err(Error::new(ErrorKind::Other, format!("{x}")));
-                }
-            }
+            aes.decrypt_padded_mut::<Pkcs7>(&mut key_d)
+                .map_err(|_| EncryptionError::UnpadError)?;
             iv.copy_from_slice(&key_d[0x00..0x10]);
             if is_ngs {
                 #[cfg(feature = "ngs_enc")]
@@ -176,7 +190,7 @@ impl Encryption {
 }
 
 impl Encryptor for Encryption {
-    fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+    fn encrypt(&mut self, data: &[u8]) -> Result<Vec<u8>, EncryptionError> {
         if data.is_empty() {
             return Ok(vec![]);
         }
@@ -192,7 +206,7 @@ impl Encryptor for Encryption {
     }
 }
 impl Decryptor for Encryption {
-    fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+    fn decrypt(&mut self, data: &[u8]) -> Result<Vec<u8>, EncryptionError> {
         if data.is_empty() {
             return Ok(vec![]);
         }
@@ -246,7 +260,7 @@ impl EncryptorType {
 }
 #[cfg(feature = "split_connection")]
 impl Encryptor for EncryptorType {
-    fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+    fn encrypt(&mut self, data: &[u8]) -> Result<Vec<u8>, EncryptionError> {
         if data.is_empty() {
             return Ok(vec![]);
         }
@@ -279,7 +293,7 @@ impl DecryptorType {
 
 #[cfg(feature = "split_connection")]
 impl Decryptor for DecryptorType {
-    fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+    fn decrypt(&mut self, data: &[u8]) -> Result<Vec<u8>, EncryptionError> {
         if data.is_empty() {
             return Ok(vec![]);
         }
@@ -325,17 +339,14 @@ pub struct Aes {
 }
 #[cfg(feature = "base_enc")]
 impl Decryptor for Aes {
-    fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+    fn decrypt(&mut self, data: &[u8]) -> Result<Vec<u8>, EncryptionError> {
         let mut iv = [0u8; 0x10];
         iv.copy_from_slice(&data[0x48..0x58]);
         let aes = cbc::Decryptor::<aes::Aes256>::new(&self.key.into(), &iv.into());
         let mut data_copy = data[0x58..].to_vec();
-        let plain_data = match aes.decrypt_padded_mut::<Pkcs7>(&mut data_copy[..]) {
-            Ok(x) => x,
-            Err(x) => {
-                return Err(Error::new(ErrorKind::Other, format!("{x}")));
-            }
-        };
+        let plain_data = aes
+            .decrypt_padded_mut::<Pkcs7>(&mut data_copy[..])
+            .map_err(|x| EncryptionError::UnpadError)?;
         Ok(plain_data.to_vec())
     }
     fn get_len_type(&self) -> LengthType {
@@ -344,34 +355,41 @@ impl Decryptor for Aes {
 }
 #[cfg(feature = "base_enc")]
 impl Encryptor for Aes {
-    fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+    fn encrypt(&mut self, data: &[u8]) -> Result<Vec<u8>, EncryptionError> {
         use hmac::Hmac;
         use hmac::Mac;
         use rand::RngCore;
 
         let mut iv = [0u8; 0x10];
         rand::thread_rng().fill_bytes(&mut iv);
-        let aes = cbc::Encryptor::<aes::Aes256>::new(&self.key.into(), &iv.into());
+
         let mut out_data = vec![0u8; 0x40];
-        out_data.write_u32::<BigEndian>(0x01_00_FF_FF)?;
+        out_data
+            .write_u32::<BigEndian>(0x01_00_FF_FF)
+            .expect("writing to Vec should not fail");
+
         let mut in_data = data.to_vec();
         let len = in_data.len();
         in_data.resize(len + 16, 0);
-        let crypt_data = match aes.encrypt_padded_mut::<Pkcs7>(&mut in_data, len) {
-            Ok(x) => x,
-            Err(x) => {
-                return Err(Error::new(ErrorKind::Other, format!("{x}")));
-            }
-        };
-        out_data.write_u32::<LittleEndian>((crypt_data.len() + 0x58) as u32)?;
+
+        let crypt_data = cbc::Encryptor::<aes::Aes256>::new(&self.key.into(), &iv.into())
+            .encrypt_padded_mut::<Pkcs7>(&mut in_data, len)
+            .map_err(|_| EncryptionError::PadError)?;
+
+        out_data
+            .write_u32::<LittleEndian>((crypt_data.len() + 0x58) as u32)
+            .expect("writing to Vec should not fail");
         out_data.extend_from_slice(&iv);
         out_data.extend_from_slice(crypt_data);
+
+        // hash calculation
         let mut sha = Hmac::<Sha256>::new_from_slice(b"passwordxxxxxxxx").unwrap();
         sha.update(&out_data[0x44..]);
         out_data[0x20..0x40].copy_from_slice(&sha.finalize().into_bytes().to_vec()[..]);
         let mut sha = Hmac::<Sha256>::new_from_slice(b"passwordxxxxxxxx").unwrap();
         sha.update(&out_data[..0x58]);
         out_data[..0x20].copy_from_slice(&sha.finalize().into_bytes().to_vec()[..]);
+
         Ok(out_data)
     }
 }
@@ -386,23 +404,19 @@ pub struct AesNgs {
 }
 #[cfg(feature = "ngs_enc")]
 impl Decryptor for AesNgs {
-    fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+    fn decrypt(&mut self, data: &[u8]) -> Result<Vec<u8>, EncryptionError> {
         let mut next_iv = [0u8; 0x10];
         next_iv.copy_from_slice(&data[data.len() - 0x10..]);
         let aes = cbc::Decryptor::<aes::Aes256>::new(&self.key.into(), &self.iv_in.into());
         let mut data_copy = data[0x48..].to_vec();
-        let plain_data = match aes.decrypt_padded_mut::<Pkcs7>(&mut data_copy[..]) {
-            Ok(x) => x,
-            Err(e) => {
-                return Err(Error::new(ErrorKind::Other, format!("{e}")));
-            }
-        };
+        let plain_data = aes
+            .decrypt_padded_mut::<Pkcs7>(&mut data_copy[..])
+            .map_err(|x| EncryptionError::UnpadError)?;
         let mut ready_data = vec![];
         if plain_data[1..=3] == [0xb5, 0x2f, 0xfd] {
-            match zstd::stream::decode_all(plain_data) {
-                Ok(ref mut unpacked_data) => ready_data.append(unpacked_data),
-                Err(e) => return Err(Error::new(ErrorKind::Other, format!("{e}"))),
-            };
+            let mut unpacked_data = zstd::stream::decode_all(plain_data)
+                .map_err(|e| EncryptionError::ZSTDError { error: e })?;
+            ready_data.append(&mut unpacked_data);
         } else {
             ready_data.append(&mut plain_data.to_vec());
         }
@@ -415,7 +429,7 @@ impl Decryptor for AesNgs {
 }
 #[cfg(feature = "ngs_enc")]
 impl Encryptor for AesNgs {
-    fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+    fn encrypt(&mut self, data: &[u8]) -> Result<Vec<u8>, EncryptionError> {
         use sha2::Digest;
         let mut tmp_data = vec![];
         // if enc {
@@ -427,26 +441,31 @@ impl Encryptor for AesNgs {
         tmp_data.extend_from_slice(data);
         // }
 
-        let aes = cbc::Encryptor::<aes::Aes256>::new(&self.key.into(), &self.iv_out.into());
         let mut out_data = vec![0u8; 0x40];
-        out_data.write_u32::<BigEndian>(0x01_00_FF_FF)?;
+        out_data
+            .write_u32::<BigEndian>(0x01_00_FF_FF)
+            .expect("writing to Vec should not fail");
+
         let len = tmp_data.len();
         tmp_data.resize(len + 16, 0);
-        let crypt_data = match aes.encrypt_padded_mut::<Pkcs7>(&mut tmp_data, len) {
-            Ok(x) => x,
-            Err(x) => {
-                return Err(Error::new(ErrorKind::Other, format!("{x}")));
-            }
-        };
-        out_data.write_u32::<LittleEndian>((crypt_data.len() + 0x48) as u32)?;
+
+        let crypt_data = cbc::Encryptor::<aes::Aes256>::new(&self.key.into(), &self.iv_out.into())
+            .encrypt_padded_mut::<Pkcs7>(&mut tmp_data, len)
+            .map_err(|_| EncryptionError::PadError)?;
+
+        out_data
+            .write_u32::<LittleEndian>((crypt_data.len() + 0x48) as u32)
+            .expect("writing to Vec should not fail");
         out_data.extend_from_slice(crypt_data);
 
+        // hash calculation
         let mut sha_hasher = Sha256::new();
         sha_hasher.update(&out_data[0x44..]);
         out_data[0x20..0x40].copy_from_slice(&sha_hasher.finalize());
         let mut sha_hasher = Sha256::new();
         sha_hasher.update(&out_data[..0x48]);
         out_data[..0x20].copy_from_slice(&sha_hasher.finalize());
+
         self.iv_out
             .copy_from_slice(&out_data[out_data.len() - 0x10..]);
         Ok(out_data)
@@ -460,7 +479,7 @@ pub struct Rc4Enc {
 }
 #[cfg(feature = "vita_enc")]
 impl Encryptor for Rc4Enc {
-    fn encrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+    fn encrypt(&mut self, data: &[u8]) -> Result<Vec<u8>, EncryptionError> {
         use rc4::StreamCipher;
         let mut data = data.to_vec();
         self.encryptor.apply_keystream(&mut data);
@@ -481,7 +500,7 @@ pub struct Rc4Dec {
 }
 #[cfg(feature = "vita_enc")]
 impl Decryptor for Rc4Dec {
-    fn decrypt(&mut self, data: &[u8]) -> std::io::Result<Vec<u8>> {
+    fn decrypt(&mut self, data: &[u8]) -> Result<Vec<u8>, EncryptionError> {
         use rc4::StreamCipher;
         let mut data = data.to_vec();
         self.decryptor.apply_keystream(&mut data);
@@ -502,26 +521,18 @@ impl Debug for Rc4Dec {
 }
 
 #[cfg(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc"))]
-pub fn encrypt(packet: &[u8], out_key: &PublicKey) -> std::io::Result<Vec<u8>> {
-    let out_key = match out_key.into_key() {
-        Ok(Some(x)) => x,
-        Ok(None) => {
-            return Err(Error::new(ErrorKind::Other, "No key provided".to_string()));
-        }
-        Err(x) => {
-            return Err(Error::new(ErrorKind::Other, format!("{x}")));
+pub fn encrypt(packet: &[u8], out_key: &PublicKey) -> Result<Vec<u8>, EncryptionError> {
+    let out_key = match out_key.into_key()? {
+        Some(x) => x,
+        None => {
+            return Err(EncryptionError::NoPublicKey);
         }
     };
-    let enc_data = match out_key.encrypt(&mut rand::thread_rng(), Pkcs1v15Encrypt, packet) {
-        Ok(x) => x,
-        Err(x) => {
-            return Err(Error::new(ErrorKind::Other, format!("{x}")));
-        }
-    };
+    let enc_data = out_key.encrypt(&mut rand::thread_rng(), Pkcs1v15Encrypt, packet)?;
     Ok(enc_data)
 }
 
 #[cfg(not(any(feature = "base_enc", feature = "ngs_enc", feature = "vita_enc")))]
-pub fn encrypt(packet: &[u8], _: &PublicKey) -> std::io::Result<Vec<u8>> {
+pub fn encrypt(packet: &[u8], _: &PublicKey) -> Result<Vec<u8>, EncryptionError> {
     Ok(packet.to_vec())
 }

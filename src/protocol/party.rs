@@ -634,7 +634,7 @@ pub enum ShortLanguage {
     Unknown,
 }
 
-bitflags::bitflags!{
+bitflags::bitflags! {
     /// Party flags.
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[cfg_attr(feature = "serde", serde(default))]
