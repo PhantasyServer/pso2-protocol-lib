@@ -38,12 +38,14 @@ pub fn packet_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
                 packet_type: #crate_location::protocol::PacketType
             ) -> std::io::Result<Self> {
                 use #crate_location::derive_reexports::*;
+                let packet_name = "#name";
 
                 let (xor, sub) = (#xor, #sub);
                 #read
             }
             fn write(&self, packet_type: #crate_location::protocol::PacketType) -> std::io::Result<Vec<u8>> {
                 use #crate_location::derive_reexports::*;
+                let packet_name = "#name";
 
                 let mut buf = PacketHeader::new(#id, #subid, #flags).write(packet_type);
                 let writer = &mut buf;
@@ -77,7 +79,7 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
             let Some(repr_type) = is_bitflags else {
                 unreachable!()
             };
-            parse_bitflags_struct(&mut read, &mut write, repr_type)?
+            parse_bitflags(&mut read, &mut write, repr_type)?
         }
         Data::Struct(data) if is_flags.is_some() => {
             let Some(repr_type) = is_flags else {
@@ -86,7 +88,7 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
             parse_flags_struct(&mut read, &mut write, data, repr_type)?
         }
         Data::Struct(data) => parse_struct_field(&mut read, &mut write, data, no_seek)?,
-        Data::Enum(data) => parse_enum_field(&mut read, &mut write, data, repr_type)?,
+        Data::Enum(data) => parse_enum(&mut read, &mut write, data, repr_type)?,
         _ => {}
     }
 
@@ -100,6 +102,7 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
                 sub: u32
             ) -> std::io::Result<Self> {
                 use #crate_location::derive_reexports::*;
+                let packet_name = "#name";
 
                 #read
             }
@@ -111,6 +114,7 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
                 sub: u32
             ) -> std::io::Result<()> {
                 use #crate_location::derive_reexports::*;
+                let packet_name = "#name";
 
                 #write
                 Ok(())
@@ -120,7 +124,7 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
     Ok(gen.into())
 }
 
-fn parse_enum_field(
+fn parse_enum(
     read: &mut TS2,
     write: &mut TS2,
     data: &DataEnum,
@@ -130,61 +134,75 @@ fn parse_enum_field(
     let mut match_expr = quote! {};
     let mut discriminant = match repr_type {
         Size::U8 => {
-            read.extend(quote! {let num = reader.read_u8()?;});
-            write.extend(quote! {writer.write_u8(*self as u8)?;});
+            read.extend(quote! {let num = reader.read_u8()});
+            write.extend(quote! {writer.write_u8(*self as _)});
             Discriminant::U8(0)
         }
         Size::U16 => {
-            read.extend(quote! {let num = reader.read_u16::<LittleEndian>()?;});
-            write.extend(quote! {writer.write_u16::<LittleEndian>(*self as u16)?;});
+            read.extend(quote! {let num = reader.read_u16::<LittleEndian>()});
+            write.extend(quote! {writer.write_u16::<LittleEndian>(*self as _)});
             Discriminant::U16(0)
         }
         Size::U32 => {
-            read.extend(quote! {let num = reader.read_u32::<LittleEndian>()?;});
-            write.extend(quote! {writer.write_u32::<LittleEndian>(*self as u32)?;});
+            read.extend(quote! {let num = reader.read_u32::<LittleEndian>()});
+            write.extend(quote! {writer.write_u32::<LittleEndian>(*self as _)});
             Discriminant::U32(0)
         }
         Size::U64 => {
-            read.extend(quote! {let num = reader.read_u64::<LittleEndian>()?;});
-            write.extend(quote! {writer.write_u64::<LittleEndian>(*self as u64)?;});
+            read.extend(quote! {let num = reader.read_u64::<LittleEndian>()});
+            write.extend(quote! {writer.write_u64::<LittleEndian>(*self as _)});
             Discriminant::U64(0)
         }
         Size::U128 => {
-            read.extend(quote! {let num = reader.read_u128::<LittleEndian>()?;});
-            write.extend(quote! {writer.write_u128::<LittleEndian>(*self as u128)?;});
+            read.extend(quote! {let num = reader.read_u128::<LittleEndian>()});
+            write.extend(quote! {writer.write_u128::<LittleEndian>(*self as _)});
             Discriminant::U128(0)
         }
     };
-    
+    read.extend(quote! {?;});
+    write.extend(quote! {?;});
+
     for variant in &data.variants {
-        let name = &variant.ident;
+        let variant_name = &variant.ident;
         let mut settings = Settings::default();
+
         if let Some((_, Expr::Lit(x))) = &variant.discriminant {
-            if let Lit::Int(int) = &x.lit {
-                match &mut discriminant {
-                    Discriminant::U8(d) => *d = int.base10_parse()?,
-                    Discriminant::U16(d) => *d = int.base10_parse()?,
-                    Discriminant::U32(d) => *d = int.base10_parse()?,
-                    Discriminant::U64(d) => *d = int.base10_parse()?,
-                    Discriminant::U128(d) => *d = int.base10_parse()?,
-                }
+            let Lit::Int(int) = &x.lit else {
+                return Err(syn::Error::new(x.span(), "Expected integer literal"));
+            };
+            match &mut discriminant {
+                Discriminant::U8(d) => *d = int.base10_parse()?,
+                Discriminant::U16(d) => *d = int.base10_parse()?,
+                Discriminant::U32(d) => *d = int.base10_parse()?,
+                Discriminant::U64(d) => *d = int.base10_parse()?,
+                Discriminant::U128(d) => *d = int.base10_parse()?,
             }
         }
+
         for attr in &variant.attrs {
             let syn::Meta::Path(path) = &attr.meta else {
                 continue;
             };
-            let string = path.get_ident().unwrap().to_string();
-            get_attrs(&mut settings, &string, None, &mut quote! {}, &mut quote! {})?;
+            let attribute_name = path.get_ident().unwrap().to_string();
+            get_attrs(
+                &mut settings,
+                &attribute_name,
+                None,
+                &mut quote! {},
+                &mut quote! {},
+            )?;
         }
+
         if settings.is_default {
-            default_token = quote! {_ => Self::#name,};
+            default_token = quote! {_ => Self::#variant_name,};
             discriminant.increase();
             continue;
         }
-        match_expr.extend(quote! {#discriminant => Self::#name,});
+
+        match_expr.extend(quote! {#discriminant => Self::#variant_name,});
         discriminant.increase();
     }
+
     read.extend(quote! {Ok(match num {
         #match_expr
         #default_token
@@ -201,91 +219,98 @@ fn parse_flags_struct(
     let mut return_token = quote! {};
     let mut discriminant;
     write.extend(quote! {let mut num = 0;});
-    let write_after = match repr {
+
+    let mut write_after = match repr {
         Size::U8 => {
-            read.extend(quote! {let num = reader.read_u8()?;});
+            read.extend(quote! {let num = reader.read_u8()});
             discriminant = Discriminant::U8(1);
-            quote! {writer.write_u8(num)?;}
+            quote! {writer.write_u8(num)}
         }
         Size::U16 => {
-            read.extend(quote! {let num = reader.read_u16::<LittleEndian>()?;});
+            read.extend(quote! {let num = reader.read_u16::<LittleEndian>()});
             discriminant = Discriminant::U16(1);
-            quote! {writer.write_u16::<LittleEndian>(num)?;}
+            quote! {writer.write_u16::<LittleEndian>(num)}
         }
         Size::U32 => {
-            read.extend(quote! {let num = reader.read_u32::<LittleEndian>()?;});
+            read.extend(quote! {let num = reader.read_u32::<LittleEndian>()});
             discriminant = Discriminant::U32(1);
-            quote! {writer.write_u32::<LittleEndian>(num)?;}
+            quote! {writer.write_u32::<LittleEndian>(num)}
         }
         Size::U64 => {
-            read.extend(quote! {let num = reader.read_u64::<LittleEndian>()?;});
+            read.extend(quote! {let num = reader.read_u64::<LittleEndian>()});
             discriminant = Discriminant::U64(1);
-            quote! {writer.write_u64::<LittleEndian>(num)?;}
+            quote! {writer.write_u64::<LittleEndian>(num)}
         }
         Size::U128 => {
-            read.extend(quote! {let num = reader.read_u128::<LittleEndian>()?;});
+            read.extend(quote! {let num = reader.read_u128::<LittleEndian>()});
             discriminant = Discriminant::U128(1);
-            quote! {writer.write_u128::<LittleEndian>(num)?;}
+            quote! {writer.write_u128::<LittleEndian>(num)}
         }
     };
+    read.extend(quote! {?;});
+    write_after.extend(quote! {?;});
+
     for field in data.fields.iter() {
-        let name = field.ident.as_ref().unwrap();
-        return_token.extend(quote! {#name,});
+        let field_name = field.ident.as_ref().unwrap();
+        return_token.extend(quote! {#field_name,});
 
         for attr in &field.attrs {
             let syn::Meta::Path(path) = &attr.meta else {
                 continue;
             };
-            let string = path.get_ident().unwrap().to_string();
-            if string == "Skip" {
+            let attribute_name = path.get_ident().unwrap().to_string();
+            if attribute_name == "Skip" {
                 discriminant.skip_flag();
             }
         }
 
         read.extend(quote! {
-            let mut #name = false;
-            if num & #discriminant != 0 {
-                #name = true;
-            }
+            let #field_name = if num & #discriminant != 0 {
+                true
+            } else {
+                false
+            };
         });
         write.extend(quote! {
-            if self.#name {
+            if self.#field_name {
                 num += #discriminant;
             }
         });
         discriminant.skip_flag();
     }
+
     read.extend(quote! {Ok(Self{#return_token})});
     write.extend(write_after);
     Ok(())
 }
 
-fn parse_bitflags_struct(read: &mut TS2, write: &mut TS2, repr: Size) -> syn::Result<()> {
-    write.extend(quote! {let mut num = 0;});
-    let write_after = match repr {
+fn parse_bitflags(read: &mut TS2, write: &mut TS2, repr: Size) -> syn::Result<()> {
+    match repr {
         Size::U8 => {
-            read.extend(quote! {let num = reader.read_u8()?;});
-            quote! {writer.write_u8(self.bits())?;}
+            read.extend(quote! {let num = reader.read_u8()});
+            write.extend(quote! {writer.write_u8(self.bits())});
         }
         Size::U16 => {
-            read.extend(quote! {let num = reader.read_u16::<LittleEndian>()?;});
-            quote! {writer.write_u16::<LittleEndian>(self.bits())?;}
+            read.extend(quote! {let num = reader.read_u16::<LittleEndian>()});
+            write.extend(quote! {writer.write_u16::<LittleEndian>(self.bits())});
         }
         Size::U32 => {
-            read.extend(quote! {let num = reader.read_u32::<LittleEndian>()?;});
-            quote! {writer.write_u32::<LittleEndian>(self.bits())?;}
+            read.extend(quote! {let num = reader.read_u32::<LittleEndian>()});
+            write.extend(quote! {writer.write_u32::<LittleEndian>(self.bits())});
         }
         Size::U64 => {
-            read.extend(quote! {let num = reader.read_u64::<LittleEndian>()?;});
-            quote! {writer.write_u64::<LittleEndian>(self.bits())?;}
+            read.extend(quote! {let num = reader.read_u64::<LittleEndian>()});
+            write.extend(quote! {writer.write_u64::<LittleEndian>(self.bits())});
         }
         Size::U128 => {
-            read.extend(quote! {let num = reader.read_u128::<LittleEndian>()?;});
-            quote! {writer.write_u128::<LittleEndian>(self.bits())?;}
+            read.extend(quote! {let num = reader.read_u128::<LittleEndian>()});
+            write.extend(quote! {writer.write_u128::<LittleEndian>(self.bits())});
         }
     };
+    read.extend(quote! {?;});
+    write.extend(quote! {?;});
+
     read.extend(quote! {Ok(Self::from_bits_truncate(num))});
-    write.extend(write_after);
     Ok(())
 }
 
@@ -296,34 +321,33 @@ fn parse_struct_field(
     no_seek: bool,
 ) -> syn::Result<()> {
     let mut return_token = quote! {};
+
+    // unnamed struct
     if let Fields::Unnamed(fileds) = &data.fields {
-        let mut writer_names = quote! {};
-        let mut tmp_write = quote! {};
         for (id, field) in fileds.unnamed.iter().enumerate() {
-            let varname = format_ident!("temp_{}", id);
-            return_token.extend(quote! {#varname,});
+            let field_name = format_ident!("unnamed_{}", id);
+            return_token.extend(quote! {#field_name,});
+
             let id = syn::Index::from(id);
-            writer_names.extend(quote! { let #varname = self.#id;});
-            check_syn_type(
+            write.extend(quote! { let #field_name = self.#id;});
+
+            parse_field_type(
                 &field.ty,
                 read,
-                &mut tmp_write,
-                &varname,
+                write,
+                &field_name,
                 &Settings::default(),
                 false,
                 no_seek,
             )?;
         }
         read.extend(quote! {Ok(Self(#return_token))});
-        write.extend(quote! {
-            #writer_names
-            #tmp_write
-        });
         return Ok(());
     }
-    for field in data.fields.iter() {
-        let name = field.ident.as_ref().unwrap();
-        return_token.extend(quote! {#name,});
+
+    for field in &data.fields {
+        let field_name = field.ident.as_ref().unwrap();
+        return_token.extend(quote! {#field_name,});
 
         let mut settings = Settings::default();
 
@@ -331,32 +355,33 @@ fn parse_struct_field(
             match &attr.meta {
                 syn::Meta::NameValue(_) => {}
                 syn::Meta::Path(path) => {
-                    let string = path.get_ident().unwrap().to_string();
-                    get_attrs(&mut settings, &string, None, read, write)?;
+                    let attribute_name = path.get_ident().unwrap().to_string();
+                    get_attrs(&mut settings, &attribute_name, None, read, write)?;
                 }
                 syn::Meta::List(list) => {
-                    let string = list.path.get_ident().unwrap().to_string();
-                    get_attrs(&mut settings, &string, Some(list), read, write)?;
+                    let attribute_name = list.path.get_ident().unwrap().to_string();
+                    get_attrs(&mut settings, &attribute_name, Some(list), read, write)?;
                 }
             }
         }
 
         let mut tmp_read = quote! {};
         let mut tmp_write = quote! {};
-        check_syn_type(
+
+        parse_field_type(
             &field.ty,
             &mut tmp_read,
             &mut tmp_write,
-            name,
+            field_name,
             &settings,
             true,
             no_seek,
         )?;
 
         if let Some(data) = settings.only_on {
-            read.extend(quote! {let #name = if matches!(packet_type, #data) {
+            read.extend(quote! {let #field_name = if matches!(packet_type, #data) {
                 #tmp_read
-                #name
+                #field_name
             } else {
                 Default::default()
             };});
@@ -364,9 +389,9 @@ fn parse_struct_field(
                 #tmp_write
             }});
         } else if let Some(data) = settings.not_on {
-            read.extend(quote! {let #name = if !matches!(packet_type, #data) {
+            read.extend(quote! {let #field_name = if !matches!(packet_type, #data) {
                 #tmp_read
-                #name
+                #field_name
             } else {
                 Default::default()
             };});
@@ -381,7 +406,7 @@ fn parse_struct_field(
         if settings.seek_after != 0 {
             let seek_after = settings.seek_after;
             read.extend(quote! {reader.seek(std::io::SeekFrom::Current(#seek_after))?;});
-            write.extend(quote! {writer.write_all(&[0u8; #seek_after as usize]).unwrap();});
+            write.extend(quote! {writer.write_all(&[0u8; #seek_after as usize])?;});
         }
     }
     read.extend(quote! {Ok(Self{#return_token})});
@@ -466,38 +491,39 @@ fn get_attrs(
     Ok(())
 }
 
-fn check_syn_type(
+fn parse_field_type(
     in_type: &Type,
     read: &mut TS2,
     write: &mut TS2,
-    name: &Ident,
+    field_name: &Ident,
     set: &Settings,
     is_first: bool,
     no_seek: bool,
 ) -> syn::Result<()> {
     match in_type {
         Type::Path(path) => {
-            let segment = path.path.segments.last().unwrap();
-            let type_name = segment.ident.to_string();
+            let type_name_segment = path.path.segments.last().unwrap();
+            let type_name = type_name_segment.ident.to_string();
             if !type_name.contains("Vec") {
-                let string = type_name;
-                let (in_read, in_write) = check_code_type(string, name, set, is_first)?;
-                read.extend(in_read);
-                write.extend(in_write);
+                let (type_read, type_write) =
+                    type_read_write(type_name, field_name, set, is_first)?;
+                read.extend(type_read);
+                write.extend(type_write);
                 return Ok(());
             }
+
             // assume type is Vec<T>
-            let PathArguments::AngleBracketed(args) = &segment.arguments else {
+            let PathArguments::AngleBracketed(args) = &type_name_segment.arguments else {
                 return Ok(());
             };
-            let GenericArgument::Type(arg_type) = &args.args[0] else {
+            let GenericArgument::Type(inner_type) = &args.args[0] else {
                 return Ok(());
             };
             let mut tmp_read = quote! {};
             let mut tmp_write = quote! {};
-            let tmp_name = Ident::new("tmp", Span::call_site());
-            check_syn_type(
-                arg_type,
+            let tmp_name = format_ident!("vec_{}_value", field_name);
+            parse_field_type(
+                inner_type,
                 &mut tmp_read,
                 &mut tmp_write,
                 &tmp_name,
@@ -506,114 +532,114 @@ fn check_syn_type(
                 no_seek,
             )?;
 
-            let seek_pad = if no_seek {
+            let read_padding = if no_seek {
                 quote! {}
             } else {
                 quote! { reader.seek(std::io::SeekFrom::Current((len.next_multiple_of(4) - len) as i64))?; }
             };
-            let write_pad = if no_seek {
+            let write_padding = if no_seek {
                 quote! {}
             } else {
                 quote! { writer.write_all(&vec![0u8; len.next_multiple_of(4) - len])?; }
             };
 
-            let read_len = if let Some(size) = &set.len_size {
+            let mut read_len = if let Some(size) = &set.len_size {
                 match size {
-                    Size::U8 => quote! { reader.read_u8()? },
-                    Size::U16 => quote! { reader.read_u16::<LittleEndian>()? },
-                    Size::U32 => quote! { reader.read_u32::<LittleEndian>()? },
-                    Size::U64 => quote! { reader.read_u64::<LittleEndian>()? },
-                    Size::U128 => quote! { reader.read_u128::<LittleEndian>()? },
+                    Size::U8 => quote! { reader.read_u8() },
+                    Size::U16 => quote! { reader.read_u16::<LittleEndian>() },
+                    Size::U32 => quote! { reader.read_u32::<LittleEndian>() },
+                    Size::U64 => quote! { reader.read_u64::<LittleEndian>() },
+                    Size::U128 => quote! { reader.read_u128::<LittleEndian>() },
                 }
             } else {
-                quote! { read_magic(reader, sub, xor)? as usize }
+                quote! { read_magic(reader, sub, xor)}
             };
-            let write_len = if let Some(size) = &set.len_size {
+            read_len.extend(quote! {?;});
+
+            let mut write_len = if let Some(size) = &set.len_size {
                 match size {
                     Size::U8 => {
-                        quote! { writer.write_u8(self.#name.len() as u8)? }
+                        quote! { writer.write_u8(self.#field_name.len() as _) }
                     }
                     Size::U16 => {
-                        quote! { writer.write_u16::<LittleEndian>(self.#name.len() as u16)? }
+                        quote! { writer.write_u16::<LittleEndian>(self.#field_name.len() as _) }
                     }
                     Size::U32 => {
-                        quote! { writer.write_u32::<LittleEndian>(self.#name.len() as u32)? }
+                        quote! { writer.write_u32::<LittleEndian>(self.#field_name.len() as _) }
                     }
                     Size::U64 => {
-                        quote! { writer.write_u64::<LittleEndian>(self.#name.len() as u64)? }
+                        quote! { writer.write_u64::<LittleEndian>(self.#field_name.len() as _) }
                     }
                     Size::U128 => {
-                        quote! { writer.write_u128::<LittleEndian>(self.#name.len() as u128)? }
+                        quote! { writer.write_u128::<LittleEndian>(self.#field_name.len() as _) }
                     }
                 }
             } else {
-                quote! { writer.write_u32::<LittleEndian>(write_magic(self.#name.len() as u32, sub, xor))? }
+                quote! { writer.write_u32::<LittleEndian>(write_magic(self.#field_name.len() as _, sub, xor)) }
             };
+            write_len.extend(quote! {?;});
 
             if set.fixed_len == 0 {
                 read.extend(quote! {
                     let len = #read_len;
-                    let mut #name = vec![];
+                    let mut #field_name = vec![];
                     let seek1 = reader.seek(std::io::SeekFrom::Current(0))?;
                     for _ in 0..len {
                         #tmp_read;
-                        #name.push(#tmp_name);
+                        #field_name.push(#tmp_name);
                     }
                     let seek2 = reader.seek(std::io::SeekFrom::Current(0))?;
                     let len = (seek2 - seek1) as usize;
-                    #seek_pad;
+                    #read_padding
                 });
                 write.extend(quote! {
                     #write_len;
                     let mut tmp_buf = vec![];
                     {
                         let writer = &mut tmp_buf;
-                        for #tmp_name in &self.#name {
+                        for #tmp_name in &self.#field_name {
                             #tmp_write;
                         }
-                    };
+                    }
                     writer.write_all(&tmp_buf)?;
                     let len = tmp_buf.len();
-                    #write_pad;
+                    #write_padding
                 });
             } else {
                 let len = set.fixed_len;
                 read.extend(quote! {
-                    let mut #name = vec![];
+                    let mut #field_name = vec![];
                     let seek1 = reader.seek(std::io::SeekFrom::Current(0))?;
-                    let len = #len as usize;
-                    for _ in 0..len {
+                    for _ in 0..#len {
                         #tmp_read
-                        #name.push(#tmp_name);
+                        #field_name.push(#tmp_name);
                     }
                     let seek2 = reader.seek(std::io::SeekFrom::Current(0))?;
                     let len = (seek2 - seek1) as usize;
-                    #seek_pad
+                    #read_padding
                 });
                 write.extend(quote! {
-                    let len = #len as usize;
-                    let def_thing = vec![Default::default()];
                     let mut tmp_buf = vec![];
                     {
                         let writer = &mut tmp_buf;
-                        for #tmp_name in self.#name.iter().chain(def_thing.iter().cycle()).take(len) {
+                        for #tmp_name in self.#field_name.iter().chain(std::iter::repeat(&Default::default())).take(#len as _) {
                             #tmp_write
                         }
                     };
                     writer.write_all(&tmp_buf)?;
                     let len = tmp_buf.len();
-                    #write_pad
+                    #write_padding
                 });
             }
         }
         Type::Array(arr) => {
-            let in_type = arr.elem.as_ref();
+            let inner_type = arr.elem.as_ref();
             let len = &arr.len;
             let mut tmp_read = quote! {};
             let mut tmp_write = quote! {};
-            let tmp_name = Ident::new("tmp", Span::call_site());
-            check_syn_type(
-                in_type,
+            let tmp_name = format_ident!("array_{}_value", field_name);
+            parse_field_type(
+                inner_type,
                 &mut tmp_read,
                 &mut tmp_write,
                 &tmp_name,
@@ -624,31 +650,31 @@ fn check_syn_type(
             if set.manual_rw.is_some() {
                 read.extend(quote! {
                     #tmp_read
-                    let #name = #tmp_name;
+                    let #field_name = #tmp_name;
                 });
                 write.extend(quote! {
-                    let #tmp_name = &self.#name;
+                    let #tmp_name = &self.#field_name;
                     #tmp_write
                 });
             } else if tmp_read.to_string().contains("read_u8()") {
                 read.extend(quote! {
-                    let mut #name = [Default::default(); #len];
-                    reader.read_exact(&mut #name)?;
+                    let mut #field_name = [Default::default(); #len];
+                    reader.read_exact(&mut #field_name)?;
                 });
                 write.extend(quote! {
-                    writer.write_all(&self.#name)?;
+                    writer.write_all(&self.#field_name)?;
                 });
             } else {
                 read.extend(quote! {
-                    let mut #name = vec![];
+                    let mut #field_name = vec![];
                     for i in 0..#len {
                         #tmp_read
-                        #name.push(#tmp_name);
+                        #field_name.push(#tmp_name);
                     }
-                    let #name = #name.try_into().unwrap();
+                    let #field_name = #field_name.try_into().unwrap();
                 });
                 write.extend(quote! {
-                    for #tmp_name in &self.#name {
+                    for #tmp_name in &self.#field_name {
                         #tmp_write
                     }
                 });
@@ -659,88 +685,90 @@ fn check_syn_type(
     Ok(())
 }
 
-fn check_code_type(
-    string: String,
-    name: &Ident,
+fn type_read_write(
+    full_type_path: String,
+    field_name: &Ident,
     set: &Settings,
-    is_first: bool,
+    is_self: bool,
 ) -> syn::Result<(TS2, TS2)> {
     let mut read = quote! {};
     let mut write = quote! {};
 
-    let write_name = if is_first {
-        quote! {self.#name}
+    let write_name = if is_self {
+        quote! {self.#field_name}
     } else {
-        quote! {#name}
+        quote! {#field_name}
     };
 
     if let Some((read_fn, write_fn)) = &set.manual_rw {
-        read.extend(quote! { let #name = #read_fn(reader, packet_type, xor, sub)?; });
+        read.extend(quote! { let #field_name = #read_fn(reader, packet_type, xor, sub)?; });
         write.extend(quote! {#write_fn(&#write_name, writer, packet_type, xor, sub)?;});
         return Ok((read, write));
     }
 
-    let type_str = string.split("::").last().unwrap();
+    let type_str = full_type_path.split("::").last().unwrap();
 
     match type_str {
         "u8" => {
-            read.extend(quote! {let #name = reader.read_u8()?;});
+            read.extend(quote! {let #field_name = reader.read_u8()?;});
             write.extend(quote! {writer.write_u8(#write_name.clone())?;});
         }
         "i8" => {
-            read.extend(quote! {let #name = reader.read_i8()?;});
+            read.extend(quote! {let #field_name = reader.read_i8()?;});
             write.extend(quote! {writer.write_i8(#write_name.clone())?;});
         }
         "u16" => {
-            read.extend(quote! {let #name = reader.read_u16::<LittleEndian>()?;});
+            read.extend(quote! {let #field_name = reader.read_u16::<LittleEndian>()?;});
             write.extend(quote! {writer.write_u16::<LittleEndian>(#write_name.clone())?;});
         }
         "i16" => {
-            read.extend(quote! {let #name = reader.read_i16::<LittleEndian>()?;});
+            read.extend(quote! {let #field_name = reader.read_i16::<LittleEndian>()?;});
             write.extend(quote! {writer.write_i16::<LittleEndian>(#write_name.clone())?;});
         }
         "u32" => {
-            read.extend(quote! {let #name = reader.read_u32::<LittleEndian>()?;});
+            read.extend(quote! {let #field_name = reader.read_u32::<LittleEndian>()?;});
             write.extend(quote! {writer.write_u32::<LittleEndian>(#write_name.clone())?;});
         }
         "i32" => {
-            read.extend(quote! {let #name = reader.read_i32::<LittleEndian>()?;});
+            read.extend(quote! {let #field_name = reader.read_i32::<LittleEndian>()?;});
             write.extend(quote! {writer.write_i32::<LittleEndian>(#write_name.clone())?;});
         }
         "u64" => {
-            read.extend(quote! {let #name = reader.read_u64::<LittleEndian>()?;});
+            read.extend(quote! {let #field_name = reader.read_u64::<LittleEndian>()?;});
             write.extend(quote! {writer.write_u64::<LittleEndian>(#write_name.clone())?;});
         }
         "i64" => {
-            read.extend(quote! {let #name = reader.read_i64::<LittleEndian>()?;});
+            read.extend(quote! {let #field_name = reader.read_i64::<LittleEndian>()?;});
             write.extend(quote! {writer.write_i64::<LittleEndian>(#write_name.clone())?;});
         }
         "u128" => {
-            read.extend(quote! {let #name = reader.read_u128::<LittleEndian>()?;});
+            read.extend(quote! {let #field_name = reader.read_u128::<LittleEndian>()?;});
             write.extend(quote! {writer.write_u128::<LittleEndian>(#write_name.clone())?;});
         }
         "i128" => {
-            read.extend(quote! {let #name = reader.read_i128::<LittleEndian>()?;});
+            read.extend(quote! {let #field_name = reader.read_i128::<LittleEndian>()?;});
             write.extend(quote! {writer.write_i128::<LittleEndian>(#write_name.clone())?;});
         }
         "f16" => {
-            read.extend(quote! {let #name = f16::from_bits(reader.read_u16::<LittleEndian>()?);});
+            read.extend(
+                quote! {let #field_name = f16::from_bits(reader.read_u16::<LittleEndian>()?);},
+            );
             write
                 .extend(quote! {writer.write_u16::<LittleEndian>(#write_name.clone().to_bits())?;});
         }
         "f32" => {
-            read.extend(quote! {let #name = reader.read_f32::<LittleEndian>()?;});
+            read.extend(quote! {let #field_name = reader.read_f32::<LittleEndian>()?;});
             write.extend(quote! {writer.write_f32::<LittleEndian>(#write_name.clone())?;});
         }
         "f64" => {
-            read.extend(quote! {let #name = reader.read_f64::<LittleEndian>()?;});
+            read.extend(quote! {let #field_name = reader.read_f64::<LittleEndian>()?;});
             write.extend(quote! {writer.write_f64::<LittleEndian>(#write_name.clone())?;});
         }
         "Ipv4Addr" => {
             read.extend(quote! {
                 let mut ip_buf = [0u8; 4];
                 reader.read_exact(&mut ip_buf)?;
-                let #name = std::net::Ipv4Addr::from(ip_buf);
+                let #field_name = std::net::Ipv4Addr::from(ip_buf);
             });
             write.extend(quote! {
                 writer.write_all(&#write_name.octets())?;
@@ -749,14 +777,14 @@ fn check_code_type(
         "Duration" => {
             if set.is_psotime {
                 read.extend(
-                    quote! {let #name = psotime_to_duration(reader.read_u64::<LittleEndian>()?);},
+                    quote! {let #field_name = psotime_to_duration(reader.read_u64::<LittleEndian>()?);},
                 );
                 write.extend(
                     quote! {writer.write_u64::<LittleEndian>(duration_to_psotime(#write_name))?;},
                 );
             } else {
                 read.extend(
-                    quote! {let #name = core::time::Duration::from_secs(reader.read_u32::<LittleEndian>()? as u64);}
+                    quote! {let #field_name = core::time::Duration::from_secs(reader.read_u32::<LittleEndian>()? as u64);}
                 );
                 write.extend(
                     quote! {writer.write_u32::<LittleEndian>(#write_name.as_secs() as u32)?;},
@@ -765,27 +793,29 @@ fn check_code_type(
         }
         "String" => match set.str_type {
             StringType::Unknown => {
-                read.extend(quote! {let #name = String::read_variable(reader, sub, xor)?;});
+                read.extend(quote! {let #field_name = String::read_variable(reader, sub, xor)?;});
                 write.extend(quote! {writer.write_all(&#write_name.write_variable(sub, xor))?;});
             }
             StringType::Fixed(len) => {
-                read.extend(quote! {let #name = String::read(reader, #len)?;});
+                read.extend(quote! {let #field_name = String::read(reader, #len)?;});
                 write.extend(quote! {writer.write_all(&#write_name.write(#len as usize))?;});
             }
         },
         "AsciiString" => match set.str_type {
             StringType::Unknown => {
-                read.extend(quote! {let #name = AsciiString::read_variable(reader, sub, xor)?;});
+                read.extend(
+                    quote! {let #field_name = AsciiString::read_variable(reader, sub, xor)?;},
+                );
                 write.extend(quote! {writer.write_all(&#write_name.write_variable(sub, xor))?;});
             }
             StringType::Fixed(len) => {
-                read.extend(quote! {let #name = AsciiString::read(reader, #len)?;});
+                read.extend(quote! {let #field_name = AsciiString::read(reader, #len)?;});
                 write.extend(quote! {writer.write_all(&#write_name.write(#len as usize))?;});
             }
         },
         _ => {
-            let out_type = Ident::new(&string, Span::call_site());
-            read.extend(quote! {let #name = #out_type::read(reader, packet_type, xor, sub)?;});
+            let out_type = Ident::new(&full_type_path, Span::call_site());
+            read.extend(quote! {let #field_name = <#out_type as HelperReadWrite>::read(reader, packet_type, xor, sub)?;});
             write.extend(quote! {#write_name.write(writer, packet_type, xor, sub)?;});
         }
     }
@@ -793,165 +823,124 @@ fn check_code_type(
 }
 
 fn get_packet_id(attrs: &[Attribute]) -> syn::Result<(u8, u16)> {
-    for attr in attrs.iter() {
-        if !attr.path().is_ident("Id") {
-            continue;
-        }
+    let Some(attr) = attrs.iter().find(|a| a.path().is_ident("Id")) else {
+        return Err(syn::Error::new(Span::call_site(), "No Id defined"));
+    };
+    let syn::Meta::List(list) = &attr.meta else {
+        return Err(syn::Error::new(
+            attr.span(),
+            "Invalid syntax \nPerhaps you ment Id(id, subid)?",
+        ));
+    };
 
-        let syn::Meta::List(list) = &attr.meta else {
-            return Err(syn::Error::new(
-                attr.span(),
-                "Invalid syntax \nPerhaps you ment Id(id, subid)?",
-            ));
-        };
-
-        let attrs: AttributeList = list.parse_args()?;
-        if attrs.fields.len() != 2 {
-            return Err(syn::Error::new(attr.span(), "Invalid number of arguments"));
-        }
-        let id = attrs.fields[0].base10_parse()?;
-        let subid = attrs.fields[1].base10_parse()?;
-        return Ok((id, subid));
+    let attrs: AttributeList = list.parse_args()?;
+    if attrs.fields.len() != 2 {
+        return Err(syn::Error::new(attr.span(), "Invalid number of arguments"));
     }
-    Err(syn::Error::new(
-        proc_macro2::Span::call_site(),
-        "No Id defined",
-    ))
+    let id = attrs.fields[0].base10_parse()?;
+    let subid = attrs.fields[1].base10_parse()?;
+    Ok((id, subid))
 }
 
 fn get_flags(attrs: &[Attribute]) -> syn::Result<TS2> {
-    for attr in attrs.iter() {
-        if !attr.path().is_ident("Flags") {
-            continue;
-        }
+    let Some(attr) = attrs.iter().find(|a| a.path().is_ident("Flags")) else {
+        return Ok(quote! {Flags::default()});
+    };
+    let syn::Meta::List(list) = &attr.meta else {
+        return Err(syn::Error::new(
+            attr.span(),
+            "Invalid syntax \nPerhaps you ment Flags(..)?",
+        ));
+    };
 
-        let syn::Meta::List(list) = &attr.meta else {
-            return Err(syn::Error::new(
-                attr.span(),
-                "Invalid syntax \nPerhaps you ment Flags(..)?",
-            ));
-        };
-
-        let attrs = &list.tokens;
-        return Ok(quote! {#attrs});
-    }
-    Ok(quote! {Flags::default()})
+    let attrs = &list.tokens;
+    Ok(quote! {#attrs})
 }
 
 fn get_repr(attrs: &[Attribute]) -> syn::Result<Size> {
-    for attr in attrs.iter() {
-        if !attr.path().is_ident("repr") {
-            continue;
-        }
-        match &attr.meta {
-            syn::Meta::NameValue(_) => {}
-            syn::Meta::Path(_) => {}
-            syn::Meta::List(x) => {
-                return Ok(match x.tokens.to_string().as_str() {
-                    "u8" => Size::U8,
-                    "u16" => Size::U16,
-                    "u32" => Size::U32,
-                    "u64" => Size::U64,
-                    _ => Size::U8,
-                })
-            }
-        }
-    }
-    Ok(Size::U8)
+    let Some(attr) = attrs.iter().find(|a| a.path().is_ident("repr")) else {
+        return Ok(Size::U8);
+    };
+    let syn::Meta::List(list) = &attr.meta else {
+        return Err(syn::Error::new(
+            attr.span(),
+            "Invalid syntax \nPerhaps you ment BitFlags(u*)?",
+        ));
+    };
+    Ok(match list.tokens.to_string().as_str() {
+        "u8" => Size::U8,
+        "u16" => Size::U16,
+        "u32" => Size::U32,
+        "u64" => Size::U64,
+        _ => return Err(syn::Error::new(list.span(), "Unsupported repr")),
+    })
 }
 
 fn get_magic(attrs: &[Attribute]) -> syn::Result<Option<(u32, u32)>> {
-    for attr in attrs.iter() {
-        if !attr.path().is_ident("Magic") {
-            continue;
-        }
+    let Some(attr) = attrs.iter().find(|a| a.path().is_ident("Magic")) else {
+        return Ok(None);
+    };
+    let syn::Meta::List(list) = &attr.meta else {
+        return Err(syn::Error::new(
+            attr.span(),
+            "Invalid syntax \nPerhaps you ment Magic(xor, sub)?",
+        ));
+    };
 
-        let syn::Meta::List(list) = &attr.meta else {
-            return Err(syn::Error::new(
-                attr.span(),
-                "Invalid syntax \nPerhaps you ment Magic(xor, sub)?",
-            ));
-        };
-
-        let attrs: AttributeList = list.parse_args()?;
-        if attrs.fields.len() != 2 {
-            return Err(syn::Error::new(attr.span(), "Invalid number of arguments"));
-        }
-        let xor = attrs.fields[0].base10_parse()?;
-        let sub = attrs.fields[1].base10_parse()?;
-        return Ok(Some((xor, sub)));
+    let attrs: AttributeList = list.parse_args()?;
+    if attrs.fields.len() != 2 {
+        return Err(syn::Error::new(attr.span(), "Invalid number of arguments"));
     }
-    Ok(None)
+    let xor = attrs.fields[0].base10_parse()?;
+    let sub = attrs.fields[1].base10_parse()?;
+    Ok(Some((xor, sub)))
 }
 
 fn get_bitflags_struct(attrs: &[Attribute]) -> syn::Result<Option<Size>> {
-    for attr in attrs.iter() {
-        if !attr.path().is_ident("BitFlags") {
-            continue;
-        }
-        match &attr.meta {
-            syn::Meta::NameValue(_) => {}
-            syn::Meta::Path(_) => {
-                return Err(syn::Error::new(
-                    attr.span(),
-                    "Invalid syntax \nPerhaps you ment BitFlags(..)?",
-                ));
-            }
-            syn::Meta::List(x) => {
-                return Ok(match x.tokens.to_string().as_str() {
-                    "u8" => Some(Size::U8),
-                    "u16" => Some(Size::U16),
-                    "u32" => Some(Size::U32),
-                    "u64" => Some(Size::U64),
-                    "u128" => Some(Size::U128),
-                    _ => None,
-                })
-            }
-        }
-    }
-    Ok(None)
+    let Some(attr) = attrs.iter().find(|a| a.path().is_ident("BitFlags")) else {
+        return Ok(None);
+    };
+    let syn::Meta::List(list) = &attr.meta else {
+        return Err(syn::Error::new(
+            attr.span(),
+            "Invalid syntax \nPerhaps you ment BitFlags(u*)?",
+        ));
+    };
+    Ok(match list.tokens.to_string().as_str() {
+        "u8" => Some(Size::U8),
+        "u16" => Some(Size::U16),
+        "u32" => Some(Size::U32),
+        "u64" => Some(Size::U64),
+        "u128" => Some(Size::U128),
+        _ => None,
+    })
 }
 
 fn get_flags_struct(attrs: &[Attribute]) -> syn::Result<Option<Size>> {
-    for attr in attrs.iter() {
-        if !attr.path().is_ident("Flags") {
-            continue;
-        }
-        match &attr.meta {
-            syn::Meta::NameValue(_) => {}
-            syn::Meta::Path(_) => {
-                return Err(syn::Error::new(
-                    attr.span(),
-                    "Invalid syntax \nPerhaps you ment Flags(..)?",
-                ));
-            }
-            syn::Meta::List(x) => {
-                return Ok(match x.tokens.to_string().as_str() {
-                    "u8" => Some(Size::U8),
-                    "u16" => Some(Size::U16),
-                    "u32" => Some(Size::U32),
-                    "u64" => Some(Size::U64),
-                    _ => None,
-                })
-            }
-        }
-    }
-    Ok(None)
+    let Some(attr) = attrs.iter().find(|a| a.path().is_ident("Flags")) else {
+        return Ok(None);
+    };
+    let syn::Meta::List(list) = &attr.meta else {
+        return Err(syn::Error::new(
+            attr.span(),
+            "Invalid syntax \nPerhaps you ment Flags(u*)?",
+        ));
+    };
+    Ok(match list.tokens.to_string().as_str() {
+        "u8" => Some(Size::U8),
+        "u16" => Some(Size::U16),
+        "u32" => Some(Size::U32),
+        "u64" => Some(Size::U64),
+        "u128" => Some(Size::U128),
+        _ => None,
+    })
 }
 
 fn get_no_seek(attrs: &[Attribute]) -> bool {
-    for attr in attrs.iter() {
-        if !attr.path().is_ident("NoPadding") {
-            continue;
-        }
-        return true;
-    }
-    false
+    attrs.iter().any(|a| a.path().is_ident("NoPadding"))
 }
 
-#[derive(Default)]
 enum Size {
-    #[default]
     U8,
     U16,
     U32,
@@ -970,6 +959,7 @@ enum StringType {
 struct AttributeList {
     fields: Punctuated<LitInt, Token![,]>,
 }
+
 impl Parse for AttributeList {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         Ok(Self {
@@ -981,6 +971,7 @@ impl Parse for AttributeList {
 struct FnList {
     fields: Punctuated<Ident, Token![,]>,
 }
+
 impl Parse for FnList {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         Ok(Self {

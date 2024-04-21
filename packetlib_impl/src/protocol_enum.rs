@@ -272,7 +272,6 @@ fn get_attrs(
         "Empty" => set.packet_type = PacketType::Empty,
         "Unknown" => {
             set.unknown = true;
-            // set.skip = true;
         }
         "Raw" => {
             set.raw = true;
