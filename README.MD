@@ -1,5 +1,9 @@
 # PSO2 Packet Library
 
+![Static Badge](https://img.shields.io/badge/github-PhantasyServer%2Fpso2--protocol--lib-blue?style=flat-square&logo=github&link=https%3A%2F%2Fgithub.com%2FPhantasyServer%2Fpso2-protocol-lib)
+![Crates.io Version](https://img.shields.io/crates/v/pso2packetlib?style=for-the-badge&logo=rust)
+![docs.rs](https://img.shields.io/docsrs/pso2packetlib?style=for-the-badge&logo=docs.rs)
+
 Library that aims to provide easy(er) interaction with the PSO2 (Phantasy Star Online 2) protocol.
 
 ## Targeted versions
