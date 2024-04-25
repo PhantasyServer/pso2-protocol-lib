@@ -1,7 +1,7 @@
 //! PSO2 packet definitions and protocol information.
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use packetlib_impl::{HelperReadWrite, PacketReadWrite, ProtocolReadWrite};
+use pso2packetlib_impl::{HelperReadWrite, PacketReadWrite, ProtocolReadWrite};
 use std::{
     io::{Read, Seek},
     time::Duration,

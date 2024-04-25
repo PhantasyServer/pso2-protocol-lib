@@ -1,7 +1,7 @@
 use pso2packetlib::protocol::{PacketType, ProtocolRW};
 
-// we use packetlib_impl instead of pso2packetlib to bypass `derive` feature requirement
-#[derive(packetlib_impl::ProtocolRW)]
+// we use pso2packetlib_impl instead of pso2packetlib to bypass `derive` feature requirement
+#[derive(pso2packetlib_impl::ProtocolRW)]
 enum Packet {
     #[Empty]
     None,
@@ -19,7 +19,7 @@ enum Packet {
     Unknown((pso2packetlib::protocol::PacketHeader, Vec<u8>)),
 }
 
-#[derive(Debug, PartialEq, packetlib_impl::PacketRW)]
+#[derive(Debug, PartialEq, pso2packetlib_impl::PacketRW)]
 #[Id(1, 1)]
 struct Numbers {
     uint8: u8,
@@ -37,7 +37,7 @@ struct Numbers {
     float64: f64,
 }
 
-#[derive(Debug, PartialEq, packetlib_impl::PacketRW)]
+#[derive(Debug, PartialEq, pso2packetlib_impl::PacketRW)]
 #[Id(1, 2)]
 #[Flags(pso2packetlib::protocol::Flags::PACKED)]
 #[Magic(0x10, 0x10)]
@@ -58,7 +58,7 @@ struct Variables {
     var_2: Vec<u8>,
 }
 
-#[derive(Debug, PartialEq, packetlib_impl::PacketRW)]
+#[derive(Debug, PartialEq, pso2packetlib_impl::PacketRW)]
 #[Id(1, 3)]
 struct Misc {
     ip: std::net::Ipv4Addr,
@@ -67,7 +67,7 @@ struct Misc {
     pso2_time: std::time::Duration,
 }
 
-#[derive(Debug, PartialEq, packetlib_impl::PacketRW)]
+#[derive(Debug, PartialEq, pso2packetlib_impl::PacketRW)]
 #[Id(1, 4)]
 struct Attributes {
     #[Seek(2)]
@@ -81,7 +81,7 @@ struct Attributes {
     d: u8,
 }
 
-#[derive(Debug, PartialEq, packetlib_impl::PacketRW)]
+#[derive(Debug, PartialEq, pso2packetlib_impl::PacketRW)]
 #[Id(1, 5)]
 struct Helpers {
     flags: HelperFlags,
@@ -89,7 +89,7 @@ struct Helpers {
     e: Enum,
 }
 
-#[derive(Debug, PartialEq, packetlib_impl::HelperRW)]
+#[derive(Debug, PartialEq, pso2packetlib_impl::HelperRW)]
 #[Flags(u8)]
 struct HelperFlags {
     #[Skip]
@@ -97,7 +97,7 @@ struct HelperFlags {
     b: bool,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, packetlib_impl::HelperRW)]
+#[derive(Debug, PartialEq, Clone, Copy, pso2packetlib_impl::HelperRW)]
 #[repr(u8)]
 enum Enum {
     #[Read_default]
@@ -106,7 +106,7 @@ enum Enum {
 }
 
 bitflags::bitflags! {
-    #[derive(packetlib_impl::HelperRW, PartialEq, Debug)]
+    #[derive(pso2packetlib_impl::HelperRW, PartialEq, Debug)]
     #[BitFlags(u16)]
     struct HelperBitFlags: u16 {
         const A = 1 << 0;

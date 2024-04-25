@@ -1,6 +1,10 @@
 [package]
-name = "packetlib_impl"
+name = "pso2packetlib_impl"
+description = "Derive backend for pso2packetlib"
 version = "0.1.0"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/PhantasyServer/pso2-protocol-lib"
+readme = false
 edition = "2021"
 
 [lib]

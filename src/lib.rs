@@ -44,7 +44,7 @@ pub use asciistring::AsciiString;
 /// - `#[Category(_category_)]` sets the category of all the packets following this attribute.
 #[cfg(feature = "derive")]
 #[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
-pub use packetlib_impl::ProtocolRW;
+pub use pso2packetlib_impl::ProtocolRW;
 
 /// Derive macro for [`protocol::PacketReadWrite`].
 ///
@@ -77,7 +77,7 @@ pub use packetlib_impl::ProtocolRW;
 /// the reader packet type differs from the specified packet type.
 #[cfg(feature = "derive")]
 #[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
-pub use packetlib_impl::PacketRW;
+pub use pso2packetlib_impl::PacketRW;
 
 /// Derive macro for [`protocol::HelperReadWrite`].
 ///
@@ -121,7 +121,7 @@ pub use packetlib_impl::PacketRW;
 /// the reader packet type differs from the specified packet type.
 #[cfg(feature = "derive")]
 #[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
-pub use packetlib_impl::HelperRW;
+pub use pso2packetlib_impl::HelperRW;
 
 #[cfg(docsrs)]
 pub mod protocol_docs;
