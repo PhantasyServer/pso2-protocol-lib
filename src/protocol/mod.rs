@@ -2,10 +2,7 @@
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use pso2packetlib_impl::{HelperReadWrite, PacketReadWrite, ProtocolReadWrite};
-use std::{
-    io::{Read, Seek},
-    time::Duration,
-};
+use std::io::{Read, Seek};
 
 // Packet traits
 mod traits;
@@ -1586,23 +1583,14 @@ pub struct ObjectHeader {
 // ----------------------------------------------------------------
 // temporarily hidden
 #[doc(hidden)]
+#[inline(always)]
 pub fn read_magic(reader: &mut impl Read, sub: u32, xor: u32) -> std::io::Result<u32> {
-    let num = reader.read_u32::<LittleEndian>()?;
-    Ok((num ^ xor) - sub)
+    Ok((reader.read_u32::<LittleEndian>()? ^ xor) - sub)
 }
 #[doc(hidden)]
+#[inline(always)]
 pub fn write_magic(num: u32, sub: u32, xor: u32) -> u32 {
     (num + sub) ^ xor
-}
-#[doc(hidden)]
-pub fn psotime_to_duration(timestamp: u64) -> Duration {
-    const UNIX_TIME: u64 = 0x0295_E964_8864;
-    Duration::from_millis(timestamp - UNIX_TIME)
-}
-#[doc(hidden)]
-pub fn duration_to_psotime(time: Duration) -> u64 {
-    const UNIX_TIME: u64 = 0x0295_E964_8864;
-    time.as_millis() as u64 + UNIX_TIME
 }
 
 // ----------------------------------------------------------------

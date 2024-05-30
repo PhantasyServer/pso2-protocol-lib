@@ -1110,17 +1110,18 @@ fn type_read_write(
         }
         "Duration" => {
             if set.is_psotime {
+                const WIN_FT_TIME_TO_TIMESTAMP: u64 = 0x0295_E964_8864; 
                 read.extend(
-                    quote! {let #field_name = psotime_to_duration(reader.read_u64::<LittleEndian>()
+                    quote! {let #field_name = std::time::Duration::from_millis(reader.read_u64::<LittleEndian>()
                         .map_err(|e| Error::FieldError{
                             packet_name,
                             field_name: stringify!(#field_name),
                             error: e,
-                        })?);
+                        })? - #WIN_FT_TIME_TO_TIMESTAMP);
                     },
                 );
                 write.extend(
-                    quote! {writer.write_u64::<LittleEndian>(duration_to_psotime(#write_name))
+                    quote! {writer.write_u64::<LittleEndian>(#write_name.as_millis() as u64 + #WIN_FT_TIME_TO_TIMESTAMP)
                         .map_err(|e| Error::FieldError{
                             packet_name,
                             field_name: stringify!(#field_name),
