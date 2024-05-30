@@ -44,8 +44,8 @@ pub struct SetLobbyEventPacket {
     pub start_time: Duration,
     /// Event end timestamp.
     pub end_time: Duration,
-    //repeat secs?
-    pub unk3: u32,
+    /// Event message repeat timer in seconds.
+    pub repeat_secs: u32,
     pub unk4: u64,
 }
 

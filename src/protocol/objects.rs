@@ -359,7 +359,8 @@ pub struct DamageReceivePacket {
     pub dmg_target: ObjectHeader,
     /// Object that deals this damage.
     pub dmg_inflicter: ObjectHeader,
-    pub unk1: u32,
+    /// Inflicted damage ID.
+    pub damage_id: u32,
     /// How much damage was inflicted.
     pub dmg_amount: i32,
     /// New HP.
