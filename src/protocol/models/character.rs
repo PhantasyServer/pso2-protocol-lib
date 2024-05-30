@@ -24,8 +24,9 @@ pub struct Character {
     pub voice_pitch: i16,
     pub name: String,
     pub look: Look,
+    pub unk3: u32,
     pub classes: ClassInfo,
-    pub unk3: String,
+    pub unk4: String,
 }
 
 /// HSV color data.
@@ -303,7 +304,6 @@ pub struct ClassLevel {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct ClassInfo {
-    pub unk1: u32,
     pub main_class: Class,
     pub sub_class: Class,
     pub unk2: u16,
@@ -429,6 +429,13 @@ impl HelperReadWrite for Character {
                 error: Box::new(e),
             }
         })?;
+        let unk3 = reader
+            .read_u32::<LittleEndian>()
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "Character",
+                field_name: "unk3",
+                error: e,
+            })?;
         let classes = ClassInfo::read(reader, packet_type, xor, sub).map_err(|e| {
             PacketError::CompositeFieldError {
                 packet_name: "Character",
@@ -437,9 +444,9 @@ impl HelperReadWrite for Character {
             }
         })?;
 
-        let unk3 = String::read(reader, 32).map_err(|e| PacketError::FieldError {
+        let unk4 = String::read(reader, 32).map_err(|e| PacketError::FieldError {
             packet_name: "Character",
-            field_name: "unk3",
+            field_name: "unk4",
             error: e,
         })?;
 
@@ -469,8 +476,9 @@ impl HelperReadWrite for Character {
             voice_pitch,
             name,
             look,
-            classes,
             unk3,
+            classes,
+            unk4,
         })
     }
     fn write(
@@ -546,6 +554,13 @@ impl HelperReadWrite for Character {
                 field_name: "look",
                 error: Box::new(e),
             })?;
+        writer
+            .write_u32::<LittleEndian>(self.unk3)
+            .map_err(|e| PacketError::FieldError {
+                packet_name: "Character",
+                field_name: "unk3",
+                error: e,
+            })?;
         self.classes
             .write(writer, packet_type, xor, sub)
             .map_err(|e| PacketError::CompositeFieldError {
@@ -554,10 +569,10 @@ impl HelperReadWrite for Character {
                 error: Box::new(e),
             })?;
         writer
-            .write_all(&self.unk3.write(32))
+            .write_all(&self.unk4.write(32))
             .map_err(|e| PacketError::FieldError {
                 packet_name: "Character",
-                field_name: "unk3",
+                field_name: "unk4",
                 error: e,
             })?;
 
