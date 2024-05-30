@@ -323,6 +323,20 @@ pub struct Unk0BAFPacket {
     pub unk2: u32,
 }
 
+/// (0x0B, 0xCD) Accept Story Quest.
+///
+/// (C -> S) Sent when the client accepts story a quest.
+///
+/// Respond with: setup quest.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0B, 0xCD)]
+pub struct AcceptStoryQuestPacket {
+    pub name_id: u32,
+    pub unk: u32,
+}
+
 /// (0x0B, 0xD0) Unknown.
 ///
 /// (S -> C)
@@ -336,6 +350,30 @@ pub struct Unk0BD0Packet {
     #[FixedLen(0x23)]
     pub unk1: Vec<u32>,
     pub unk2: Vec<u32>,
+}
+
+/// (0x0B, 0xD4) Unknown.
+///
+/// (C -> S)
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0B, 0xD4)]
+pub struct Unk0BD4Packet {
+    pub unk: u32,
+}
+
+/// (0x0B, 0xF1) Unknown.
+///
+/// (S -> C)
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0B, 0xF1)]
+pub struct Unk0BF1Packet {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
 }
 
 // ----------------------------------------------------------------

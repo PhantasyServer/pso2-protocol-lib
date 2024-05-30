@@ -85,6 +85,18 @@ pub struct TakenOrdersPacket {
     pub unk3: u32,
 }
 
+/// (0x1F, 0x0F) Unknown
+///
+/// (C -> S)
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x1F, 0x0F)]
+pub struct Unk1F0FPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+}
+
 // ----------------------------------------------------------------
 // Additional structs
 // ----------------------------------------------------------------

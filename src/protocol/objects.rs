@@ -1,6 +1,10 @@
 //! Object related packets. \[0x04\]
 use super::{
-    models::Position, Flags, ObjectHeader, PacketError, PacketHeader, PacketReadWrite, PacketType,
+    models::{
+        character::{Class, ClassInfo},
+        Position,
+    },
+    Flags, ObjectHeader, PacketError, PacketHeader, PacketReadWrite, PacketType,
 };
 use crate::AsciiString;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
@@ -212,6 +216,50 @@ pub struct SetTagPacket {
     pub attribute: AsciiString,
 }
 
+/// (0x04, 0x20) Change Class Request.
+///
+/// (C -> S) Sent when the client wants to change the active class.
+///
+/// Respond with: [`crate::protocol::Packet::ChangeClass`], [`crate::protocol::Packet::Unk042C`].
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x20)]
+#[Flags(Flags::OBJECT_RELATED)]
+pub struct ChangeClassRequestPacket {
+    /// Unused object header.
+    pub unused: ObjectHeader,
+    /// Player object that changed the class.
+    pub player: ObjectHeader,
+    /// New main class.
+    pub main_class: Class,
+    /// New sub class.
+    pub sub_class: Class,
+    pub unk: u16,
+}
+
+/// (0x04, 0x21) Change Class Response.
+///
+/// (S -> C) Sent in response to the request.
+///
+/// Response to: [`crate::protocol::Packet::ChangeClassRequest`].
+///
+/// Follow with: [`crate::protocol::Packet::Unk0E21`].
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x21)]
+#[Flags(Flags::OBJECT_RELATED)]
+pub struct ChangeClassPacket {
+    /// Receiving player object header.
+    pub receiver: ObjectHeader,
+    /// Player object that changed the class.
+    pub player: ObjectHeader,
+    /// New class info.
+    pub new_info: ClassInfo,
+    pub unk3: [u16; 11],
+}
+
 /// (0x04, 0x22) Unknown.
 ///
 /// (S -> C)
@@ -288,6 +336,25 @@ pub struct Unk0425Packet {
 pub struct Unk042BPacket {
     pub unk1: [u8; 0xC],
     pub unk2: ObjectHeader,
+}
+
+/// (0x04, 0x2C) Unknown.
+///
+/// (S -> C)
+///
+/// Response to: [`crate::protocol::Packet::ChangeClassRequest`].
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x2C)]
+#[Flags(Flags::OBJECT_RELATED)]
+pub struct Unk042CPacket {
+    pub unk1: ObjectHeader,
+    pub unk2: ObjectHeader,
+    pub unk3: u8,
+    pub unk4: u8,
+    pub unk5: u16,
+    pub unk6: [u8; 0x10],
 }
 
 /// (0x04, 0x2E) Load Learned Photon Arts. (broadcast)
@@ -377,6 +444,25 @@ pub struct DamageReceivePacket {
     pub unk5: u32,
 }
 
+/// (0x04, 0x5F) Set Title Request.
+///
+/// (C -> S) Sent when a client sets an active title.
+///
+/// Respond with: [`crate::protocol::Packet::SetTitle`].
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x5F)]
+#[Flags(Flags::OBJECT_RELATED)]
+pub struct SetTitleRequestPacket {
+    pub unused: ObjectHeader,
+    /// Object of the player that has set the title.
+    pub target: ObjectHeader,
+    pub unk: u32,
+    /// Active title ID.
+    pub title_id: u32,
+}
+
 /// (0x04, 0x71) Object Movement End. (broadcast)
 ///
 /// (Bidirectional) Sent when players (or objects?) stop moving.
@@ -400,6 +486,28 @@ pub struct MovementEndPacket {
     pub unk_z: f16,
     pub unk7: u16,
     pub unk8: u32,
+}
+
+/// (0x04, 0x72) Set Title. (broadcast)
+///
+/// (S -> C) Sent in response to the request.
+///
+/// Response to: [`crate::protocol::Packet::SetTitleRequest`].
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0x72)]
+#[Flags(Flags::OBJECT_RELATED | Flags::PACKED)]
+#[Magic(0xF2B6, 0x5F)]
+pub struct SetTitlePacket {
+    /// Object of the player that receives this packet.
+    pub receiver: ObjectHeader,
+    /// Object of the player that has set the title.
+    pub target: ObjectHeader,
+    /// JP version of the title.
+    pub jp_title: String,
+    /// NA version of the title.
+    pub en_title: String,
 }
 
 /// (0x04, 0x75) Action End. (broadcast)

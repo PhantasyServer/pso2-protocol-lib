@@ -61,6 +61,23 @@ pub struct LobbyMonitorPacket {
     pub video_id: u32,
 }
 
+/// (0x19, 0x1C) Unknown.
+///
+/// (C -> S) 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x19, 0x1C)]
+pub struct Unk191CPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+    pub unk4: u32,
+    pub unk5: f32,
+    pub unk6: f32,
+    pub unk7: f32,
+}
+
 // ----------------------------------------------------------------
 // Additional structs
 // ----------------------------------------------------------------

@@ -33,6 +33,7 @@ pub mod spawn;
 pub mod symbolart;
 pub mod unk10;
 pub mod unk19;
+pub mod unk1e;
 pub mod unk2a;
 pub mod unk31;
 pub mod unk34;
@@ -59,6 +60,7 @@ use spawn::*;
 use symbolart::*;
 use unk10::*;
 use unk19::*;
+use unk1e::*;
 use unk2a::*;
 use unk31::*;
 use unk34::*;
@@ -269,6 +271,12 @@ pub enum Packet {
     /// (0x04, 0x15) Object Action or Set Object Tag. (unicast or broadcast)
     #[Id(0x04, 0x15)]
     SetTag(SetTagPacket),
+    /// (0x04, 0x20) Change Class Request.
+    #[Id(0x04, 0x20)]
+    ChangeClassRequest(ChangeClassRequestPacket),
+    /// (0x04, 0x21) Change Class Response.
+    #[Id(0x04, 0x21)]
+    ChangeClass(ChangeClassPacket),
     /// (0x04, 0x22) Unknown.
     #[Id(0x04, 0x22)]
     Unk0422(Unk0422Packet),
@@ -284,6 +292,9 @@ pub enum Packet {
     /// (0x04, 0x2B) Unknown.
     #[Id(0x04, 0x2B)]
     Unk042B(Unk042BPacket),
+    /// (0x04, 0x2C) Unknown.
+    #[Id(0x04, 0x2C)]
+    Unk042C(Unk042CPacket),
     /// (0x04, 0x2E) Load Learned Photon Arts. (broadcast)
     #[Id(0x04, 0x2E)]
     LoadPAs(LoadPAsPacket),
@@ -296,9 +307,15 @@ pub enum Packet {
     /// (0x04, 0x52) Damage Received.
     #[Id(0x04, 0x52)]
     DamageReceive(DamageReceivePacket),
+    /// (0x04, 0x5F) Set Title Request.
+    #[Id(0x04, 0x5F)]
+    SetTitleRequest(SetTitleRequestPacket),
     /// (0x04, 0x71) Object Movement End. (broadcast)
     #[Id(0x04, 0x71)]
     MovementEnd(MovementEndPacket),
+    /// (0x04, 0x72) Set Title. (broadcast)
+    #[Id(0x04, 0x72)]
+    SetTitle(SetTitlePacket),
     /// (0x04, 0x75) Action End. (broadcast)
     #[Id(0x04, 0x75)]
     ActionEnd(ActionEndPacket),
@@ -434,9 +451,18 @@ pub enum Packet {
     /// (0x0B, 0xAF) Unknown.
     #[Id(0x0B, 0xAF)]
     Unk0BAF(Unk0BAFPacket),
+    /// (0x0B, 0xCD) Accept Story Quest.
+    #[Id(0x0B, 0xCD)]
+    AcceptStoryQuest(AcceptStoryQuestPacket),
     /// (0x0B, 0xD0) Unknown.
     #[Id(0x0B, 0xD0)]
     Unk0BD0(Unk0BD0Packet),
+    /// (0x0B, 0xD4) Unknown.
+    #[Id(0x0B, 0xD4)]
+    Unk0BD4(Unk0BD4Packet),
+    /// (0x0B, 0xF1) Unknown.
+    #[Id(0x0B, 0xF1)]
+    Unk0BF1(Unk0BF1Packet),
 
     // Party packets [0x0E]
     #[Category(PacketCategory::Party)]
@@ -763,6 +789,9 @@ pub enum Packet {
     /// (0x11, 0x06) Delete Character Request.
     #[Id(0x11, 0x06)]
     CharacterDeletionRequest(CharacterDeletionRequestPacket),
+    /// (0x11, 0x07) Create New Character Response.
+    #[Id(0x11, 0x07)]
+    CharacterCreateResponse(CharacterCreateResponsePacket),
     /// (0x11, 0x08) Delete Character.
     #[Id(0x11, 0x08)]
     CharacterDeletion(CharacterDeletionPacket),
@@ -1011,6 +1040,9 @@ pub enum Packet {
     /// (0x19, 0x0F) Set Lobby Monitor Video (broadcast).
     #[Id(0x19, 0x0F)]
     LobbyMonitor(LobbyMonitorPacket),
+    /// (0x19, 0x1C) Unknown.
+    #[Id(0x19, 0x1C)]
+    Unk191C(Unk191CPacket),
 
     // Mail packets [0x1A]
     #[Category(PacketCategory::Mail)]
@@ -1047,6 +1079,12 @@ pub enum Packet {
     #[Id(0x1C, 0x10)]
     GetNearbyCharacters,
 
+    // Unknown 0x1E packets [0x1E]
+    #[Category(PacketCategory::Unk1E)]
+    /// (0x1E, 0x0C) Unknown.
+    #[Id(0x1E, 0x0C)]
+    Unk1E0C(Unk1E0CPacket),
+
     // Daily order packets [0x1F]
     #[Category(PacketCategory::DailyOrders)]
     /// (0x1F, 0x01) Taken Daily Orders Request.
@@ -1061,6 +1099,9 @@ pub enum Packet {
     /// (0x1F, 0x08) Taken Daily Orders.
     #[Id(0x1F, 0x08)]
     TakenOrders(TakenOrdersPacket),
+    /// (0x1F, 0x0F) Unknown
+    #[Id(0x1F, 0x0F)]
+    Unk1F0F(Unk1F0FPacket),
 
     // Palette packets [0x21]
     #[Category(PacketCategory::Palette)]
@@ -1235,6 +1276,35 @@ pub enum Packet {
 
     // Unknown 0x31 packets [0x31]
     #[Category(PacketCategory::Unk31)]
+    /// (0x31, 0x01) New Titles Request.
+    ///
+    /// (C -> S) Sent whet the client interacts with the title counter.
+    ///
+    /// Respond with: [`Packet::NewTitles`].
+    #[Id(0x31, 0x01)]
+    NewTitlesRequest,
+    /// (0x31, 0x02) New Titles.
+    #[Id(0x31, 0x02)]
+    NewTitles(NewTitlesPacket),
+    /// (0x31, 0x03) Title List Request.
+    ///
+    /// (C -> S) Sent whet the client interacts with the title counter.
+    ///
+    /// Respond with: [`Packet::TitleList`].
+    #[Id(0x31, 0x03)]
+    TitleListRequest,
+    /// (0x31, 0x04) Title List.
+    #[Id(0x31, 0x04)]
+    TitleList(TitleListPacket),
+    /// (0x31, 0x05) Load Title Names.
+    #[Id(0x31, 0x05)]
+    LoadTitles(LoadTitlesPacket),
+    /// (0x31, 0x06) Title Condition Request.
+    #[Id(0x31, 0x06)]
+    GetTitleCondition(GetTitleConditionPacket),
+    /// (0x31, 0x07) Title Condition.
+    #[Id(0x31, 0x07)]
+    LoadTitleCondition(LoadTitleConditionPacket),
     /// (0x31, 0x08) Play Achievements Request.
     ///
     /// (C -> S) Sent when the client request play achievements list.
@@ -1245,6 +1315,12 @@ pub enum Packet {
     /// (0x31, 0x09) Play Achievements Request.
     #[Id(0x31, 0x09)]
     PlayAchievementsResponse(PlayAchievementsResponsePacket),
+    /// (0x31, 0x0A) Receive Title Reward Request.
+    #[Id(0x31, 0x0A)]
+    ReceiveTitleRewardRequest(ReceiveTitleRewardRequestPacket),
+    /// (0x31, 0x0B) Receive Title Reward Response.
+    #[Id(0x31, 0x0B)]
+    ReceiveTitleReward(ReceiveTitleRewardPacket),
 
     // Unknown 0x34 packets [0x34]
     #[Category(PacketCategory::Unk34)]
@@ -1375,6 +1451,8 @@ pub enum PacketCategory {
     Mail,
     /// Charater related packets.
     Characters,
+    /// Unknown 0x1E packets. See [`unk1e`]
+    Unk1E,
     /// Daily orders related packets. See [`orders`]
     DailyOrders,
     /// Palette related packets. See [`palette`]
@@ -1581,6 +1659,7 @@ pub struct ObjectHeader {
 // ----------------------------------------------------------------
 // Utils
 // ----------------------------------------------------------------
+
 // temporarily hidden
 #[doc(hidden)]
 #[inline(always)]
@@ -1665,12 +1744,30 @@ mod tests {
                     // failing packets
                     if matches!(
                         packet,
+                        // extra data at the end
                         Packet::Movement(_)
+                            // unclean name string
                             | Packet::EventSpawn(_)
+                            // unclean name string
                             | Packet::ObjectSpawn(_)
-                            | Packet::LoadItem(_)
+                            // lengths are sometimes 0 instead of magicked 0
                             | Packet::FriendList(_)
                             | Packet::ShipList(_)
+                            // current testing structure replaces the last char with null byte
+                            | Packet::LoadItem(_)
+                            // current testing structure replaces the last char with null byte
+                            | Packet::LoadTitles(_)
+                            // current testing structure replaces the last char with null byte
+                            | Packet::PlayAchievementsResponse(_)
+                    ) {
+                        continue;
+                    }
+                    // NGS specific failing packets
+                    #[cfg(feature = "ngs_packets")]
+                    if matches!(
+                        packet,
+                        // changed across version and currently extremely unfinished
+                        Packet::CharacterSpawnNGS(_)
                     ) {
                         continue;
                     }

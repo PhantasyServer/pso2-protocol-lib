@@ -190,6 +190,8 @@ pub struct StartGamePacket {
 ///
 /// (C -> S) Sent when the client has created a new character (i.e. in the end of the character
 /// creation screen).
+///
+/// Respond with: [`crate::protocol::Packet::CharacterCreateResponse`].
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
@@ -210,6 +212,22 @@ pub struct CharacterCreatePacket {
 #[Id(0x11, 0x06)]
 pub struct CharacterDeletionRequestPacket {
     /// Deleted character ID.
+    pub char_id: u32,
+}
+
+/// (0x11, 0x07) Create New Character Response.
+///
+/// (S -> C) Sent in response to character creation.
+///
+/// Response to: [`crate::protocol::Packet::CharacterCreate`].
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x07)]
+pub struct CharacterCreateResponsePacket {
+    /// Creation result.
+    pub status: CharacterCreationStatus,
+    /// New character ID.
     pub char_id: u32,
 }
 
@@ -1313,6 +1331,25 @@ pub enum NewNameStatus {
     Success,
     /// Renaming failed.
     Failure,
+}
+
+/// Character creation status.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
+#[repr(u32)]
+pub enum CharacterCreationStatus {
+    /// Character has been successfully created.
+    #[default]
+    #[Read_default]
+    Success,
+    /// Displays an empty error message.
+    EmptyError,
+    /// Character limit reached.
+    LimitReached,
+    /// Not enough AC to create a character.
+    NoAC,
+    /// Generic system error message.
+    SystemError,
 }
 
 // ----------------------------------------------------------------

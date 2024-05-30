@@ -1,10 +1,89 @@
 //! Unknown \[0x31\] packets.
-use super::{HelperReadWrite, ItemId, PacketError, PacketReadWrite};
+use super::{HelperReadWrite, Item, ItemId, PacketError, PacketReadWrite, PacketType};
 use crate::AsciiString;
 
 // ----------------------------------------------------------------
 // Unknown 0x31 packets
 // ----------------------------------------------------------------
+
+/// (0x31, 0x02) New Title.
+///
+/// (S -> C) Sent in response to a request.
+///
+/// Response to: [`crate::protocol::Packet::NewTitlesRequest`].
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x31, 0x02)]
+#[Flags(Flags::PACKED)]
+#[Magic(0xC6AD, 0xB1)]
+pub struct NewTitlesPacket {
+    /// Unclaimed title IDs (i.e. new titles).
+    pub new_titles_ids: Vec<u32>,
+}
+
+/// (0x31, 0x04) Title List.
+///
+/// (S -> C) Sent in response to a request.
+///
+/// Response to: [`crate::protocol::Packet::TitleListRequest`].
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x31, 0x04)]
+#[Flags(Flags::PACKED)]
+#[Magic(0xD228, 0x47)]
+pub struct TitleListPacket {
+    /// Title information.
+    pub title_infos: Vec<TitleInfo>,
+    pub unk: u32,
+}
+
+/// (0x31, 0x05) Load Title Names.
+///
+/// (S -> C) Sent when a client sees a title for the first time since logging in.
+//
+// See internal repr for real structure.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct LoadTitlesPacket {
+    /// Title ID - Name pairs.
+    pub names: Vec<NamedTitleId>,
+}
+
+/// (0x31, 0x06) Title Condition Request.
+///
+/// (C -> S) Sent when a player wants to receive a title completion condition (i.e. the player
+/// hovers over a title at the title counter).
+///
+/// Respond with: [`crate::protocol::Packet::TitleCondition`].
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x31, 0x06)]
+pub struct GetTitleConditionPacket {
+    /// Requested title ID.
+    pub title_id: u32,
+}
+
+/// (0x31, 0x07) Title Condition.
+///
+/// (S -> C) Sent in response to a request.
+///
+/// Response to: [`crate::protocol::Packet::TitleConditionRequest`].
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x31, 0x07)]
+#[Flags(Flags::PACKED)]
+#[Magic(0x6361, 0x28)]
+pub struct LoadTitleConditionPacket {
+    /// Requested title ID.
+    pub title_id: u32,
+    /// Translated condition string.
+    pub condition: String,
+}
 
 /// (0x31, 0x09) Play Achievements Request.
 ///
@@ -46,9 +125,52 @@ pub struct PlayAchievementsResponsePacket {
     pub titles_acquired: u32,
 }
 
+/// (0x31, 0x0A) Receive Title Reward Request.
+///
+/// (C -> S) Sent when a player wants to receive a reward for a new title.
+///
+/// Respond with: [`crate::protocol::Packet::AddedItem`],
+/// [`crate::protocol::Packet::ReceiveTitleReward`].
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x31, 0x0A)]
+pub struct ReceiveTitleRewardRequestPacket {
+    /// Requested title ID.
+    pub title_id: u32,
+}
+
+/// (0x31, 0x0B) Receive Title Reward Response.
+///
+/// (S -> C) Sent in response to a request.
+///
+/// Response to: [`crate::protocol::Packet::ReceiveTitleRewardRequest`].
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x31, 0x0B)]
+pub struct ReceiveTitleRewardPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    /// Requested title ID.
+    pub title_id: u32,
+}
+
 // ----------------------------------------------------------------
 // Internal structs
 // ----------------------------------------------------------------
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x31, 0x05)]
+#[Flags(Flags::PACKED)]
+#[Magic(0x57E6, 0x92)]
+struct LoadTitlesInternal {
+    title_ids: Vec<u32>,
+    names: String,
+    name_lens: Vec<u8>,
+}
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -107,6 +229,32 @@ struct EnemyRecordInternal {
 // Additional structs
 // ----------------------------------------------------------------
 
+/// Title name + ID pair.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct NamedTitleId {
+    /// Title ID.
+    pub title_id: u32,
+    /// Title name.
+    pub name: String,
+}
+
+/// Title information.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+pub struct TitleInfo {
+    /// Title ID.
+    pub title_id: u32,
+    pub title_id2: u32,
+    pub unk1: u32,
+    /// Reward received flag.
+    pub reward_received: u32,
+    /// Reward item.
+    pub reward_item: Item,
+}
+
 /// Quest record entry.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -138,13 +286,68 @@ pub struct EnemyRecord {
 // Read/Write implementations
 // ----------------------------------------------------------------
 
+impl PacketReadWrite for LoadTitlesPacket {
+    fn read(
+        reader: &mut (impl std::io::Read + std::io::Seek),
+        flags: &super::Flags,
+        packet_type: PacketType,
+    ) -> Result<Self, PacketError> {
+        let packet = LoadTitlesInternal::read(reader, flags, packet_type).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "LoadTitlesPacket",
+                field_name: "internal",
+                error: Box::new(e),
+            }
+        })?;
+        let mut names = packet.names.chars();
+        let mut items = vec![];
+        for (title_id, name_length) in packet
+            .title_ids
+            .into_iter()
+            .zip(packet.name_lens.into_iter())
+        {
+            let name = names.by_ref().take(name_length as usize).collect();
+            items.push(NamedTitleId { name, title_id });
+        }
+        Ok(Self { names: items })
+    }
+
+    fn write(&self, packet_type: PacketType) -> Result<Vec<u8>, PacketError> {
+        let mut names = String::new();
+        let mut name_lens = vec![];
+        let mut title_ids = vec![];
+        for item in self.names.iter() {
+            name_lens.push(item.name.chars().count() as u8);
+            names.push_str(&item.name);
+            title_ids.push(item.title_id);
+        }
+        LoadTitlesInternal {
+            title_ids,
+            names,
+            name_lens,
+        }
+        .write(packet_type)
+        .map_err(|e| PacketError::CompositeFieldError {
+            packet_name: "LoadTitlesPacket",
+            field_name: "internal",
+            error: Box::new(e),
+        })
+    }
+}
+
 impl PacketReadWrite for PlayAchievementsResponsePacket {
     fn read(
         reader: &mut (impl std::io::Read + std::io::Seek),
         flags: &super::Flags,
         packet_type: super::PacketType,
     ) -> Result<Self, PacketError> {
-        let packet = PlayAchievementsInternal::read(reader, flags, packet_type)?;
+        let packet = PlayAchievementsInternal::read(reader, flags, packet_type).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "PlayAchievementsResponsePacket",
+                field_name: "internal",
+                error: Box::new(e),
+            }
+        })?;
         let mut names = packet.enemy_ids.chars();
         let mut boss_enemies = vec![];
         let mut rare_enemies = vec![];
@@ -229,5 +432,10 @@ impl PacketReadWrite for PlayAchievementsResponsePacket {
             titles_acquired: self.titles_acquired,
         }
         .write(packet_type)
+        .map_err(|e| PacketError::CompositeFieldError {
+            packet_name: "PlayAchievementsResponsePacket",
+            field_name: "internal",
+            error: Box::new(e),
+        })
     }
 }
