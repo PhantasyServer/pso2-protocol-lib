@@ -2,6 +2,7 @@
 #[cfg(feature = "ngs_packets")]
 use super::models::FunValue;
 use super::{
+    items::Item,
     items::ItemId,
     models::{character::Character, SGValue},
     Flags, HelperReadWrite, ObjectHeader, ObjectType, PacketError, PacketHeader, PacketReadWrite,
@@ -155,6 +156,7 @@ pub struct LoginResponsePacket {
 pub struct CharacterListPacket {
     /// Available characters.
     pub characters: Vec<Character>,
+    pub equiped_items: Vec<[Item; 10]>,
     /// Character play times.
     pub play_times: [u32; 30],
     /// Character deletion flags (flag, deletion timestamp).
@@ -1399,12 +1401,29 @@ impl PacketReadWrite for CharacterListPacket {
         }
         // ???
         reader
-            .seek(std::io::SeekFrom::Current(0x41A4))
+            .seek(std::io::SeekFrom::Current(0x4))
             .map_err(|e| PacketError::FieldError {
                 packet_name: "CharacterListPacket",
                 field_name: "undefined",
                 error: e,
             })?;
+        let mut equiped_items = vec![];
+        // items
+        for i in 0..30 {
+            let mut items: [Item; 10] = Default::default();
+            for item in &mut items {
+                *item = Item::read(reader, packet_type, 0, 0).map_err(|e| {
+                    PacketError::CompositeFieldError {
+                        packet_name: "CharacterListPacket",
+                        field_name: "vec_equiped_items_value",
+                        error: Box::new(e),
+                    }
+                })?;
+            }
+            if i < char_amount {
+                equiped_items.push(items);
+            }
+        }
         let mut play_times = [0u32; 30];
         for item in &mut play_times {
             *item = reader
@@ -1489,6 +1508,7 @@ impl PacketReadWrite for CharacterListPacket {
 
         Ok(Self {
             characters,
+            equiped_items,
             play_times,
             deletion_flags,
             transfer_flags,
@@ -1512,13 +1532,14 @@ impl PacketReadWrite for CharacterListPacket {
                 error: e,
             })?;
 
-        let mut characters = &self.characters;
-        let default_character = vec![Character::default()];
-        if characters.is_empty() {
-            characters = &default_character;
-        }
+        let characters = &self.characters;
 
-        for character in characters.iter().cycle().take(30) {
+        for character in characters
+            .iter()
+            .chain([Character::default()].iter())
+            .cycle()
+            .take(30)
+        {
             buf.write_u32::<LittleEndian>(0)
                 .map_err(|e| PacketError::PaddingError {
                     packet_name: "CharacterListPacket",
@@ -1534,12 +1555,28 @@ impl PacketReadWrite for CharacterListPacket {
             })?;
         }
         // ???
-        for _ in 0..0x41A4 {
-            buf.write_u8(0).map_err(|e| PacketError::FieldError {
+        buf.write_u32::<LittleEndian>(0)
+            .map_err(|e| PacketError::FieldError {
                 packet_name: "CharacterListPacket",
                 field_name: "undefined",
                 error: e,
             })?;
+        for equiped_items in self
+            .equiped_items
+            .iter()
+            .chain([Default::default()].iter())
+            .cycle()
+            .take(30)
+        {
+            for item in equiped_items {
+                item.write(&mut buf, packet_type, 0, 0).map_err(|e| {
+                    PacketError::CompositeFieldError {
+                        packet_name: "CharacterListPacket",
+                        field_name: "vec_equiped_items_value",
+                        error: Box::new(e),
+                    }
+                })?;
+            }
         }
         for i in 0..30 {
             buf.write_u32::<LittleEndian>(self.play_times[i])
