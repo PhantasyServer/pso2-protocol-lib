@@ -386,6 +386,7 @@ pub enum Packet {
 
     // Quest List packets [0x0B]
     #[Category(PacketCategory::QuestList)]
+    /// (0x0B, 0x06) Start Cutscene.
     #[Id(0x0B, 0x06)]
     StartCutscene(StartCutscenePacket),
     /// (0x0B, 0x09) Unknown.
@@ -727,7 +728,7 @@ pub enum Packet {
     ///
     /// Respond with: (0x0F, 0x8B)
     #[Id(0x0F, 0x8A)]
-    CharacterCapaignsRequest,
+    CharacterCampaignsRequest,
     /// (0x0F, 0x9C) Unknown.
     #[Id(0x0F, 0x9C)]
     Unk0F9C(Unk0F9CPacket),
@@ -1255,7 +1256,7 @@ pub enum Packet {
     /// (0x2F, 0x00) Request Symbol Art Data (client).
     #[Id(0x2F, 0x00)]
     SymbolArtClientDataRequest(SymbolArtClientDataRequestPacket),
-    /// (0x2F, 0x00) Request Symbol Art Data (server).
+    /// (0x2F, 0x01) Request Symbol Art Data (server).
     #[Id(0x2F, 0x01)]
     SymbolArtDataRequest(SymbolArtDataRequestPacket),
     /// (0x2F, 0x02) Symbol Art Data (serverbound).

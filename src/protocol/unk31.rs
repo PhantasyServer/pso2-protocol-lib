@@ -57,7 +57,7 @@ pub struct LoadTitlesPacket {
 /// (C -> S) Sent when a player wants to receive a title completion condition (i.e. the player
 /// hovers over a title at the title counter).
 ///
-/// Respond with: [`crate::protocol::Packet::TitleCondition`].
+/// Respond with: [`crate::protocol::Packet::LoadTitleCondition`].
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
@@ -71,7 +71,7 @@ pub struct GetTitleConditionPacket {
 ///
 /// (S -> C) Sent in response to a request.
 ///
-/// Response to: [`crate::protocol::Packet::TitleConditionRequest`].
+/// Response to: [`crate::protocol::Packet::GetTitleCondition`].
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
