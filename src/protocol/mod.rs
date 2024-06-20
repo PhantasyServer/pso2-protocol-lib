@@ -619,6 +619,18 @@ pub enum Packet {
     /// (0x0F, 0x06) Update Inventory.
     #[Id(0x0F, 0x06)]
     UpdateInventory(UpdateInventoryPacket),
+    /// (0x0F, 0x08) Equip Item Request.
+    #[Id(0x0F, 0x08)]
+    EquipItemRequest(EquipItemRequestPacket),
+    /// (0x0F, 0x09) Equip Item. (broadcast?)
+    #[Id(0x0F, 0x09)]
+    EquipItem(EquipItemPacket),
+    /// (0x0F, 0x0A) Unequip Item Request.
+    #[Id(0x0F, 0x0A)]
+    UnequipItemRequest(UnequipItemRequestPacket),
+    /// (0x0F, 0x0B) Unequip Item. (broadcast?)
+    #[Id(0x0F, 0x0B)]
+    UnequipItem(UnequipItemPacket),
     /// (0x0F, 0x0C) Load Player's Equipment (broadcast).
     #[Id(0x0F, 0x0C)]
     LoadEquiped(LoadEquipedPacket),
@@ -673,6 +685,9 @@ pub enum Packet {
     /// (0x0F, 0x25) Discard Storage Item Request.
     #[Id(0x0F, 0x25)]
     DiscardStorageItemRequest(DiscardStorageItemRequestPacket),
+    /// (0x0F, 0x2B) Unknown.
+    #[Id(0x0F, 0x2B)]
+    Unk0F2B(Unk0F2BPacket),
     /// (0x0F, 0x30) Load Item Name.
     #[Id(0x0F, 0x30)]
     LoadItem(LoadItemPacket),

@@ -4,7 +4,7 @@ use super::{
     HelperReadWrite, ObjectHeader, PacketError, PacketReadWrite, PacketType,
 };
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use std::time::Duration;
+use std::{io::SeekFrom, time::Duration};
 
 // ----------------------------------------------------------------
 // Items packets
@@ -129,6 +129,91 @@ pub struct UpdateInventoryPacket {
     pub updated: Vec<UpdatedInventoryItem>,
     pub unk: Vec<UpdatedInventoryItem>,
     pub unk2: u32,
+}
+
+/// (0x0F, 0x08) Equip Item Request.
+///
+/// (C -> S) Sent when a player equips an item.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x08)]
+pub struct EquipItemRequestPacket {
+    /// Equiped item UUID.
+    pub uuid: u64,
+    /// Equipment slot ID.
+    pub equipment_pos: u32,
+    pub unk: u32,
+}
+
+/// (0x0F, 0x09) Equip Item. (broadcast?)
+///
+/// (S -> C) Sent in response to the request.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x09)]
+#[Flags(Flags::PACKED)]
+#[Magic(0x3E3D, 0xD4)]
+pub struct EquipItemPacket {
+    /// Player who equiped an item (?).
+    pub player_equiped: ObjectHeader,
+    /// Equiped item.
+    pub equiped_item: Item,
+    /// Equipment slot ID.
+    pub equipment_pos: u32,
+    pub unk1: Vec<u8>,
+    pub unk2: u64,
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[OnlyOn(PacketType::NGS)]
+    #[FixedLen(0x58)]
+    pub unk3: Vec<u8>,
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[OnlyOn(PacketType::NGS)]
+    pub unk4: u32,
+}
+
+/// (0x0F, 0x0A) Unequip Item Request.
+///
+/// (C -> S) Sent when a player unequips an item.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x0A)]
+pub struct UnequipItemRequestPacket {
+    /// Unequiped item UUID.
+    pub uuid: u64,
+    /// Equipment slot ID.
+    pub equipment_pos: u32,
+    pub unk: u32,
+}
+
+/// (0x0F, 0x0B) Unequip Item. (broadcast?)
+///
+/// (S -> C) Sent in response to the request.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x0B)]
+pub struct UnequipItemPacket {
+    /// Player who unequiped an item (?).
+    pub player_unequiped: ObjectHeader,
+    /// Unequiped item.
+    pub unequiped_item: Item,
+    /// Equipment slot ID.
+    pub equipment_pos: u32,
+    pub unk1: u64,
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[OnlyOn(PacketType::NGS)]
+    #[FixedLen(0x58)]
+    pub unk2: Vec<u8>,
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[OnlyOn(PacketType::NGS)]
+    pub unk3: u32,
 }
 
 /// (0x0F, 0x0C) Load Player's Equipment (broadcast).
@@ -458,6 +543,19 @@ pub struct UpdateStoragePacket {
 pub struct DiscardStorageItemRequestPacket {
     /// Items being discarded.
     pub items: Vec<MoveStorageItemRequest>,
+}
+
+/// (0x0F, 0x2B) Unknown.
+///
+/// (S -> C)
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x2B)]
+#[Flags(Flags::PACKED)]
+#[Magic(0x016D, 0xCE)]
+pub struct Unk0F2BPacket {
+    pub items: Vec<Item>,
 }
 
 // for impl see [`LoadItemInternal`]
@@ -915,8 +1013,10 @@ pub struct UpdatedStorageItem {
 
 /// Item types.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum ItemType {
+    #[default]
+    NoItem,
     Weapon(WeaponItem),
     Clothing(ClothingItem),
     Consumable(ConsumableItem),
@@ -924,6 +1024,9 @@ pub enum ItemType {
     Unit(UnitItem),
     Unknown(Vec<u8>),
     // NGS Options
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    NoItemNGS,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     WeaponNGS(WeaponItemNGS),
@@ -1429,6 +1532,16 @@ impl ItemType {
     ) -> Result<Self, PacketError> {
         Ok(match (item.item_type, packet_type) {
             #[cfg(feature = "ngs_packets")]
+            (0, PacketType::NGS) => {
+                reader.seek(SeekFrom::Current(0x38))
+                    .map_err(|e| PacketError::FieldError {
+                        packet_name: "ItemType",
+                        field_name: "field_0",
+                        error: e,
+                    })?;
+                Self::NoItemNGS
+            }
+            #[cfg(feature = "ngs_packets")]
             (1, PacketType::NGS) => {
                 Self::WeaponNGS(WeaponItemNGS::read(reader, packet_type, 0, 0)?)
             }
@@ -1456,6 +1569,15 @@ impl ItemType {
                     })?;
                 tmp.into()
             }),
+            (0, _) => {
+                reader.seek(SeekFrom::Current(0x28))
+                    .map_err(|e| PacketError::FieldError {
+                        packet_name: "ItemType",
+                        field_name: "field_0",
+                        error: e,
+                    })?;
+                Self::NoItem
+            }
             (1, _) => Self::Weapon(WeaponItem::read(reader, packet_type, 0, 0)?),
             (2, _) => Self::Clothing(ClothingItem::read(reader, packet_type, 0, 0)?),
             (3, _) => Self::Consumable(ConsumableItem::read(reader, packet_type, 0, 0)?),
@@ -1481,6 +1603,15 @@ impl ItemType {
         packet_type: PacketType,
     ) -> Result<(), PacketError> {
         match self {
+            Self::NoItem => {
+                writer
+                    .write_all(&[0; 0x28])
+                    .map_err(|e| PacketError::FieldError {
+                        packet_name: "ItemType",
+                        field_name: "field_0",
+                        error: e,
+                    })?;
+            }
             Self::Weapon(x) => x.write(writer, packet_type, 0, 0)?,
             Self::Clothing(x) => x.write(writer, packet_type, 0, 0)?,
             Self::Consumable(x) => x.write(writer, packet_type, 0, 0)?,
@@ -1491,6 +1622,16 @@ impl ItemType {
                 data.resize(0x28, 0);
                 writer
                     .write_all(&data)
+                    .map_err(|e| PacketError::FieldError {
+                        packet_name: "ItemType",
+                        field_name: "field_0",
+                        error: e,
+                    })?;
+            }
+            #[cfg(feature = "ngs_packets")]
+            Self::NoItemNGS => {
+                writer
+                    .write_all(&[0; 0x38])
                     .map_err(|e| PacketError::FieldError {
                         packet_name: "ItemType",
                         field_name: "field_0",
@@ -1572,14 +1713,4 @@ fn write_packed_affixes(
             error: e,
         })?;
     Ok(())
-}
-
-// ----------------------------------------------------------------
-// Default implementations
-// ----------------------------------------------------------------
-
-impl Default for ItemType {
-    fn default() -> Self {
-        Self::Weapon(Default::default())
-    }
 }
