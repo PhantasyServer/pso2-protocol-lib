@@ -259,9 +259,9 @@ pub enum Packet {
     /// (0x04, 0x08) Client Movement Action.
     #[Id(0x04, 0x08)]
     MovementAction(MovementActionPacket),
-    /// (0x04, 0x0F) Unknown.
+    /// (0x04, 0x0F) Enemy Killed (map broadcast).
     #[Id(0x04, 0x0F)]
-    Unk040F(Unk040FPacket),
+    EnemyKilled(EnemyKilledPacket),
     /// (0x04, 0x13) Unknown.
     #[Id(0x04, 0x13)]
     Unk0413(Unk0413Packet),
@@ -277,9 +277,9 @@ pub enum Packet {
     /// (0x04, 0x21) Change Class Response.
     #[Id(0x04, 0x21)]
     ChangeClass(ChangeClassPacket),
-    /// (0x04, 0x22) Unknown.
+    /// (0x04, 0x22) Enemy Action. (map broadcast)
     #[Id(0x04, 0x22)]
-    Unk0422(Unk0422Packet),
+    EnemyAction(EnemyActionPacket),
     /// (0x04, 0x23) Unknown.
     #[Id(0x04, 0x23)]
     Unk0423(Unk0423Packet),

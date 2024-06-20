@@ -123,33 +123,45 @@ pub struct MovementActionPacket {
     pub unk10: u32,
 }
 
-/// (0x04, 0x0F) Unknown.
+/// (0x04, 0x0F) Enemy Killed (map broadcast).
 ///
-/// (S -> C)
+/// (S -> C) Send when an enemy is killed.
+///
+/// Followed by: [`crate::protocol::Packet::GainedEXP`]
+// literally the same as DamageReceive
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x0F)]
 #[Flags(Flags::OBJECT_RELATED)]
-pub struct Unk040FPacket {
-    pub unk1: ObjectHeader,
-    pub unk2: ObjectHeader,
-    pub unk3: ObjectHeader,
+pub struct EnemyKilledPacket {
+    /// Player that receives this packet.
+    pub receiver: ObjectHeader,
+    /// Object that receives this damage.
+    pub dmg_target: ObjectHeader,
+    /// Object that deals this damage.
+    pub dmg_inflicter: ObjectHeader,
+    /// Inflicted damage ID.
+    pub damage_id: u32,
+    /// How much damage was inflicted.
+    pub dmg_amount: i32,
+    /// New HP.
+    pub new_hp: u32,
+    /// Hitbox ID (?).
+    pub hitbox_id: u32,
+    /// Hit x position.
+    pub x_pos: f16,
+    /// Hit y position.
+    pub y_pos: f16,
+    /// Hit z position.
+    pub z_pos: f16,
+    pub unk1: u16,
+    pub unk2: u16,
+    pub unk3: u16,
     pub unk4: u16,
     pub unk5: u16,
     pub unk6: u32,
     pub unk7: u32,
-    pub unk8: u32,
-    pub unk9: f16,
-    pub unk10: f16,
-    pub unk11: f16,
-    pub unk12: u16,
-    pub unk13: u16,
-    pub unk14: u16,
-    pub unk15: u16,
-    pub unk16: u16,
-    pub unk17: u32,
-    pub unk18: u32,
 }
 
 /// (0x04, 0x13) Unknown.
@@ -260,20 +272,20 @@ pub struct ChangeClassPacket {
     pub unk3: [u16; 11],
 }
 
-/// (0x04, 0x22) Unknown.
+/// (0x04, 0x22) Enemy Action. (map broadcast)
 ///
-/// (S -> C)
+/// (S -> C) Sent when an enemy performs an action (i.e. spawns or dies).
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x22)]
 #[Flags(Flags::OBJECT_RELATED)]
-pub struct Unk0422Packet {
-    pub unk1: ObjectHeader,
-    pub unk2: ObjectHeader,
-    pub unk3: u32,
-    pub unk4: u32,
-    pub unk5: [u8; 0x20],
+pub struct EnemyActionPacket {
+    pub receiver: ObjectHeader,
+    pub actor: ObjectHeader,
+    pub action_id: u32,
+    pub action_starter: ObjectHeader,
+    pub unk5: [u8; 0x18],
 }
 
 /// (0x04, 0x23) Unknown.
@@ -440,8 +452,13 @@ pub struct DamageReceivePacket {
     pub y_pos: f16,
     /// Hit z position.
     pub z_pos: f16,
-    pub unk4: [u8; 0xE],
-    pub unk5: u32,
+    pub unk1: u16,
+    pub unk2: u16,
+    pub unk3: u16,
+    pub unk4: u16,
+    pub unk5: u16,
+    pub unk6: u32,
+    pub unk7: u32,
 }
 
 /// (0x04, 0x5F) Set Title Request.
@@ -523,7 +540,7 @@ pub struct SetTitlePacket {
 #[Flags(Flags::PACKED | Flags::OBJECT_RELATED)]
 #[Magic(0x83EF, 0x40)]
 pub struct ActionEndPacket {
-    pub unk1: [u8; 0xC],
+    pub unk1: ObjectHeader,
     /// Object that was performing an action.
     pub performer: ObjectHeader,
     pub unk2: u32,
