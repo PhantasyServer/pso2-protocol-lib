@@ -389,12 +389,12 @@ pub enum Packet {
     /// (0x0B, 0x06) Start Cutscene.
     #[Id(0x0B, 0x06)]
     StartCutscene(StartCutscenePacket),
-    /// (0x0B, 0x09) Unknown.
+    /// (0x0B, 0x09) Minimap Reveal Chunk Request.
     #[Id(0x0B, 0x09)]
-    Unk0B09(Unk0B09Packet),
-    /// (0x0B, 0x13) Unknown.
+    MinimapRevealRequest(MinimapRevealRequestPacket),
+    /// (0x0B, 0x13) Minimap Reveal.
     #[Id(0x0B, 0x13)]
-    Unk0B13(Unk0B13Packet),
+    MinimapReveal(MinimapRevealPacket),
     /// (0x0B, 0x15) Available Quests Request.
     #[Id(0x0B, 0x15)]
     AvailableQuestsRequest(AvailableQuestsRequestPacket),

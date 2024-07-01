@@ -32,34 +32,39 @@ pub struct StartCutscenePacket {
     pub unk11: ObjectHeader,
 }
 
-/// (0x0B, 0x09) Unknown.
+/// (0x0B, 0x09) Minimap Reveal Chunk Request.
 ///
-/// (C -> S)
+/// (C -> S) Sent when a player crosses a zone chunk boundary.
+///
+/// Respond with: [`crate::protocol::Packet::MinimapReveal`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x09)]
-pub struct Unk0B09Packet {
+pub struct MinimapRevealRequestPacket {
     pub unk1: u32,
-    pub unk2: u32,
-    pub unk3: u32,
-    pub unk4: u32,
+    /// ID of the chunk that a player has entered.
+    pub chunk_id: u32,
+    /// Column of the chunk on the minimap.
+    pub map_column: u32,
+    /// Row of the chunk on the minimap.
+    pub map_row: u32,
 }
 
-/// (0x0B, 0x13) Unknown.
+/// (0x0B, 0x13) Minimap Reveal.
 ///
-/// (S -> C)
+/// (S -> C) Sent to reveal a chunk of the minimap.
+///
+/// Response to: [`crate::protocol::Packet::MinimapRevealRequest`].
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x13)]
-pub struct Unk0B13Packet {
+pub struct MinimapRevealPacket {
     pub unk1: ObjectHeader,
     pub party: ObjectHeader,
-    pub unk2: u32,
-    pub unk3: [u8; 8],
-    pub unk4: u32,
-    pub unk5: u32,
+    pub zone_id: u32,
+    pub unk3: [u8; 10],
 }
 
 /// (0x0B, 0x15) Available Quests Request.
