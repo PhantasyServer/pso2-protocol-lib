@@ -37,9 +37,9 @@ pub struct TeleportTransferPacket {
     pub unk2: u16,
 }
 
-/// (0x04, 0x06) Item Picked Up.
+/// (0x04, 0x06) Despawn Object.
 ///
-/// (S -> C) Sent when players pickup items.
+/// (S -> C) Sent when an object is despawning (i.e. picking up an item or a concert is starting).
 ///
 /// Response to: [`crate::protocol::Packet::ItemPickupRequest`] and ???
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -47,10 +47,10 @@ pub struct TeleportTransferPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x06)]
 #[Flags(Flags::OBJECT_RELATED)]
-pub struct ItemPickedUpPacket {
-    /// Player that picked up the item. (?)
+pub struct DespawnObjectPacket {
+    /// Player that received this packet.
     pub player: ObjectHeader,
-    /// Item object that was picked up.
+    /// Object that was despawned.
     pub item: ObjectHeader,
 }
 
@@ -389,19 +389,19 @@ pub struct LoadPAsPacket {
     pub unk: Vec<u8>,
 }
 
-/// (0x04, 0x3B) Remove Object. (broadcast)
+/// (0x04, 0x3B) Despawn Player. (broadcast)
 ///
-/// (S -> C) Sent when object gets deleted (e.g player disconnects).
+/// (S -> C) Sent when a player leaves a map (e.g player disconnects).
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x04, 0x3B)]
 #[Flags(Flags::OBJECT_RELATED)]
-pub struct RemoveObjectPacket {
+pub struct DespawnPlayerPacket {
     /// Player that receives this packet.
     pub receiver: ObjectHeader,
-    /// Object that got removed.
-    pub removed_object: ObjectHeader,
+    /// Player that got removed.
+    pub removed_player: ObjectHeader,
 }
 
 /// (0x04, 0x3C) Client Action Update.
@@ -637,6 +637,24 @@ pub struct Unk04B0Packet {
     pub unk2: ObjectHeader,
     pub unk3: [u8; 0xC],
     pub unk4: u32,
+}
+
+/// (0x04, 0xBA) Unknown.
+///
+/// (S -> C)
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0xBA)]
+#[Flags(Flags::OBJECT_RELATED)]
+pub struct Unk04BAPacket {
+    pub unk1: ObjectHeader,
+    pub unk2: ObjectHeader,
+    pub unk3: u32,
+    pub unk4: u8,
+    pub unk5: u8,
+    pub unk6: u8,
+    pub unk7: u8,
 }
 
 /// (0x04, 0xEA) Unknown.

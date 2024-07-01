@@ -250,9 +250,9 @@ pub enum Packet {
     /// (0x04, 0x02) Object Teleport Location.
     #[Id(0x04, 0x02)]
     TeleportTransfer(TeleportTransferPacket),
-    /// (0x04, 0x06) Item Picked Up.
+    /// (0x04, 0x06) Despawn Object.
     #[Id(0x04, 0x06)]
-    ItemPickedUp(ItemPickedUpPacket),
+    DespawnObject(DespawnObjectPacket),
     /// (0x04, 0x07) Object Movement. (broadcast)
     #[Id(0x04, 0x07)]
     Movement(MovementPacket),
@@ -298,9 +298,9 @@ pub enum Packet {
     /// (0x04, 0x2E) Load Learned Photon Arts. (broadcast)
     #[Id(0x04, 0x2E)]
     LoadPAs(LoadPAsPacket),
-    /// (0x04, 0x3B) Remove Object. (broadcast)
+    /// (0x04, 0x3B) Despawn Player. (broadcast)
     #[Id(0x04, 0x3B)]
-    RemoveObject(RemoveObjectPacket),
+    DespawnPlayer(DespawnPlayerPacket),
     /// (0x04, 0x3C) Client Action Update.
     #[Id(0x04, 0x3C)]
     ActionUpdate(ActionUpdatePacket),
@@ -334,6 +334,9 @@ pub enum Packet {
     /// (0x04, 0xB0) Unknown.
     #[Id(0x04, 0xB0)]
     Unk04B0(Unk04B0Packet),
+    /// (0x04, 0xBA) Unknown.
+    #[Id(0x04, 0xBA)]
+    Unk04BA(Unk04BAPacket),
     /// (0x04, 0xEA) Unknown.
     #[Id(0x04, 0xEA)]
     Unk04EA(Unk04EAPacket),
