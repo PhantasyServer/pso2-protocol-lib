@@ -175,6 +175,25 @@ pub struct Unk230EPacket {
     pub unk: Vec<Unk230EThing>,
 }
 
+/// (0x23, 0x15) Unknown
+///
+/// (S -> C)
+///
+/// Response to: [`crate::protocol::Packet::StartGame`]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x23, 0x15)]
+pub struct Unk2315Packet {
+    #[FixedLen(0x1800)]
+    pub unk: Vec<u8>,
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    #[OnlyOn(super::PacketType::NGS)]
+    #[FixedLen(0x1E80)]
+    pub unk2: Vec<u8>,
+}
+
 // ----------------------------------------------------------------
 // Additional structs
 // ----------------------------------------------------------------

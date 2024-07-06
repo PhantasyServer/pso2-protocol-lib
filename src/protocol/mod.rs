@@ -1095,14 +1095,14 @@ pub enum Packet {
     #[Id(0x1A, 0x0D)]
     NewMailMarker,
 
-    // Character packets [0x1C]
+    // Alliance packets [0x1C]
     #[Category(PacketCategory::Characters)]
-    /// (0x1C, 0x10) Get Nearby Characters.
+    /// (0x1C, 0x10) Get Alliance Status.
     ///
-    /// (C -> S) Sent when the client wants to get information about nearby characters (e.g when
-    /// clicking on any player or when entering the "nearby characters" window).
+    /// (C -> S) Sent when the client wants to get information about their alliance status (during
+    /// initial load or when clicking on other players).
     #[Id(0x1C, 0x10)]
-    GetNearbyCharacters,
+    GetAllianceStatus,
 
     // Unknown 0x1E packets [0x1E]
     #[Category(PacketCategory::Unk1E)]
@@ -1199,6 +1199,9 @@ pub enum Packet {
     /// (C -> S)
     #[Id(0x23, 0x10)]
     Unk2310,
+    /// (0x23, 0x15) Unknown
+    #[Id(0x23, 0x15)]
+    Unk2315(Unk2315Packet),
 
     // Friend avatar packets [0x26]
     #[Category(PacketCategory::FriendAvatar)]
@@ -1660,7 +1663,8 @@ pub enum ObjectType {
     Quest = 11,
     /// Party object.
     Party = 13,
-    Unk10 = 16,
+    /// World (in map pool) object.
+    World = 16,
     /// Non-playable partners.
     APC = 22,
     #[Read_default]
