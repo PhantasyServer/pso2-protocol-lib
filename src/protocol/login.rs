@@ -531,8 +531,7 @@ pub struct NicknameRequestPacket {
 #[Id(0x11, 0x1D)]
 pub struct NicknameResponsePacket {
     /// Desired nickname.
-    #[FixedLen(0x10)]
-    #[SeekAfter(0x20)]
+    #[FixedLen(0x20)]
     pub nickname: String,
 }
 
@@ -822,6 +821,46 @@ pub struct NotificationStatusPacket {
 pub struct LoginHistoryPacket {
     /// List of login attempts (max 50).
     pub attempts: Vec<LoginAttempt>,
+}
+
+/// (0x11, 0x8B) 2nd Password Operation Request.
+///
+/// (C -> S) Sent when a client wants to do something with a 2nd password (i.e set a 2nd password
+/// or unlock shops).
+///
+/// Respond with: [`crate::protocol::Packet::SecondPwdOperation`]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x8B)]
+pub struct SecondPwdOperationRequestPacket {
+    // 0 - unlock
+    // 1 - set new pwd
+    pub operation_type: u32,
+    #[FixedLen(0x10)]
+    pub password: AsciiString,
+}
+
+/// (0x11, 0x8C) 2nd Password Operation.
+///
+/// (S -> C) Sent in response to the request.
+///
+/// Response to: [`crate::protocol::Packet::SecondPwdOperationRequest`]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x8C)]
+#[Flags(Flags::PACKED)]
+#[Magic(0x29A0, 0x7F)]
+pub struct SecondPwdOperationPacket {
+    pub unk1: u32,
+    pub unk2: u8,
+    /// 2nd password set flag.
+    pub is_set: u8,
+    /// 2nd password entered correctly flag.
+    pub is_unlocked: u16,
+    pub unk5: u32,
+    pub unk: String,
 }
 
 /// (0x11, 0x90) Character Undeletion Request.

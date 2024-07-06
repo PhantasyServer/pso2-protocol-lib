@@ -949,6 +949,12 @@ pub enum Packet {
     /// (0x11, 0x87) Login History.
     #[Id(0x11, 0x87)]
     LoginHistoryResponse(LoginHistoryPacket),
+    /// (0x11, 0x8B) 2nd Password Operation Request.
+    #[Id(0x11, 0x8B)]
+    SecondPwdOperationRequest(SecondPwdOperationRequestPacket),
+    /// (0x11, 0x8C) 2nd Password Operation.
+    #[Id(0x11, 0x8C)]
+    SecondPwdOperation(SecondPwdOperationPacket),
     /// (0x11, 0x90) Character Undeletion Request.
     #[Id(0x11, 0x90)]
     CharacterUndeletionRequest(CharacterUndeletionRequestPacket),
