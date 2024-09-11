@@ -905,6 +905,13 @@ pub enum Packet {
     #[Id(0x11, 0x63)]
     #[Classic]
     VitaLogin(VitaLoginPacket),
+    /// (0x11, 0x65) Full Block List Request.
+    ///
+    /// (C -> S) Sent when a client wants a list of all the blocks in the server
+    ///
+    /// Respond with: [`Packet::AllBlocksList`]
+    #[Id(0x11, 0x64)]
+    AllBlocksListRequest,
     /// (0x11, 0x65) Full Block List.
     #[Id(0x11, 0x65)]
     AllBlocksList(AllBlocksListPacket),

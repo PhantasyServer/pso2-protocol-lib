@@ -707,6 +707,8 @@ pub struct VitaLoginPacket {
 ///
 /// (S -> C) Sent when the client need the information about all blocks (e.g. as part of friend
 /// list).
+///
+/// Response to: [`crate::protocol::Packet::AllBlocksListRequest`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
