@@ -436,6 +436,9 @@ pub enum Packet {
     /// (0x0B, 0x20) Accept Quest.
     #[Id(0x0B, 0x20)]
     AcceptQuest(AcceptQuestPacket),
+    /// (0x0B, 0x22) New Unlocked Quest List
+    #[Id(0x0B, 0x22)]
+    NewUnlockedQuests(NewUnlockedQuestsPacket),
     /// (0x0B, 0x28) Add Quest Points. (broadcast)
     #[Id(0x0B, 0x28)]
     QuestPointsAdded(QuestPointsAddedPacket),

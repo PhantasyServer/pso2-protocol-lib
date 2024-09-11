@@ -266,6 +266,23 @@ pub struct AcceptQuestPacket {
     pub unk2: [u32; 7],
 }
 
+/// (0x0B, 0x22) New Unlocked Quest List
+///
+/// (S -> C) Sent when a player interacts with the quest counter.
+///
+/// Respond with: [`crate::protocol::Packet::AvailableQuestsRequest`]
+///
+/// Response to: [`crate::protocol::Packet::QuestCounterRequest`]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0B, 0x22)]
+pub struct NewUnlockedQuestsPacket {
+    /// List of unlocked quests
+    #[FixedLen(51)]
+    pub unlocks: Vec<UnlockedQuest>,
+}
+
 /// (0x0B, 0x28) Add Quest Points. (broadcast)
 ///
 /// (S -> C) Sent when quest points are increase (usually due to killing an enemy).
@@ -695,5 +712,31 @@ bitflags::bitflags! {
         const SUPER_HARD = 1 << 3;
         const EX_HARD = 1 << 4;
         const ULTRA_HARD = 1 << 5;
+    }
+}
+
+/// Unlocked quest entry
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, PartialEq, HelperReadWrite)]
+pub struct UnlockedQuest {
+    /// ID of the quest name.
+    pub name_id: u32,
+    /// Type of the quest.
+    pub quest_type: QuestType,
+    pub _padding: [u8; 3],
+}
+
+// ----------------------------------------------------------------
+// Default implementations
+// ----------------------------------------------------------------
+
+impl Default for UnlockedQuest {
+    fn default() -> Self {
+        Self {
+            name_id: u32::MAX,
+            quest_type: QuestType::Unk0,
+            _padding: [0, 0, 0],
+        }
     }
 }
