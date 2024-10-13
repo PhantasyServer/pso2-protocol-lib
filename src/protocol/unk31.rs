@@ -112,7 +112,7 @@ pub struct PlayAchievementsResponsePacket {
     pub deaths: u32,
     /// Maximum damage.
     pub max_damage: u32,
-    pub unk2: Vec<u32>,
+    pub unk2: [u32; 3],
     /// Quest records.
     pub quest_records: Vec<QuestRecord>,
     /// Rare item acquisition records.
@@ -196,8 +196,7 @@ struct PlayAchievementsInternal {
     deaths: u32,
     /// Maximum damage.
     max_damage: u32,
-    #[FixedLen(3)]
-    unk2: Vec<u32>,
+    unk2: [u32; 3],
     /// Quest records.
     quest_records: Vec<QuestRecord>,
     /// Rare item acquisition records.

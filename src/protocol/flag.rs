@@ -1,6 +1,6 @@
 //! Flag related packets. \[0x23\]
 use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
-use crate::AsciiString;
+use crate::fixed_types::{FixedAsciiString, FixedBytes, FixedVec};
 
 // ----------------------------------------------------------------
 // Flag packets
@@ -66,16 +66,13 @@ pub struct ServerSetParamPacket {
 #[Id(0x23, 0x06)]
 pub struct AccountFlagsPacket {
     /// Account flags.
-    #[FixedLen(0x400)]
-    pub flags: Vec<u8>,
+    pub flags: FixedBytes<0x400>,
     /// Account parameters.
-    #[FixedLen(0x100)]
-    pub params: Vec<u32>,
+    pub params: FixedVec<0x100, u32>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[OnlyOn(super::PacketType::NGS)]
-    #[FixedLen(0x400)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x400>,
 }
 
 /// (0x23, 0x07) Load Character Flags.
@@ -89,16 +86,13 @@ pub struct AccountFlagsPacket {
 #[Id(0x23, 0x07)]
 pub struct CharacterFlagsPacket {
     /// Character flags.
-    #[FixedLen(0xC00)]
-    pub flags: Vec<u8>,
+    pub flags: FixedBytes<0xC00>,
     /// Character parameters.
-    #[FixedLen(0x100)]
-    pub params: Vec<u32>,
+    pub params: FixedVec<0x100, u32>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[OnlyOn(super::PacketType::NGS)]
-    #[FixedLen(0xF40)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0xF40>,
 }
 
 /// (0x23, 0x0A) Cutscene Ended.
@@ -110,8 +104,7 @@ pub struct CharacterFlagsPacket {
 #[Id(0x23, 0x0A)]
 pub struct CutsceneEndPacket {
     /// Cuscene ID.
-    #[FixedLen(0x20)]
-    pub skit_name: AsciiString,
+    pub skit_name: FixedAsciiString<0x20>,
     /// Emergency object (if related).
     pub emergency_obj: ObjectHeader,
     pub unk2: u32,
@@ -130,8 +123,7 @@ pub struct CutsceneEndPacket {
 #[Id(0x23, 0x0B)]
 pub struct SkitItemAddRequestPacket {
     /// Skit ID.
-    #[FixedLen(0x20)]
-    pub skit_name: AsciiString,
+    pub skit_name: FixedAsciiString<0x20>,
     pub unk: u32,
 }
 
@@ -146,8 +138,7 @@ pub struct SkitItemAddRequestPacket {
 #[Id(0x23, 0x0C)]
 pub struct SkitItemAddResponsePacket {
     /// Skit ID.
-    #[FixedLen(0x20)]
-    pub skit_name: AsciiString,
+    pub skit_name: FixedAsciiString<0x20>,
     pub unk: u32,
 }
 
@@ -185,13 +176,11 @@ pub struct Unk230EPacket {
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x23, 0x15)]
 pub struct Unk2315Packet {
-    #[FixedLen(0x1800)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x1800>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[OnlyOn(super::PacketType::NGS)]
-    #[FixedLen(0x1E80)]
-    pub unk2: Vec<u8>,
+    pub unk2: FixedBytes<0x1E80>,
 }
 
 // ----------------------------------------------------------------

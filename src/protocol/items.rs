@@ -1,4 +1,6 @@
 //! Item related packets. \[0x0F\]
+use crate::fixed_types::{Bytes, FixedString, FixedVec};
+
 use super::{
     models::{character::HSVColor, Position},
     HelperReadWrite, ObjectHeader, PacketError, PacketReadWrite, PacketType,
@@ -32,7 +34,7 @@ pub struct ItemAttributesPacket {
     pub total_size: u32,
     // data contains an ice archive that includes a "item_parameter.bin".
     /// ICE archive data segment.
-    pub data: Vec<u8>,
+    pub data: Bytes,
 }
 
 /// (0x0F, 0x01) Item Pickup Request.
@@ -162,13 +164,12 @@ pub struct EquipItemPacket {
     pub equiped_item: Item,
     /// Equipment slot ID.
     pub equipment_pos: u32,
-    pub unk1: Vec<u8>,
+    pub unk1: Bytes,
     pub unk2: u64,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[OnlyOn(PacketType::NGS)]
-    #[FixedLen(0x58)]
-    pub unk3: Vec<u8>,
+    pub unk3: FixedVec<0x58, u8>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[OnlyOn(PacketType::NGS)]
@@ -208,8 +209,7 @@ pub struct UnequipItemPacket {
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[OnlyOn(PacketType::NGS)]
-    #[FixedLen(0x58)]
-    pub unk2: Vec<u8>,
+    pub unk2: FixedVec<0x58, u8>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[OnlyOn(PacketType::NGS)]
@@ -232,13 +232,11 @@ pub struct LoadEquipedPacket {
     /// Player's equiped items.
     pub items: Vec<EquipedItem>,
     pub unk1: u32,
-    #[FixedLen(0x28)]
-    pub unk2: Vec<u8>,
+    pub unk2: FixedVec<0x28, u8>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[OnlyOn(PacketType::NGS)]
-    #[FixedLen(0x58)]
-    pub unk3: Vec<u8>,
+    pub unk3: FixedVec<0x58, u8>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[OnlyOn(PacketType::NGS)]
@@ -603,7 +601,7 @@ pub struct PotentialListPacket {
     pub unk1: u16,
     pub unk2: u16,
     pub potential_ids: Vec<u32>,
-    pub unk4: Vec<u8>,
+    pub unk4: Bytes,
     pub target_items: Vec<ShortItemId>,
     pub unk6: Vec<u32>,
     pub unk7: u32,
@@ -702,8 +700,7 @@ pub struct Unk0F9CPacket {
 pub struct ChangeWeaponPalettePacket {
     /// Player switching the palette.
     pub player: ObjectHeader,
-    #[FixedLen(0x12)]
-    pub unk: Vec<u16>,
+    pub unk: FixedVec<0x12, u16>,
     /// New palette ID.
     #[SeekAfter(0x4)]
     pub cur_palette: u32,
@@ -1022,7 +1019,7 @@ pub enum ItemType {
     Consumable(ConsumableItem),
     Camo(CamoItem),
     Unit(UnitItem),
-    Unknown(Vec<u8>),
+    Unknown(Bytes),
     // NGS Options
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
@@ -1044,7 +1041,7 @@ pub enum ItemType {
     UnitNGS(UnitItemNGS),
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    UnknownNGS(Vec<u8>),
+    UnknownNGS(Bytes),
 }
 
 /// Weapon type item data.
@@ -1278,11 +1275,9 @@ pub struct Campaign {
     /// End timestamp.
     pub end_date: Duration,
     /// Campaign title.
-    #[FixedLen(0x3E)]
-    pub title: String,
+    pub title: FixedString<0x3E>,
     /// Campaign conditions (description).
-    #[FixedLen(0x102)]
-    pub conditions: String,
+    pub conditions: FixedString<0x102>,
 }
 
 /// Campaign item list definition.
@@ -1533,7 +1528,8 @@ impl ItemType {
         Ok(match (item.item_type, packet_type) {
             #[cfg(feature = "ngs_packets")]
             (0, PacketType::NGS) => {
-                reader.seek(SeekFrom::Current(0x38))
+                reader
+                    .seek(SeekFrom::Current(0x38))
                     .map_err(|e| PacketError::FieldError {
                         packet_name: "ItemType",
                         field_name: "field_0",
@@ -1567,10 +1563,11 @@ impl ItemType {
                         field_name: "field_0",
                         error: e,
                     })?;
-                tmp.into()
+                tmp.to_vec().into()
             }),
             (0, _) => {
-                reader.seek(SeekFrom::Current(0x28))
+                reader
+                    .seek(SeekFrom::Current(0x28))
                     .map_err(|e| PacketError::FieldError {
                         packet_name: "ItemType",
                         field_name: "field_0",
@@ -1593,7 +1590,7 @@ impl ItemType {
                         error: e,
                     })?;
 
-                tmp.into()
+                tmp.to_vec().into()
             }),
         })
     }

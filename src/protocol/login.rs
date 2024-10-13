@@ -8,7 +8,10 @@ use super::{
     Flags, HelperReadWrite, ObjectHeader, ObjectType, PacketError, PacketHeader, PacketReadWrite,
     PacketType,
 };
-use crate::AsciiString;
+use crate::{
+    fixed_types::{Bytes, FixedAsciiString, FixedBytes, FixedString, FixedVec, WinTime},
+    AsciiString,
+};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::{
     io::{Read, Seek, Write},
@@ -45,8 +48,7 @@ pub struct SegaIDLoginPacket {
     /// Clients active network interfaces.
     pub interfaces: Vec<NetInterface>,
     #[Seek(0x14)]
-    #[FixedLen(0x90)]
-    pub unk4: Vec<u8>,
+    pub unk4: FixedBytes<0x90>,
     #[Seek(0x10)]
     pub unk5: [u8; 0x10],
     #[Seek(0x10)]
@@ -60,22 +62,18 @@ pub struct SegaIDLoginPacket {
     pub lang_lang: Language,
     /// Language code (in game lang?).
     #[Seek(0x8)]
-    #[FixedLen(0x10)]
-    pub language: String,
+    pub language: FixedString<0x10>,
     pub unk6: u32,
     pub unk7: u32,
     pub magic1: u32,
     pub unk8: [u8; 0x20],
-    #[FixedLen(0x44)]
-    pub unk9: Vec<u8>,
+    pub unk9: FixedBytes<0x44>,
     /// Sega ID username.
     #[Seek(0x104)]
-    #[FixedLen(0x40)]
-    pub username: AsciiString,
+    pub username: FixedAsciiString<0x40>,
     /// Sega ID password.
     #[Seek(0x20)]
-    #[FixedLen(0x40)]
-    pub password: AsciiString,
+    pub password: FixedAsciiString<0x40>,
     #[Seek(0x4)]
     pub unk10: u32,
     #[SeekAfter(0x4)]
@@ -108,8 +106,7 @@ pub struct LoginResponsePacket {
     /// Player object.
     pub player: ObjectHeader,
     /// Current block name.
-    #[FixedLen(0x20)]
-    pub blockname: String,
+    pub blockname: FixedString<0x20>,
     pub unk1: f32,
     pub unk2: u32,
     pub level_cap: u32,
@@ -137,8 +134,7 @@ pub struct LoginResponsePacket {
     pub unk25: f32,
     pub unk26: u32,
     pub unk27: [u8; 0xC],
-    #[FixedLen(0x20)]
-    pub unk28: String,
+    pub unk28: FixedString<0x20>,
     pub unk29: u32,
     pub unk30: String,
     pub unk31: u32,
@@ -266,7 +262,7 @@ pub struct CharacterDeletionPacket {
 pub struct EncryptionRequestPacket {
     /// RSA encrypted data (if received using [`crate::connection::Connection`] it will be
     /// decrypted).
-    pub rsa_data: Vec<u8>,
+    pub rsa_data: Bytes,
 }
 
 /// (0x11, 0x0C) Encryption Setup Response.
@@ -284,7 +280,7 @@ pub struct EncryptionRequestPacket {
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct EncryptionResponsePacket {
     /// Encryption key.
-    pub data: Vec<u8>,
+    pub data: Bytes,
 }
 
 /// (0x11, 0x0D) Client Ping.
@@ -299,8 +295,7 @@ pub struct EncryptionResponsePacket {
 #[Id(0x11, 0x0D)]
 pub struct ClientPingPacket {
     /// Ping timestamp.
-    #[PSOTime]
-    pub time: Duration,
+    pub time: WinTime,
 }
 
 /// (0x11, 0x0E) Client Pong.
@@ -315,11 +310,9 @@ pub struct ClientPingPacket {
 #[Id(0x11, 0x0E)]
 pub struct ClientPongPacket {
     /// Ping timestamp.
-    #[PSOTime]
-    pub client_time: Duration,
+    pub client_time: WinTime,
     /// Pong timestamp.
-    #[PSOTime]
-    pub server_time: Duration,
+    pub server_time: WinTime,
     pub unk1: u32,
 }
 
@@ -334,8 +327,7 @@ pub struct ClientPongPacket {
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0x10)]
 pub struct BlockListPacket {
-    #[FixedLen(200)]
-    pub blocks: Vec<BlockInfo>,
+    pub blocks: FixedVec<200, BlockInfo>,
     pub unk: u32,
 }
 
@@ -410,8 +402,7 @@ pub struct BlockLoginPacket {
     pub interfaces: Vec<NetInterface>,
     /// Login challenge (from [`crate::protocol::Packet::BlockSwitchResponse`]).
     pub challenge: u32,
-    #[FixedLen(0xC4)]
-    pub unk6: Vec<u8>,
+    pub unk6: FixedBytes<0xC4>,
     pub unk7: [u8; 0x10],
 }
 
@@ -531,8 +522,7 @@ pub struct NicknameRequestPacket {
 #[Id(0x11, 0x1D)]
 pub struct NicknameResponsePacket {
     /// Desired nickname.
-    #[FixedLen(0x20)]
-    pub nickname: String,
+    pub nickname: FixedString<0x20>,
 }
 
 /// (0x11, 0x2C) Block Balance.
@@ -545,14 +535,12 @@ pub struct NicknameResponsePacket {
 pub struct BlockBalancePacket {
     pub unk1: [u8; 0x20],
     /// Target block name.
-    #[FixedLen(0x20)]
-    pub blockname: String,
+    pub blockname: FixedString<0x20>,
     /// Target block IP.
     pub ip: Ipv4Addr,
     /// Target block port.
     pub port: u16,
-    #[FixedLen(0x11A)]
-    pub unk2: Vec<u8>,
+    pub unk2: FixedBytes<0x11A>,
 }
 
 /// (0x11, 0x2D) System Information.
@@ -667,8 +655,7 @@ pub struct VitaLoginPacket {
     pub interfaces: Vec<NetInterface>,
     pub unk6: [u8; 0x10],
     #[Seek(0x4)]
-    #[FixedLen(0x90)]
-    pub unk7: Vec<u8>,
+    pub unk7: FixedBytes<0x90>,
     #[Seek(0x10)]
     pub unk8: [u8; 0x10],
     #[Seek(0x10)]
@@ -679,27 +666,23 @@ pub struct VitaLoginPacket {
     pub flag5: u32,
     pub flag6: u32,
     /// Language code.
-    #[FixedLen(0x10)]
-    pub language: String,
+    pub language: FixedString<0x10>,
     pub unk9: u32,
     pub unk10: u32,
     pub magic1: u32,
     pub unk11: [u8; 0x20],
-    #[FixedLen(0x44)]
-    pub unk12: Vec<u8>,
+    pub unk12: FixedBytes<0x44>,
     /// PSN username.
     #[Seek(0xFC)]
-    #[FixedLen(0x40)]
-    pub username: AsciiString,
+    pub username: FixedAsciiString<0x40>,
     #[Seek(0x20)]
-    #[FixedLen(0x40)]
-    pub password: AsciiString,
+    pub password: FixedAsciiString<0x40>,
     #[Seek(0x4)]
     pub unk13: u8,
     pub unk14: u8,
     pub unk15: u16,
     pub unk16: AsciiString,
-    pub unk17: Vec<u8>,
+    pub unk17: Bytes,
     pub unk18: [u8; 0x10],
 }
 
@@ -715,8 +698,7 @@ pub struct VitaLoginPacket {
 #[Id(0x11, 0x65)]
 pub struct AllBlocksListPacket {
     /// All blocks.
-    #[FixedLen(200)]
-    pub blocks: Vec<BlockInfo>,
+    pub blocks: FixedVec<200, BlockInfo>,
     pub unk: u32,
 }
 
@@ -755,7 +737,7 @@ pub struct SalonResponse {
 #[Magic(0x5AF4, 0xEF)]
 pub struct ChallengeRequestPacket {
     /// Challenge data.
-    pub data: Vec<u8>,
+    pub data: Bytes,
 }
 
 /// (0x11, 0x69) Anticheat Challenge Response.
@@ -771,7 +753,7 @@ pub struct ChallengeRequestPacket {
 #[Magic(0xE0B1, 0x3A)]
 pub struct ChallengeResponsePacket {
     /// Response data.
-    pub data: Vec<u8>,
+    pub data: Bytes,
 }
 
 /// (0x11, 0x6F) Unknown
@@ -839,8 +821,7 @@ pub struct SecondPwdOperationRequestPacket {
     // 0 - unlock
     // 1 - set new pwd
     pub operation_type: u32,
-    #[FixedLen(0x10)]
-    pub password: AsciiString,
+    pub password: FixedAsciiString<0x10>,
 }
 
 /// (0x11, 0x8C) 2nd Password Operation.
@@ -944,8 +925,7 @@ pub struct CharacterNewNameRequestPacket {
     /// Character ID for renaming.
     pub char_id: u32,
     /// New character name.
-    #[FixedLen(0x10)]
-    pub name: String,
+    pub name: FixedString<0x10>,
 }
 
 /// (0x11, 0x9C) Set New Character Name.
@@ -963,8 +943,7 @@ pub struct CharacterNewNamePacket {
     /// Character ID for renaming.
     pub char_id: u32,
     /// New character name.
-    #[FixedLen(0x10)]
-    pub name: String,
+    pub name: FixedString<0x10>,
 }
 
 /// (0x11, 0xAF) Unknown
@@ -1130,8 +1109,7 @@ pub struct Unk11FFPacket {
     pub unk4: u8,
     pub unk5: String,
     pub unk6: [u8; 0xC],
-    #[FixedLen(0x40)]
-    pub unk7: Vec<u8>,
+    pub unk7: FixedBytes<0x40>,
     pub unk8: [u8; 0x20],
 }
 
@@ -1147,8 +1125,7 @@ pub struct NetInterface {
     /// Interface status.
     pub state: u32,
     /// Interface MAC address.
-    #[FixedLen(0x18)]
-    pub mac: AsciiString,
+    pub mac: FixedAsciiString<0x18>,
 }
 
 /// Ship information.
@@ -1159,8 +1136,7 @@ pub struct ShipEntry {
     /// Ship numerical ID.
     pub id: u32,
     /// Ship string ID (in form of "ShipXX").
-    #[FixedLen(0x10)]
-    pub name: String,
+    pub name: FixedString<0x10>,
     /// Ship IP (ignored by the client).
     pub ip: Ipv4Addr,
     /// Ship status.
@@ -1264,8 +1240,7 @@ pub struct BlockInfo {
     /// Block ID.
     pub block_id: u16,
     /// Block name.
-    #[FixedLen(0x20)]
-    pub blockname: String,
+    pub blockname: FixedString<0x20>,
     /// Block IP.
     pub ip: Ipv4Addr,
     /// Block port.
@@ -1728,14 +1703,14 @@ impl PacketReadWrite for EncryptionRequestPacket {
             tmp_data.push(x);
             tmp_data.extend(iter);
         }
-        Ok(Self { rsa_data: tmp_data })
+        Ok(Self { rsa_data: tmp_data.into() })
     }
     fn write(&self, packet_type: PacketType) -> Result<Vec<u8>, PacketError> {
         let mut buf = PacketHeader::new(0x11, 0x0B, Flags::default()).write(packet_type);
         let mut data = self.rsa_data.clone();
         data.reverse();
         data.resize(0x104, 0);
-        buf.extend(data);
+        buf.extend(data.iter());
         Ok(buf)
     }
 }
@@ -1751,7 +1726,7 @@ impl PacketReadWrite for EncryptionResponsePacket {
                 error: e,
             })?;
 
-        Ok(Self { data })
+        Ok(Self { data: data.into() })
     }
     fn write(&self, packet_type: PacketType) -> Result<Vec<u8>, PacketError> {
         let mut buf = PacketHeader::new(0x11, 0x0C, Flags::default()).write(packet_type);
@@ -1772,18 +1747,18 @@ impl Default for SegaIDLoginPacket {
             unk3: 0,
             ver_id: [0u8; 0x20],
             interfaces: vec![],
-            unk4: [0u8; 0x90].into(),
+            unk4: Default::default(),
             unk5: [0u8; 0x10],
             text_lang: Language::Japanese,
             voice_lang: Language::Japanese,
             text_lang2: Language::Japanese,
             lang_lang: Language::Japanese,
-            language: String::new(),
+            language: Default::default(),
             unk6: 7,
             unk7: 7,
             magic1: 0x0419,
             unk8: [0u8; 0x20],
-            unk9: [0u8; 0x44].into(),
+            unk9: Default::default(),
             username: Default::default(),
             password: Default::default(),
             unk10: 512,
@@ -1803,7 +1778,7 @@ impl Default for LoginResponsePacket {
                 map_id: 0,
                 entity_type: ObjectType::Player,
             },
-            blockname: String::new(),
+            blockname: Default::default(),
             unk1: 70.0,
             unk2: 32767,
             level_cap: 100,
@@ -1831,7 +1806,7 @@ impl Default for LoginResponsePacket {
             unk25: 1000.0,
             unk26: 0,
             unk27: [0; 0xC],
-            unk28: String::new(),
+            unk28: Default::default(),
             unk29: 0,
             unk30: String::new(),
             unk31: 0,
@@ -1842,7 +1817,7 @@ impl Default for LoginResponsePacket {
 impl Default for ClientPingPacket {
     fn default() -> Self {
         Self {
-            time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap(),
+            time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().into(),
         }
     }
 }
@@ -1850,8 +1825,8 @@ impl Default for ClientPingPacket {
 impl Default for ClientPongPacket {
     fn default() -> Self {
         Self {
-            client_time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap(),
-            server_time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap(),
+            client_time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().into(),
+            server_time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().into(),
             unk1: 0,
         }
     }
@@ -1861,10 +1836,10 @@ impl Default for BlockBalancePacket {
     fn default() -> Self {
         Self {
             unk1: [0u8; 0x20],
-            blockname: String::new(),
+            blockname: Default::default(),
             ip: Ipv4Addr::UNSPECIFIED,
             port: 0,
-            unk2: [0u8; 0x11A].into(),
+            unk2: Default::default(),
         }
     }
 }
@@ -1890,7 +1865,7 @@ impl Default for VitaLoginPacket {
             ver_id: [0u8; 0x20],
             interfaces: vec![],
             unk6: [0u8; 0x10],
-            unk7: [0u8; 0x90].into(),
+            unk7: Default::default(),
             unk8: [0u8; 0x10],
             flag1: 0,
             flag2: 0,
@@ -1898,19 +1873,19 @@ impl Default for VitaLoginPacket {
             flag4: 0,
             flag5: 0,
             flag6: 0,
-            language: String::new(),
+            language: Default::default(),
             unk9: 0,
             unk10: 0,
             magic1: 0,
             unk11: [0u8; 0x20],
-            unk12: [0u8; 0x44].into(),
+            unk12: Default::default(),
             username: Default::default(),
             password: Default::default(),
             unk13: 0,
             unk14: 2,
             unk15: 0,
             unk16: Default::default(),
-            unk17: vec![],
+            unk17: Default::default(),
             unk18: [0u8; 0x10],
         }
     }
@@ -1934,7 +1909,7 @@ impl Default for Unk11FFPacket {
             unk4: 0,
             unk5: String::new(),
             unk6: [0; 0xC],
-            unk7: [0; 0x40].into(),
+            unk7: Default::default(),
             unk8: [0; 0x20],
         }
     }
@@ -1944,7 +1919,7 @@ impl Default for ShipEntry {
     fn default() -> Self {
         Self {
             id: 0,
-            name: String::new(),
+            name: Default::default(),
             ip: Ipv4Addr::UNSPECIFIED,
             status: ShipStatus::Unknown,
             order: 0,
@@ -1975,7 +1950,7 @@ impl Default for BlockInfo {
             unk7: 0,
             unk8: 0,
             block_id: 0,
-            blockname: String::new(),
+            blockname: Default::default(),
             ip: Ipv4Addr::UNSPECIFIED,
             port: 0,
             unk10: 0,

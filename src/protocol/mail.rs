@@ -1,4 +1,6 @@
 //! Mail related packets. \[0x1A\]
+use crate::fixed_types::FixedString;
+
 use super::{HelperReadWrite, PacketReadWrite};
 use std::time::Duration;
 
@@ -145,9 +147,7 @@ pub struct MailHeader {
     pub receive_time: Duration,
     pub unk6: u32,
     /// Sender name.
-    #[FixedLen(0x22)]
-    pub sender: String,
+    pub sender: FixedString<0x22>,
     /// Mail subject.
-    #[FixedLen(0x2A)]
-    pub subject: String,
+    pub subject: FixedString<0x2A>,
 }

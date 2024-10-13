@@ -1,4 +1,6 @@
 //! Symbol Art related packets. \[0x2F\]
+use crate::fixed_types::Bytes;
+
 use super::{HelperReadWrite, MessageChannel, ObjectHeader, PacketReadWrite};
 
 // ----------------------------------------------------------------
@@ -48,7 +50,7 @@ pub struct SymbolArtDataPacket {
     /// Symbol Art UUID.
     pub uuid: u128,
     /// Symbol Art data.
-    pub data: Vec<u8>,
+    pub data: Bytes,
     /// Symbol Art name.
     pub name: String,
 }
@@ -68,7 +70,7 @@ pub struct SymbolArtClientDataPacket {
     /// Symbol Art UUID.
     pub uuid: u128,
     /// Symbol Art data.
-    pub data: Vec<u8>,
+    pub data: Bytes,
 }
 
 /// (0x2F, 0x04) Change Symbol Art Slot.

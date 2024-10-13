@@ -406,7 +406,7 @@ impl HelperReadWrite for Character {
                     field_name: "voice_pitch",
                     error: e,
                 })?;
-        let name = String::read(reader, 16).map_err(|e| PacketError::FieldError {
+        let name = String::read_fixed(reader, 16).map_err(|e| PacketError::FieldError {
             packet_name: "Character",
             field_name: "name",
             error: e,
@@ -444,7 +444,7 @@ impl HelperReadWrite for Character {
             }
         })?;
 
-        let unk4 = String::read(reader, 32).map_err(|e| PacketError::FieldError {
+        let unk4 = String::read_fixed(reader, 32).map_err(|e| PacketError::FieldError {
             packet_name: "Character",
             field_name: "unk4",
             error: e,
@@ -531,7 +531,7 @@ impl HelperReadWrite for Character {
                 error: e,
             })?;
         writer
-            .write_all(&self.name.write(16))
+            .write_all(&self.name.write_fixed(16))
             .map_err(|e| PacketError::FieldError {
                 packet_name: "Character",
                 field_name: "name",
@@ -569,7 +569,7 @@ impl HelperReadWrite for Character {
                 error: Box::new(e),
             })?;
         writer
-            .write_all(&self.unk4.write(32))
+            .write_all(&self.unk4.write_fixed(32))
             .map_err(|e| PacketError::FieldError {
                 packet_name: "Character",
                 field_name: "unk4",

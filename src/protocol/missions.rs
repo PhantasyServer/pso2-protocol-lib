@@ -1,4 +1,6 @@
 //! ARKS Missions related packets. \[0x4A\]
+use crate::fixed_types::FixedVec;
+
 use super::{HelperReadWrite, PacketReadWrite};
 
 // ----------------------------------------------------------------
@@ -96,11 +98,9 @@ pub struct Mission {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Unk2Struct {
-    #[FixedLen(0x40)]
-    pub unk: Vec<u32>,
+    pub unk: FixedVec<0x40, u32>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[OnlyOn(super::PacketType::NGS)]
-    #[FixedLen(0x28)]
-    pub unk2: Vec<u32>,
+    pub unk2: FixedVec<0x28, u32>,
 }

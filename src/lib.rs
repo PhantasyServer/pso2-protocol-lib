@@ -7,6 +7,7 @@ pub mod asciistring;
 pub mod connection;
 #[cfg(feature = "connection")]
 pub(crate) mod encryption;
+pub mod fixed_types;
 #[cfg(feature = "ppac")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ppac")))]
 pub mod ppac;
@@ -65,12 +66,6 @@ pub use pso2packetlib_impl::ProtocolRW;
 /// - `#[Seek(_seek-amount_)]` sets the padding before the field data.
 /// - `#[SeekAfter(_seek-amount_)]` sets the padding after the field data.
 /// - `#[Const_u16(_const-int_)]` sets the constant u16 before the field data.
-/// - `#[PSOTime]`. Assumes the following [`std::time::Duration`] is stored as a Windows filetime.
-/// - `#[Len_u16]`. Assumes that the length for the following variable length type is stored in a
-/// u16 preceding the actual data.
-/// - `#[Len_u32]`. Assumes that the length for the following variable length type is stored in a
-/// u32 preceding the actual data.
-/// - `#[FixedLen(_len_)]` sets the length for the following variable length type.
 /// - `#[OnlyOn(_`[`protocol::PacketType`]`_)]`. If set then the field will only be read/written if
 /// the reader packet type matches the specified packet type.
 /// - `#[NotOn(_`[`protocol::PacketType`]`_)]`. If set then the field will only be read/written if
@@ -84,10 +79,7 @@ pub use pso2packetlib_impl::PacketRW;
 /// # Note
 /// This macro makes few assumtions about
 /// 1) the packet struct:
-/// - The only container type currently allowed is [`Vec<T>`].
-/// - Any type that is not hardcoded (i.e integers, floats, [`half::f16`], [`std::net::Ipv4Addr`],
-/// [`std::time::Duration`], [`String`], [`AsciiString`]) must implement
-/// [`protocol::HelperReadWrite`] or have the `read`, `write` functions with the same prototype.
+/// - Any type must implement [`protocol::HelperReadWrite`].
 /// 2) the flags struct:
 /// - All fields must be of type [`bool`]
 /// 3) the variant enum:
@@ -99,17 +91,10 @@ pub use pso2packetlib_impl::PacketRW;
 /// ## Container attributes
 /// - `#[Flags(u*)]` makes the struct into a flags struct with the specified length.
 /// - `#[BitFlags(u*)]` adds read/write support for [`bitflags`] flags containers.
-/// - `#[NoPadding]` disables the 4-byte alligning padding after the type.
 /// ## Field attributes
 /// - `#[Seek(_seek-amount_)]` sets the padding before the field data.
 /// - `#[SeekAfter(_seek-amount_)]` sets the padding after the field data.
 /// - `#[Const_u16(_const-int_)]` sets the constant u16 before the field data.
-/// - `#[PSOTime]`. Assumes the following [`std::time::Duration`] is stored as a Windows filetime.
-/// - `#[Len_u16]`. Assumes that the length for the following variable length type is stored in a
-/// u16 preceding the actual data.
-/// - `#[Len_u32]`. Assumes that the length for the following variable length type is stored in a
-/// u32 preceding the actual data.
-/// - `#[FixedLen(_len_)]` sets the length for the following variable length type.
 /// - `#[Read_default]` sets the default enum variant for reading.
 /// - `#[Skip]`. If applied to a field struct field, then this attribute will skip one bit of the
 /// flags.

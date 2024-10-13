@@ -1,4 +1,6 @@
 //! Friend avatar related packets. \[0x26\]
+use crate::fixed_types::{FixedBytes, FixedVec};
+
 use super::{items::Item, ObjectHeader, PacketReadWrite};
 
 // ----------------------------------------------------------------
@@ -44,17 +46,14 @@ pub struct FriendAvatarDataResponsePacket {
     pub unk10: u32,
     pub unk11: u32,
     pub unk12: u32,
-    #[FixedLen(0x100)]
-    pub unk13: Vec<u8>,
+    pub unk13: FixedBytes<0x100>,
     pub unk14: u32,
     // 0x174 on classic
-    #[FixedLen(0x300)]
-    pub character_data: Vec<u8>,
+    pub character_data: FixedBytes<0x300>,
     /// Item used as a weapon.
     pub weapon: Item,
     /// Other items (e.g. camos, outfit).
-    #[FixedLen(0x9)]
-    pub other_items: Vec<Item>,
+    pub other_items: FixedVec<9, Item>,
     pub unk18: u32,
     pub unk19: u32,
 }

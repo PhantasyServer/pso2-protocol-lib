@@ -1,6 +1,6 @@
 //! Daily order related packets. \[0x1F\]
 use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
-use crate::AsciiString;
+use crate::{fixed_types::FixedVec, AsciiString};
 
 // ----------------------------------------------------------------
 // Client order packets
@@ -56,8 +56,7 @@ pub struct OrderListPacket {
     /// Player object.
     pub user: ObjectHeader,
     /// Daily orders.
-    #[FixedLen(100)]
-    pub orders: Vec<ClientOrder>,
+    pub orders: FixedVec<100, ClientOrder>,
     pub unk1: u32,
     pub unk2: u32,
 }
@@ -75,11 +74,9 @@ pub struct TakenOrdersPacket {
     /// Player object.
     pub user: ObjectHeader,
     /// Taken orders.
-    #[FixedLen(50)]
-    pub orders: Vec<ClientOrder>,
+    pub orders: FixedVec<50, ClientOrder>,
     /// Taken orders status.
-    #[FixedLen(50)]
-    pub statues: Vec<OrderStatus>,
+    pub statues: FixedVec<50, OrderStatus>,
     pub unk1: u32,
     pub unk2: u32,
     pub unk3: u32,

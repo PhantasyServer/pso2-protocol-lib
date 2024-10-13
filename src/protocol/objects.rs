@@ -6,7 +6,7 @@ use super::{
     },
     Flags, ObjectHeader, PacketError, PacketHeader, PacketReadWrite, PacketType,
 };
-use crate::AsciiString;
+use crate::{fixed_types::FixedBytes, AsciiString};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use half::f16;
 use std::{
@@ -382,11 +382,9 @@ pub struct LoadPAsPacket {
     pub receiver: ObjectHeader,
     /// Player that has this data.
     pub target: ObjectHeader,
-    /// Levels for 0xEE(?) PAs.
-    #[FixedLen(0xEE)]
-    pub levels: Vec<u8>,
-    #[FixedLen(0x40)]
-    pub unk: Vec<u8>,
+    /// Levels for PAs.
+    pub levels: FixedBytes<0xEE>,
+    pub unk: FixedBytes<0x40>,
 }
 
 /// (0x04, 0x3B) Despawn Player. (broadcast)

@@ -1,6 +1,6 @@
 //! Server related packets. \[0x03\]
 use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
-use crate::AsciiString;
+use crate::{fixed_types::FixedBytes, AsciiString};
 
 // ----------------------------------------------------------------
 // Server packets
@@ -146,14 +146,12 @@ pub struct LoadLevelPacket {
     pub unk18: u32,
     pub unk19: u32,
     pub unk20: u32,
-    #[FixedLen(0x3C)]
-    pub unk21: Vec<u8>,
+    pub unk21: FixedBytes<0x3C>,
     pub unk22: u32,
     pub unk23: [u8; 0x10],
     pub unk24: [u8; 0x10],
     pub unk25: Vec<u32>,
-    #[FixedLen(0x200)]
-    pub unk26: Vec<u8>,
+    pub unk26: FixedBytes<0x200>,
     pub unk27: Vec<UnkThing2>,
     pub unk28: AsciiString,
     pub unk29: AsciiString,

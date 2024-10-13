@@ -1,4 +1,5 @@
 //! Classic Mission Pass related packets. \[0x4D\]
+use crate::fixed_types::FixedVec;
 use super::{items::Item, HelperReadWrite, PacketReadWrite};
 
 // ----------------------------------------------------------------
@@ -15,8 +16,7 @@ use super::{items::Item, HelperReadWrite, PacketReadWrite};
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x4D, 0x01)]
 pub struct MissionPassInfoPacket {
-    #[FixedLen(0x2F)]
-    pub unk: Vec<u32>,
+    pub unk: FixedVec<0x2F, u32>,
 }
 
 /// (0x4D, 0x03) Mission Pass.

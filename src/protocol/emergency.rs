@@ -1,6 +1,6 @@
 //! Emergency related packets. \[0x15\]
 use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
-use crate::AsciiString;
+use crate::{fixed_types::{FixedBytes, FixedVec}, AsciiString};
 
 // ----------------------------------------------------------------
 // Emergency packets
@@ -20,18 +20,15 @@ pub struct SpawnEmergencyPacket {
     pub object: ObjectHeader,
     /// Trial string ID.
     pub trial_id: AsciiString,
-    #[FixedLen(0x40)]
-    pub unk1: Vec<u8>,
+    pub unk1: FixedBytes<0x40>,
     pub unk2: AsciiString,
     pub unk3: Vec<Unk1502_1>,
     pub unk4: AsciiString,
     pub unk5: Vec<Unk1502_1>,
     /// Trial fail conditions.
-    #[FixedLen(3)]
-    pub fail_conds: Vec<EmergencyCondition>,
-    #[FixedLen(2)]
+    pub fail_conds: FixedVec<3, EmergencyCondition>,
     /// Trial pass conditions.
-    pub pass_conds: Vec<EmergencyCondition>,
+    pub pass_conds: FixedVec<2, EmergencyCondition>,
     pub unk8: u32,
     pub unk9: u32,
     pub unk10: AsciiString,
@@ -39,8 +36,7 @@ pub struct SpawnEmergencyPacket {
     pub unk12: AsciiString,
     pub unk13: Vec<Unk1502_1>,
     pub unk14: u32,
-    #[FixedLen(0x20)]
-    pub unk15: Vec<u8>,
+    pub unk15: FixedBytes<0x20>,
     pub unk16: u32,
     pub unk17: u32,
     pub unk18: AsciiString,
@@ -65,8 +61,7 @@ pub struct EmergencyEndPacket {
     pub unk2: u32,
     pub unk3: u32,
     pub unk4: u32,
-    #[FixedLen(0x1C)]
-    pub unk5: Vec<u8>,
+    pub unk5: FixedBytes<0x1C>,
     pub unk6: u32,
     pub unk7: AsciiString,
     pub unk8: Vec<Unk1502_1>,
@@ -115,8 +110,7 @@ pub struct Unk1508Packet {
 #[Magic(0xDE28, 0xDE)]
 pub struct AvailableEmergenciesPacket {
     /// Emergency definitions.
-    #[FixedLen(0x40)]
-    pub definitions: Vec<EmergencyDefinition>,
+    pub definitions: FixedVec<0x40, EmergencyDefinition>,
     /// Number of definitions in the above array.
     pub count: u32,
 }
@@ -129,8 +123,7 @@ pub struct AvailableEmergenciesPacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Unk1502_1 {
-    #[FixedLen(0x24)]
-    pub unk1: Vec<u8>,
+    pub unk1: FixedBytes<0x24>,
 }
 
 /// Emergency trial pass/fail condition.
@@ -147,8 +140,7 @@ pub struct EmergencyCondition {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Unk1502_3 {
-    #[FixedLen(0x4C)]
-    pub unk1: Vec<u8>,
+    pub unk1: FixedBytes<0x4C>,
 }
 
 /// Emergency definition

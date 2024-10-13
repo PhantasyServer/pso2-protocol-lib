@@ -1,9 +1,10 @@
 //! Item attribute related structures.
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-
-use crate::protocol::{HelperReadWrite, PacketError, PacketType};
-
 use super::character::ClassFlags;
+use crate::{
+    fixed_types::{FixedBytes, FixedVec, VecUSize},
+    protocol::{HelperReadWrite, PacketError, PacketType},
+};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 /// Item attributes found in the `item_parameter.bin` file in the ICE archive from
 /// [`crate::protocol::Packet::LoadItemAttributes`].
@@ -21,55 +22,34 @@ pub enum ItemAttributes {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct ItemAttributesPC {
     pub unk1: u32,
     pub unk2: u128,
     /// Attributes for weapons.
-    #[Len_u16]
-    pub weapons: Vec<WeaponAttrs>,
+    pub weapons: VecUSize<u16, WeaponAttrs>,
     /// Attributes for costumes.
-    #[Len_u16]
-    pub human_costumes: Vec<HumanCostume>,
+    pub human_costumes: VecUSize<u16, HumanCostume>,
     /// Attributes for CAST parts.
-    #[Len_u16]
-    pub cast_parts: Vec<CastPart>,
+    pub cast_parts: VecUSize<u16, CastPart>,
     /// Attributes for consumables.
-    #[Len_u16]
-    pub consumables: Vec<Consumable>,
-    #[Len_u16]
-    pub data5: Vec<Data5>,
+    pub consumables: VecUSize<u16, Consumable>,
+    pub data5: VecUSize<u16, Data5>,
     /// Attributes for units.
-    #[Len_u16]
-    pub data6: Vec<Unit>,
-    #[Len_u16]
-    pub data7: Vec<Data7>,
-    #[Len_u16]
-    pub data8: Vec<Data8>,
-    #[Len_u16]
-    pub data9: Vec<Data9>,
-    #[Len_u16]
-    pub data10: Vec<Data10>,
-    #[Len_u16]
-    pub data11: Vec<Data11>,
-    #[Len_u16]
-    pub data12: Vec<Data12>,
-    #[Len_u16]
-    pub data13: Vec<Data13>,
-    #[Len_u16]
-    pub data14: Vec<Data14>,
-    #[Len_u16]
-    pub data15: Vec<Data15>,
-    #[Len_u16]
-    pub data16: Vec<Data16>,
-    #[Len_u16]
-    pub data17: Vec<Data17>,
-    #[FixedLen(406)]
-    pub data18: Vec<ShortData>,
-    #[Len_u16]
-    pub data19: Vec<Data19>,
-    #[Len_u16]
-    pub data20: Vec<Data20>,
+    pub data6: VecUSize<u16, Unit>,
+    pub data7: VecUSize<u16, Data7>,
+    pub data8: VecUSize<u16, Data8>,
+    pub data9: VecUSize<u16, Data9>,
+    pub data10: VecUSize<u16, Data10>,
+    pub data11: VecUSize<u16, Data11>,
+    pub data12: VecUSize<u16, Data12>,
+    pub data13: VecUSize<u16, Data13>,
+    pub data14: VecUSize<u16, Data14>,
+    pub data15: VecUSize<u16, Data15>,
+    pub data16: VecUSize<u16, Data16>,
+    pub data17: VecUSize<u16, Data17>,
+    pub data18: FixedVec<406, ShortData>,
+    pub data19: VecUSize<u16, Data19>,
+    pub data20: VecUSize<u16, Data20>,
 }
 
 /// Item attributes found in the `item_parameter.bin` file in the ICE archive from
@@ -77,63 +57,41 @@ pub struct ItemAttributesPC {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct ItemAttributesVita {
     pub unk1: u32,
     pub unk2: u128,
     /// Attributes for weapons.
-    #[Len_u16]
-    pub weapons: Vec<WeaponAttrs>,
+    pub weapons: VecUSize<u16, WeaponAttrs>,
     /// Attributes for costumes.
-    #[Len_u16]
-    pub human_costumes: Vec<HumanCostume>,
+    pub human_costumes: VecUSize<u16, HumanCostume>,
     /// Attributes for CAST parts.
-    #[Len_u16]
-    pub cast_parts: Vec<CastPart>,
+    pub cast_parts: VecUSize<u16, CastPart>,
     /// Attributes for consumables.
-    #[Len_u16]
-    pub consumables: Vec<Consumable>,
-    #[Len_u16]
-    pub data5: Vec<Data5>,
+    pub consumables: VecUSize<u16, Consumable>,
+    pub data5: VecUSize<u16, Data5>,
     /// Attributes for units.
-    #[Len_u16]
-    pub data6: Vec<Unit>,
-    #[Len_u16]
-    pub data7: Vec<Data7>,
-    #[Len_u16]
-    pub data8: Vec<Data8>,
-    #[Len_u16]
-    pub data9: Vec<Data9>,
-    #[Len_u16]
-    pub data10: Vec<Data10>,
-    #[Len_u16]
-    pub data11: Vec<Data11>,
-    #[Len_u16]
-    pub data12: Vec<Data12>,
-    #[Len_u16]
-    pub data13: Vec<Data13>,
-    #[Len_u16]
-    pub data14: Vec<Data14>,
-    #[Len_u16]
-    pub data15: Vec<Data15>,
-    #[Len_u16]
-    pub data16: Vec<Data16>,
-    #[Len_u16]
-    pub data17: Vec<Data17>,
+    pub data6: VecUSize<u16, Unit>,
+    pub data7: VecUSize<u16, Data7>,
+    pub data8: VecUSize<u16, Data8>,
+    pub data9: VecUSize<u16, Data9>,
+    pub data10: VecUSize<u16, Data10>,
+    pub data11: VecUSize<u16, Data11>,
+    pub data12: VecUSize<u16, Data12>,
+    pub data13: VecUSize<u16, Data13>,
+    pub data14: VecUSize<u16, Data14>,
+    pub data15: VecUSize<u16, Data15>,
+    pub data16: VecUSize<u16, Data16>,
+    pub data17: VecUSize<u16, Data17>,
     // #[FixedLen(46)] // inside game files
-    #[FixedLen(406)]
-    pub data18: Vec<ShortData>,
-    #[Len_u16]
-    pub data19: Vec<Data19Vita>,
-    #[Len_u16]
-    pub data20: Vec<Data20>,
+    pub data18: FixedVec<406, ShortData>,
+    pub data19: VecUSize<u16, Data19>,
+    pub data20: VecUSize<u16, Data20>,
 }
 
 /// Weapon attributes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct WeaponAttrs {
     /// Item category.
     pub id: u16,
@@ -181,7 +139,6 @@ pub struct WeaponAttrs {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct HumanCostume {
     /// Item category.
     pub id: u16,
@@ -209,7 +166,6 @@ pub struct HumanCostume {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct CastPart {
     /// Item category.
     pub id: u16,
@@ -235,7 +191,6 @@ pub struct CastPart {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Consumable {
     /// Item category.
     pub id: u16,
@@ -258,7 +213,6 @@ pub struct Consumable {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data5 {
     pub id: u16,
     pub subid: u16,
@@ -270,15 +224,13 @@ pub struct Data5 {
     pub unk5: u8,
     pub icon_list: u16,
     pub icon_index: u16,
-    #[FixedLen(0x30)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x30>,
 }
 
 /// Unit attributes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Unit {
     /// Item category.
     pub id: u16,
@@ -319,145 +271,113 @@ pub struct Unit {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data7 {
-    #[FixedLen(0x38)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x38>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data8 {
-    #[FixedLen(0x10)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x10>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data9 {
-    #[FixedLen(0x3C)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x3C>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data10 {
-    #[FixedLen(0x24)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x24>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data11 {
-    #[FixedLen(0x10)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x10>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data12 {
-    #[FixedLen(0x24)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x24>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data13 {
-    #[FixedLen(0x50)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x50>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data14 {
-    #[FixedLen(0x7C)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x7C>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data15 {
-    #[FixedLen(0x10)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x10>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data16 {
-    #[FixedLen(0x12)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x12, true>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data17 {
-    #[FixedLen(0x5A)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x5A>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data18 {
-    #[FixedLen(0x8)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x8>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct ShortData {
-    #[Len_u16]
-    pub unk: Vec<Data18>,
+    pub unk: VecUSize<u16, Data18>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data19 {
-    #[FixedLen(0x54)] //sent by jp server + used by pc
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x54>, //sent by jp server + used by pc
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data19Vita {
-    #[FixedLen(0x2C)] //inside na/vita client + used by vita
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x2C>, //inside na/vita client + used by vita
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Data20 {
-    #[FixedLen(0x1C)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x1C>,
 }
 
 /// Force damage and equipable genders.
@@ -859,20 +779,24 @@ impl HelperReadWrite for UnitAtk {
 impl Default for ShortData {
     fn default() -> Self {
         Self {
-            unk: vec![Default::default()],
+            unk: vec![Default::default()].into(),
         }
     }
 }
 
 impl From<Data19Vita> for Data19 {
     fn from(value: Data19Vita) -> Self {
-        Self { unk: value.unk }
+        Self {
+            unk: Into::<Vec<_>>::into(value.unk).into(),
+        }
     }
 }
 
 impl From<Data19> for Data19Vita {
     fn from(value: Data19) -> Self {
-        Self { unk: value.unk }
+        Self {
+            unk: Into::<Vec<_>>::into(value.unk).into(),
+        }
     }
 }
 
@@ -899,7 +823,11 @@ impl From<ItemAttributesPC> for ItemAttributesVita {
             data16: value.data16,
             data17: value.data17,
             data18: value.data18,
-            data19: value.data19.into_iter().map(|x| x.into()).collect(),
+            data19: Into::<Vec<_>>::into(value.data19)
+                .into_iter()
+                .map(|x| x.into())
+                .collect::<Vec<_>>()
+                .into(),
             data20: value.data20,
         }
     }
@@ -928,7 +856,11 @@ impl From<ItemAttributesVita> for ItemAttributesPC {
             data16: value.data16,
             data17: value.data17,
             data18: value.data18,
-            data19: value.data19.into_iter().map(|x| x.into()).collect(),
+            data19: Into::<Vec<_>>::into(value.data19)
+                .into_iter()
+                .map(|x| x.into())
+                .collect::<Vec<_>>()
+                .into(),
             data20: value.data20,
         }
     }

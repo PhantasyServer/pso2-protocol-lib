@@ -6,9 +6,9 @@ use std::io::{Read, Seek, SeekFrom, Write};
 /// Helper read/write trait for strings.
 pub trait StringRW: Sized + Default + std::ops::Deref<Target = str> {
     /// Reads a fixed length string from a reader.
-    fn read(reader: &mut impl Read, len: u64) -> std::io::Result<Self>;
+    fn read_fixed(reader: &mut impl Read, len: u64) -> std::io::Result<Self>;
     /// Writes a fixed length string to a writer.
-    fn write(&self, len: usize) -> Vec<u8>;
+    fn write_fixed(&self, len: usize) -> Vec<u8>;
     /// Returns number of bytes needed to pad a string to align it to a 4 byte boundary.
     fn get_padding(len: u64) -> u64;
     /// Reads a variable length string from a reader.
@@ -19,7 +19,7 @@ pub trait StringRW: Sized + Default + std::ops::Deref<Target = str> {
         }
         let len = magic_len;
         let padding = Self::get_padding(len);
-        let string = Self::read(reader, len)?;
+        let string = Self::read_fixed(reader, len)?;
         reader.seek(SeekFrom::Current(padding as i64))?;
         Ok(string)
     }
@@ -38,14 +38,14 @@ pub trait StringRW: Sized + Default + std::ops::Deref<Target = str> {
         let padding = Self::get_padding(len as u64) as usize;
         buf.write_u32::<LittleEndian>(write_magic(len as u32, sub, xor))
             .unwrap();
-        buf.write_all(&self.write(len)).unwrap();
+        buf.write_all(&self.write_fixed(len)).unwrap();
         buf.write_all(&vec![0; padding]).unwrap();
         buf
     }
 }
 
 impl StringRW for String {
-    fn read(reader: &mut impl Read, len: u64) -> std::io::Result<Self> {
+    fn read_fixed(reader: &mut impl Read, len: u64) -> std::io::Result<Self> {
         let len = len * 2;
         let mut buf = vec![];
         reader.take(len).read_to_end(&mut buf)?;
@@ -62,7 +62,7 @@ impl StringRW for String {
         Ok(string)
     }
 
-    fn write(&self, len: usize) -> Vec<u8> {
+    fn write_fixed(&self, len: usize) -> Vec<u8> {
         let mut buf = vec![];
         let string = self
             .chars()
@@ -95,7 +95,8 @@ impl StringRW for String {
 /// # }
 /// ```
 ///
-#[derive(Default, Clone, PartialEq)]
+#[derive(Default, Clone, PartialEq, PartialOrd, Hash)]
+#[repr(transparent)]
 pub struct AsciiString(String);
 
 impl std::fmt::Display for AsciiString {
@@ -184,7 +185,7 @@ impl<'de> serde::Deserialize<'de> for AsciiString {
 }
 
 impl StringRW for AsciiString {
-    fn read(reader: &mut impl Read, len: u64) -> std::io::Result<Self> {
+    fn read_fixed(reader: &mut impl Read, len: u64) -> std::io::Result<Self> {
         let mut buf = vec![];
         reader.take(len).read_to_end(&mut buf)?;
         let mut string = String::from_utf8_lossy(&buf).to_string();
@@ -198,7 +199,7 @@ impl StringRW for AsciiString {
     }
 
     #[cfg(not(test))]
-    fn write(&self, len: usize) -> Vec<u8> {
+    fn write_fixed(&self, len: usize) -> Vec<u8> {
         self.chars()
             .take(len - 1)
             .map(|c| c as u8)
@@ -208,7 +209,7 @@ impl StringRW for AsciiString {
     }
     // sega pls clear your buffers
     #[cfg(test)]
-    fn write(&self, len: usize) -> Vec<u8> {
+    fn write_fixed(&self, len: usize) -> Vec<u8> {
         self.chars()
             .map(|c| c as u8)
             .chain([0].into_iter().cycle())

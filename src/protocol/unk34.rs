@@ -1,4 +1,6 @@
 //! Unknown \[0x34\] packets.
+use crate::fixed_types::FixedBytes;
+
 use super::{items::Item, HelperReadWrite, PacketReadWrite};
 
 // ----------------------------------------------------------------
@@ -55,8 +57,7 @@ pub struct PlayerShopListResponsePacket {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Unk3435_1 {
-    #[FixedLen(0xC)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0xC>,
 }
 
 /// Item listed in a player shop top items list.

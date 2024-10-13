@@ -1,4 +1,6 @@
 //! Friend related packets. \[0x18\]
+use crate::fixed_types::FixedString;
+
 use super::{HelperReadWrite, PacketReadWrite};
 use std::time::Duration;
 
@@ -77,14 +79,11 @@ pub struct AddedRequestPacket {
     pub target_id: u32,
     /// Sender player nickname.
     #[Seek(4)]
-    #[FixedLen(0x22)]
-    pub sender_nickname: String,
+    pub sender_nickname: FixedString<0x22>,
     /// Target player nickname.
-    #[FixedLen(0x22)]
-    pub target_nickname: String,
+    pub target_nickname: FixedString<0x22>,
     /// Request message.
-    #[FixedLen(0x80)]
-    pub msg: String,
+    pub msg: FixedString<0x80>,
     /// Request send timestamp.
     pub send_time: Duration,
     #[Seek(0x88)]
@@ -107,12 +106,10 @@ pub struct FriendListEntry {
     pub id: u32,
     /// Player nickname.
     #[Seek(4)]
-    #[FixedLen(0x20)]
-    pub nickname: String,
+    pub nickname: FixedString<0x20>,
     /// Player character name (if logged in).
     #[Seek(4)]
-    #[FixedLen(0x10)]
-    pub char_name: String,
+    pub char_name: FixedString<0x10>,
     /// Friend flags.
     #[Seek(4)]
     pub flags: FriendFlags,
@@ -129,8 +126,7 @@ pub struct FriendListEntry {
     pub unk6: u16,
     pub unk7: u32,
     /// Player alliance name.
-    #[FixedLen(0x18)]
-    pub alliance_name: String,
+    pub alliance_name: FixedString<0x18>,
     #[Seek(0x8)]
     pub unk8: Duration,
     pub unk9: Duration,

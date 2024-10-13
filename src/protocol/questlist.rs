@@ -1,6 +1,6 @@
 //! Quest list related packets. \[0x0B\]
 use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
-use crate::AsciiString;
+use crate::{fixed_types::{FixedAsciiString, FixedBytes, FixedVec}, AsciiString};
 use half::f16;
 
 // ----------------------------------------------------------------
@@ -279,8 +279,7 @@ pub struct AcceptQuestPacket {
 #[Id(0x0B, 0x22)]
 pub struct NewUnlockedQuestsPacket {
     /// List of unlocked quests
-    #[FixedLen(51)]
-    pub unlocks: Vec<UnlockedQuest>,
+    pub unlocks: FixedVec<51, UnlockedQuest>,
 }
 
 /// (0x0B, 0x28) Add Quest Points. (broadcast)
@@ -369,8 +368,7 @@ pub struct AcceptStoryQuestPacket {
 #[Flags(Flags::PACKED)]
 #[Magic(0x3E03, 0xC2)]
 pub struct Unk0BD0Packet {
-    #[FixedLen(0x23)]
-    pub unk1: Vec<u32>,
+    pub unk1: FixedVec<0x23, u32>,
     pub unk2: Vec<u32>,
 }
 
@@ -408,8 +406,7 @@ pub struct Unk0BF1Packet {
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Quest {
     /// Quest date.
-    #[FixedLen(0x20)]
-    pub date: AsciiString,
+    pub date: FixedAsciiString<0x20>,
     /// Quest object.
     pub quest_obj: ObjectHeader,
     /// ID of the quest name.
@@ -444,8 +441,7 @@ pub struct Quest {
     pub unk14: u16,
     pub unk15: [u8; 2],
     // pub unk15: [QuestThing; 16],
-    #[FixedLen(0x320)]
-    pub unk16: Vec<u8>,
+    pub unk16: FixedBytes<0x320>,
 }
 
 /// Amount of parties that can join a quest.
@@ -469,8 +465,7 @@ pub enum PartyType {
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct QuestDifficulty {
     /// Quest date.
-    #[FixedLen(0x20)]
-    pub date: AsciiString,
+    pub date: FixedAsciiString<0x20>,
     /// Quest object.
     pub quest_obj: ObjectHeader,
     /// ID of the quest name.

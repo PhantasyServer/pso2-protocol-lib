@@ -1,4 +1,6 @@
 //! Palette related packets. \[0x21\]
+use crate::fixed_types::FixedVec;
+
 use super::{HelperReadWrite, PacketReadWrite};
 
 // ----------------------------------------------------------------
@@ -55,9 +57,8 @@ pub struct FullPaletteInfoPacket {
     #[Seek(0x240)] // maybe other books
     // from packet 0x21, 0x0F
     /// Default photon arts (?).
-    #[FixedLen(0x1A0)]
     #[SeekAfter(0x240)] // padding??
-    pub default_pa: Vec<u32>,
+    pub default_pa: FixedVec<0x1A0, u32>,
 }
 
 /// (0x21, 0x04) Set Active Palette.
@@ -90,8 +91,7 @@ pub struct SetPalettePacket {
 pub struct UpdateSubPalettePacket {
     /// New subpalettes.
     pub subpalettes: [SubPalette; 6],
-    #[FixedLen(0x90)]
-    pub unk: Vec<u32>,
+    pub unk: FixedVec<0x90, u32>,
     /// Current subpalette index.
     pub cur_subpalette: u32,
     /// Current book index.
@@ -137,8 +137,7 @@ pub struct SetSubPalettePacket {
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x21, 0x0A)]
 pub struct SetDefaultPAsPacket {
-    #[FixedLen(0x1A0)]
-    pub default: Vec<u32>,
+    pub default: FixedVec<0x1A0, u32>,
 }
 
 /// (0x21, 0x0F) New Default Photon Arts (?)
@@ -151,9 +150,8 @@ pub struct SetDefaultPAsPacket {
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x21, 0x0F)]
 pub struct NewDefaultPAsPacket {
-    #[FixedLen(0x1A0)]
     #[SeekAfter(0x240)] // padding??
-    pub default: Vec<u32>,
+    pub default: FixedVec<0x1A0, u32>,
 }
 
 // ----------------------------------------------------------------

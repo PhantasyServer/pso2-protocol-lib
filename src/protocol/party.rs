@@ -1,7 +1,6 @@
 //! Party related packets. \[0x0E\]
 use crate::{
-    protocol::{models::character::Class, HelperReadWrite, ObjectHeader, PacketReadWrite},
-    AsciiString,
+    fixed_types::FixedVec, protocol::{models::character::Class, HelperReadWrite, ObjectHeader, PacketReadWrite}, AsciiString
 };
 
 use super::questlist::{Quest, QuestDifficulty, QuestType};
@@ -409,8 +408,7 @@ pub struct PartyDetailsPacket {
     /// Number of populated party details.
     pub num_of_details: u32,
     /// Party details.
-    #[FixedLen(0x0C)]
-    pub details: Vec<PartyDetails>,
+    pub details: FixedVec<0xC, PartyDetails>,
 }
 
 /// (0x0E, 0x21) Unknown.

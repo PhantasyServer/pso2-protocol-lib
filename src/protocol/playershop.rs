@@ -1,4 +1,6 @@
 //! Player shop related packets. \[0x2D\]
+use crate::fixed_types::{FixedBytes, FixedVec};
+
 use super::{items::Item, HelperReadWrite, ObjectHeader, PacketReadWrite};
 
 // ----------------------------------------------------------------
@@ -24,10 +26,8 @@ pub struct ProductSearchRequestPacket {
     pub item_name: String,
     pub unk5: u64,
     pub unk6: u64,
-    #[FixedLen(12)]
-    pub unk7: Vec<u8>,
-    #[FixedLen(0x10)]
-    pub unk8: Vec<u8>,
+    pub unk7: FixedBytes<12>,
+    pub unk8: FixedBytes<0x10>,
 }
 
 /// (0x2D, 0x03) Player Shop Item Search Response.
@@ -115,8 +115,7 @@ pub struct CharacterSearchResponsePacket {
     pub unk1: u8,
     pub unk2: u8,
     pub unk3: u16,
-    #[FixedLen(0x32)]
-    pub characters: Vec<CharacterSearchEntry>,
+    pub characters: FixedVec<0x32, CharacterSearchEntry>,
 }
 
 /// (0x2D, 0x12) Recruiting Alliances List Request.
@@ -147,8 +146,7 @@ pub struct RecruitingAlliancesResponsePacket {
     pub unk1: u32,
     pub unk2: u16,
     pub unk3: u16,
-    #[FixedLen(0x64)]
-    pub alliances: Vec<RecruitingAlliance>,
+    pub alliances: FixedVec<0x64, RecruitingAlliance>,
 }
 
 // ----------------------------------------------------------------

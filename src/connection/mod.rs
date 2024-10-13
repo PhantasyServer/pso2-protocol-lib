@@ -360,7 +360,7 @@ impl<P: ProtocolRW + Send> Connection<P> {
             let enc =
                 Encryption::from_dec_data(rsa_data, matches!(self.packet_type, PacketType::NGS))?;
             self.encryption = enc;
-            new_packet.rsa_data = encrypt(rsa_data, &self.out_keyfile)?;
+            new_packet.rsa_data = encrypt(rsa_data, &self.out_keyfile)?.into();
             let packet = Packet::EncryptionRequest(new_packet).write(self.packet_type);
             self.write.prepare_data(&packet, &mut Encryption::None)?;
             packet
@@ -670,7 +670,7 @@ impl ConnectionWrite {
                     .into_split();
             let _ = self.enc_channel.0.send(dec);
             self.encryption = enc;
-            new_packet.rsa_data = encrypt(rsa_data, &self.out_keyfile)?;
+            new_packet.rsa_data = encrypt(rsa_data, &self.out_keyfile)?.into();
             let packet = Packet::EncryptionRequest(new_packet).write(self.packet_type);
             self.write.prepare_data(&packet, &mut EncryptorType::None)?;
             packet

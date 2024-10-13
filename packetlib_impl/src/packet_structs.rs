@@ -1,9 +1,11 @@
+use std::str::FromStr;
+
 use proc_macro::TokenStream;
 use proc_macro2::{Span, TokenStream as TS2};
 use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse::Parse, punctuated::Punctuated, spanned::Spanned, Attribute, Data, DataEnum, DataStruct,
-    Expr, Fields, GenericArgument, Ident, Lit, LitInt, MetaList, PathArguments, Token, Type,
+    Expr, Fields, Ident, Lit, LitInt, MetaList, Token, Type,
 };
 
 pub fn packet_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<TokenStream> {
@@ -26,7 +28,7 @@ pub fn packet_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
     let mut write = quote! {};
 
     if let Data::Struct(data) = &ast.data {
-        parse_struct_field(&mut read, &mut write, data, false)?;
+        parse_struct_field(&mut read, &mut write, data)?;
     }
 
     let code = quote! {
@@ -71,7 +73,6 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
     let repr_type = get_repr(&ast.attrs)?;
     let is_flags = get_flags_struct(&ast.attrs)?;
     let is_bitflags = get_bitflags_struct(&ast.attrs)?;
-    let no_seek = get_no_seek(&ast.attrs);
 
     let crate_location = if is_internal {
         quote! {crate}
@@ -92,7 +93,7 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
             };
             parse_flags_struct(&mut read, &mut write, data, repr_type)?
         }
-        Data::Struct(data) => parse_struct_field(&mut read, &mut write, data, no_seek)?,
+        Data::Struct(data) => parse_struct_field(&mut read, &mut write, data)?,
         Data::Enum(data) => parse_enum(&mut read, &mut write, data, repr_type)?,
         _ => {}
     }
@@ -345,12 +346,7 @@ fn parse_bitflags(read: &mut TS2, write: &mut TS2, repr: Size) -> syn::Result<()
     Ok(())
 }
 
-fn parse_struct_field(
-    read: &mut TS2,
-    write: &mut TS2,
-    data: &DataStruct,
-    no_seek: bool,
-) -> syn::Result<()> {
+fn parse_struct_field(read: &mut TS2, write: &mut TS2, data: &DataStruct) -> syn::Result<()> {
     let mut return_token = quote! {};
 
     // unnamed struct
@@ -369,7 +365,6 @@ fn parse_struct_field(
                 &field_name,
                 &Settings::default(),
                 false,
-                no_seek,
             )?;
         }
         read.extend(quote! {Ok(Self(#return_token))});
@@ -406,7 +401,6 @@ fn parse_struct_field(
             field_name,
             &settings,
             true,
-            no_seek,
         )?;
 
         if let Some(data) = settings.only_on {
@@ -458,15 +452,11 @@ fn parse_struct_field(
 
 #[derive(Default)]
 struct Settings {
-    is_psotime: bool,
     seek_after: i64,
-    str_type: StringType,
     is_default: bool,
     to_skip: bool,
     only_on: Option<TS2>,
     not_on: Option<TS2>,
-    fixed_len: u32,
-    len_size: Option<Size>,
     manual_rw: Option<(TS2, TS2)>,
 }
 
@@ -479,7 +469,6 @@ fn get_attrs(
 ) -> syn::Result<()> {
     match string {
         "Read_default" => set.is_default = true,
-        "PSOTime" => set.is_psotime = true,
         "Skip" => set.to_skip = true,
         "OnlyOn" => {
             let Some(attrs) = list.map(|l| l.tokens.clone()) else {
@@ -526,10 +515,6 @@ fn get_attrs(
         "SeekAfter" => {
             set.seek_after = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
         }
-        "FixedLen" => {
-            set.fixed_len = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
-            set.str_type = StringType::Fixed(set.fixed_len as u64);
-        }
         "Const_u16" => {
             let num: u16 = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
             read.extend(quote! {reader.seek(std::io::SeekFrom::Current(2))
@@ -547,12 +532,6 @@ fn get_attrs(
                 })?;
             });
         }
-        "Len_u16" => {
-            set.len_size = Some(Size::U16);
-        }
-        "Len_u32" => {
-            set.len_size = Some(Size::U32);
-        }
         _ => {}
     }
     Ok(())
@@ -565,254 +544,15 @@ fn parse_field_type(
     field_name: &Ident,
     set: &Settings,
     is_first: bool,
-    no_seek: bool,
 ) -> syn::Result<()> {
-    match in_type {
-        Type::Path(path) => {
-            let type_name_segment = path.path.segments.last().unwrap();
-            let type_name = type_name_segment.ident.to_string();
-            if !type_name.contains("Vec") {
-                let (type_read, type_write) =
-                    type_read_write(type_name, field_name, set, is_first)?;
-                read.extend(type_read);
-                write.extend(type_write);
-                return Ok(());
-            }
-
-            // assume type is Vec<T>
-            let PathArguments::AngleBracketed(args) = &type_name_segment.arguments else {
-                return Ok(());
-            };
-            let GenericArgument::Type(inner_type) = &args.args[0] else {
-                return Ok(());
-            };
-            let mut tmp_read = quote! {};
-            let mut tmp_write = quote! {};
-            let tmp_name = format_ident!("vec_{}_value", field_name);
-            parse_field_type(
-                inner_type,
-                &mut tmp_read,
-                &mut tmp_write,
-                &tmp_name,
-                set,
-                false,
-                no_seek,
-            )?;
-
-            let read_padding = if no_seek {
-                quote! {}
-            } else {
-                quote! { reader.seek(std::io::SeekFrom::Current((len.next_multiple_of(4) - len) as i64))
-                    .map_err(|e| Error::PaddingError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: e,
-                    })?;
-                }
-            };
-            let write_padding = if no_seek {
-                quote! {}
-            } else {
-                quote! { writer.write_all(&vec![0u8; len.next_multiple_of(4) - len])
-                    .map_err(|e| Error::PaddingError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: e,
-                    })?;
-                }
-            };
-
-            let mut read_len = if let Some(size) = &set.len_size {
-                match size {
-                    Size::U8 => quote! { reader.read_u8() },
-                    Size::U16 => quote! { reader.read_u16::<LittleEndian>() },
-                    Size::U32 => quote! { reader.read_u32::<LittleEndian>() },
-                    Size::U64 => quote! { reader.read_u64::<LittleEndian>() },
-                    Size::U128 => quote! { reader.read_u128::<LittleEndian>() },
-                }
-            } else {
-                quote! { read_magic(reader, sub, xor)}
-            };
-            read_len.extend(quote! {
-                .map_err(|e| Error::FieldLengthError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
-            });
-
-            let mut write_len = if let Some(size) = &set.len_size {
-                match size {
-                    Size::U8 => {
-                        quote! { writer.write_u8(self.#field_name.len() as _) }
-                    }
-                    Size::U16 => {
-                        quote! { writer.write_u16::<LittleEndian>(self.#field_name.len() as _) }
-                    }
-                    Size::U32 => {
-                        quote! { writer.write_u32::<LittleEndian>(self.#field_name.len() as _) }
-                    }
-                    Size::U64 => {
-                        quote! { writer.write_u64::<LittleEndian>(self.#field_name.len() as _) }
-                    }
-                    Size::U128 => {
-                        quote! { writer.write_u128::<LittleEndian>(self.#field_name.len() as _) }
-                    }
-                }
-            } else {
-                quote! { writer.write_u32::<LittleEndian>(write_magic(self.#field_name.len() as _, sub, xor)) }
-            };
-            write_len.extend(quote! {
-                .map_err(|e| Error::FieldLengthError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
-            });
-
-            if set.fixed_len == 0 {
-                read.extend(quote! {
-                    let len = #read_len;
-                    let mut #field_name = vec![];
-                    let seek1 = reader.seek(std::io::SeekFrom::Current(0))
-                        .map_err(|e| Error::PaddingError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                    for _ in 0..len {
-                        #tmp_read;
-                        #field_name.push(#tmp_name);
-                    }
-                    let seek2 = reader.seek(std::io::SeekFrom::Current(0))
-                        .map_err(|e| Error::PaddingError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                    let len = (seek2 - seek1) as usize;
-                    #read_padding
-                });
-                write.extend(quote! {
-                    #write_len;
-                    let mut tmp_buf = vec![];
-                    {
-                        let writer = &mut tmp_buf;
-                        for #tmp_name in &self.#field_name {
-                            #tmp_write;
-                        }
-                    }
-                    writer.write_all(&tmp_buf)
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                    let len = tmp_buf.len();
-                    #write_padding
-                });
-            } else {
-                let len = set.fixed_len;
-                read.extend(quote! {
-                    let mut #field_name = vec![];
-                    let seek1 = reader.seek(std::io::SeekFrom::Current(0))
-                        .map_err(|e| Error::PaddingError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                    for _ in 0..#len {
-                        #tmp_read
-                        #field_name.push(#tmp_name);
-                    }
-                    let seek2 = reader.seek(std::io::SeekFrom::Current(0))
-                        .map_err(|e| Error::PaddingError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                    let len = (seek2 - seek1) as usize;
-                    #read_padding
-                });
-                write.extend(quote! {
-                    let mut tmp_buf = vec![];
-                    {
-                        let writer = &mut tmp_buf;
-                        for #tmp_name in self.#field_name.iter().chain(std::iter::repeat(&Default::default())).take(#len as _) {
-                            #tmp_write
-                        }
-                    };
-                    writer.write_all(&tmp_buf)
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                    let len = tmp_buf.len();
-                    #write_padding
-                });
-            }
-        }
-        Type::Array(arr) => {
-            let inner_type = arr.elem.as_ref();
-            let len = &arr.len;
-            let mut tmp_read = quote! {};
-            let mut tmp_write = quote! {};
-            let tmp_name = format_ident!("array_{}_value", field_name);
-            parse_field_type(
-                inner_type,
-                &mut tmp_read,
-                &mut tmp_write,
-                &tmp_name,
-                set,
-                false,
-                no_seek,
-            )?;
-            if set.manual_rw.is_some() {
-                read.extend(quote! {
-                    #tmp_read
-                    let #field_name = #tmp_name;
-                });
-                write.extend(quote! {
-                    let #tmp_name = &self.#field_name;
-                    #tmp_write
-                });
-            } else if tmp_read.to_string().contains("read_u8()") {
-                read.extend(quote! {
-                    let mut #field_name = [Default::default(); #len];
-                    reader.read_exact(&mut #field_name)
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e
-                        })?;
-                });
-                write.extend(quote! {
-                    writer.write_all(&self.#field_name)
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e
-                        })?;
-                });
-            } else {
-                read.extend(quote! {
-                    let mut #field_name = vec![];
-                    for i in 0..#len {
-                        #tmp_read
-                        #field_name.push(#tmp_name);
-                    }
-                    let #field_name = #field_name.try_into().unwrap();
-                });
-                write.extend(quote! {
-                    for #tmp_name in &self.#field_name {
-                        #tmp_write
-                    }
-                });
-            }
-        }
-        _ => {}
-    }
+    let (type_read, type_write) = type_read_write(
+        in_type.to_token_stream().to_string(),
+        field_name,
+        set,
+        is_first,
+    )?;
+    read.extend(type_read);
+    write.extend(type_write);
     Ok(())
 }
 
@@ -852,378 +592,8 @@ fn type_read_write(
         return Ok((read, write));
     }
 
-    let type_str = full_type_path.split("::").last().unwrap();
-
-    match type_str {
-        "u8" => {
-            read.extend(quote! {let #field_name = reader.read_u8()
-                .map_err(|e| Error::FieldError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
-            });
-            write.extend(quote! {writer.write_u8(#write_name.clone())
-                .map_err(|e| Error::FieldError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
-            });
-        }
-        "i8" => {
-            read.extend(quote! {let #field_name = reader.read_i8()
-                .map_err(|e| Error::FieldError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
-            });
-            write.extend(quote! {writer.write_i8(#write_name.clone())
-                .map_err(|e| Error::FieldError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
-            });
-        }
-        "u16" => {
-            read.extend(quote! {let #field_name = reader.read_u16::<LittleEndian>()
-                .map_err(|e| Error::FieldError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
-            });
-            write.extend(
-                quote! {writer.write_u16::<LittleEndian>(#write_name.clone())
-                    .map_err(|e| Error::FieldError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: e,
-                    })?;
-                },
-            );
-        }
-        "i16" => {
-            read.extend(quote! {let #field_name = reader.read_i16::<LittleEndian>()
-                .map_err(|e| Error::FieldError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
-            });
-            write.extend(
-                quote! {writer.write_i16::<LittleEndian>(#write_name.clone())
-                    .map_err(|e| Error::FieldError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: e,
-                    })?;
-                },
-            );
-        }
-        "u32" => {
-            read.extend(quote! {let #field_name = reader.read_u32::<LittleEndian>()
-                .map_err(|e| Error::FieldError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
-            });
-            write.extend(
-                quote! {writer.write_u32::<LittleEndian>(#write_name.clone())
-                    .map_err(|e| Error::FieldError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: e,
-                    })?;
-                },
-            );
-        }
-        "i32" => {
-            read.extend(quote! {let #field_name = reader.read_i32::<LittleEndian>()
-                .map_err(|e| Error::FieldError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
-            });
-            write.extend(
-                quote! {writer.write_i32::<LittleEndian>(#write_name.clone())
-                    .map_err(|e| Error::FieldError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: e,
-                    })?;
-                },
-            );
-        }
-        "u64" => {
-            read.extend(quote! {let #field_name = reader.read_u64::<LittleEndian>()
-                .map_err(|e| Error::FieldError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
-            });
-            write.extend(
-                quote! {writer.write_u64::<LittleEndian>(#write_name.clone())
-                    .map_err(|e| Error::FieldError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: e,
-                    })?;
-                },
-            );
-        }
-        "i64" => {
-            read.extend(quote! {let #field_name = reader.read_i64::<LittleEndian>()
-                .map_err(|e| Error::FieldError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
-            });
-            write.extend(
-                quote! {writer.write_i64::<LittleEndian>(#write_name.clone())
-                    .map_err(|e| Error::FieldError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: e,
-                    })?;
-                },
-            );
-        }
-        "u128" => {
-            read.extend(quote! {let #field_name = reader.read_u128::<LittleEndian>()
-                .map_err(|e| Error::FieldError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
-            });
-            write.extend(
-                quote! {writer.write_u128::<LittleEndian>(#write_name.clone())
-                    .map_err(|e| Error::FieldError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: e,
-                    })?;
-                },
-            );
-        }
-        "i128" => {
-            read.extend(quote! {let #field_name = reader.read_i128::<LittleEndian>()
-                .map_err(|e| Error::FieldError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
-            });
-            write.extend(
-                quote! {writer.write_i128::<LittleEndian>(#write_name.clone())
-                    .map_err(|e| Error::FieldError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: e,
-                    })?;
-                },
-            );
-        }
-        "f16" => {
-            read.extend(
-                quote! {let #field_name = f16::from_bits(reader.read_u16::<LittleEndian>()
-                .map_err(|e| Error::FieldError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?);
-                },
-            );
-            write.extend(
-                quote! {writer.write_u16::<LittleEndian>(#write_name.clone().to_bits())
-                    .map_err(|e| Error::FieldError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: e,
-                    })?;
-                },
-            );
-        }
-        "f32" => {
-            read.extend(quote! {let #field_name = reader.read_f32::<LittleEndian>()
-                    .map_err(|e| Error::FieldError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: e,
-                    })?;
-            });
-            write.extend(
-                quote! {writer.write_f32::<LittleEndian>(#write_name.clone())
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                },
-            );
-        }
-        "f64" => {
-            read.extend(quote! {let #field_name = reader.read_f64::<LittleEndian>()
-                    .map_err(|e| Error::FieldError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: e,
-                    })?;
-            });
-            write.extend(
-                quote! {writer.write_f64::<LittleEndian>(#write_name.clone())
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                },
-            );
-        }
-        "Ipv4Addr" => {
-            read.extend(quote! {
-                let mut ip_buf = [0u8; 4];
-                reader.read_exact(&mut ip_buf)
-                    .map_err(|e| Error::FieldError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: e,
-                    })?;
-
-                let #field_name = std::net::Ipv4Addr::from(ip_buf);
-            });
-            write.extend(quote! {
-                writer.write_all(&#write_name.octets())
-                    .map_err(|e| Error::FieldError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: e,
-                    })?;
-            });
-        }
-        "Duration" => {
-            if set.is_psotime {
-                const WIN_FT_TIME_TO_TIMESTAMP: u64 = 0x0295_E964_8864; 
-                read.extend(
-                    quote! {let #field_name = std::time::Duration::from_millis(reader.read_u64::<LittleEndian>()
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })? - #WIN_FT_TIME_TO_TIMESTAMP);
-                    },
-                );
-                write.extend(
-                    quote! {writer.write_u64::<LittleEndian>(#write_name.as_millis() as u64 + #WIN_FT_TIME_TO_TIMESTAMP)
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                    },
-                );
-            } else {
-                read.extend(
-                    quote! {let #field_name = core::time::Duration::from_secs(reader.read_u32::<LittleEndian>()
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })? 
-                        as u64);
-                    }
-                );
-                write.extend(
-                    quote! {writer.write_u32::<LittleEndian>(#write_name.as_secs() as u32)
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                    },
-                );
-            }
-        }
-        "String" => match set.str_type {
-            StringType::Unknown => {
-                read.extend(quote! {let #field_name = String::read_variable(reader, sub, xor)
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                });
-                write.extend(quote! {writer.write_all(&#write_name.write_variable(sub, xor))
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                });
-            }
-            StringType::Fixed(len) => {
-                read.extend(quote! {let #field_name = String::read(reader, #len)
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                });
-                write.extend(quote! {writer.write_all(&#write_name.write(#len as usize))
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                });
-            }
-        },
-        "AsciiString" => match set.str_type {
-            StringType::Unknown => {
-                read.extend(
-                    quote! {let #field_name = AsciiString::read_variable(reader, sub, xor)
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                    },
-                );
-                write.extend(quote! {writer.write_all(&#write_name.write_variable(sub, xor))
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                });
-            }
-            StringType::Fixed(len) => {
-                read.extend(quote! {let #field_name = AsciiString::read(reader, #len)
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                });
-                write.extend(quote! {writer.write_all(&#write_name.write(#len as usize))
-                        .map_err(|e| Error::FieldError{
-                            packet_name,
-                            field_name: stringify!(#field_name),
-                            error: e,
-                        })?;
-                });
-            }
-        },
-        _ => {
-            let out_type = Ident::new(&full_type_path, Span::call_site());
-            read.extend(quote! {let #field_name = <#out_type as HelperReadWrite>::read(reader, packet_type, xor, sub)
+    let out_type = TS2::from_str(&full_type_path)?;
+    read.extend(quote! {let #field_name = <#out_type as HelperReadWrite>::read(reader, packet_type, xor, sub)
                 .map_err(|e| {
                     Error::CompositeFieldError{
                         packet_name,
@@ -1232,17 +602,15 @@ fn type_read_write(
                     }
                 })?;
             });
-            write.extend(quote! {#write_name.write(writer, packet_type, xor, sub)
-                .map_err(|e| {
-                    Error::CompositeFieldError{
-                        packet_name,
-                        field_name: stringify!(#field_name),
-                        error: Box::new(e),
-                    }
-                })?;
-            });
-        }
-    }
+    write.extend(quote! {#write_name.write(writer, packet_type, xor, sub)
+        .map_err(|e| {
+            Error::CompositeFieldError{
+                packet_name,
+                field_name: stringify!(#field_name),
+                error: Box::new(e),
+            }
+        })?;
+    });
     Ok((read, write))
 }
 
@@ -1360,24 +728,12 @@ fn get_flags_struct(attrs: &[Attribute]) -> syn::Result<Option<Size>> {
     })
 }
 
-fn get_no_seek(attrs: &[Attribute]) -> bool {
-    attrs.iter().any(|a| a.path().is_ident("NoPadding"))
-}
-
 enum Size {
     U8,
     U16,
     U32,
     U64,
     U128,
-}
-
-#[derive(Default)]
-enum StringType {
-    #[default]
-    Unknown,
-    // len
-    Fixed(u64),
 }
 
 struct AttributeList {

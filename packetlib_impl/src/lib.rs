@@ -12,10 +12,7 @@ use syn::{parse_macro_input, DeriveInput};
 // Internal derive.
 #[proc_macro_derive(
     PacketReadWrite,
-    attributes(
-        Id, Seek, SeekAfter, Const_u16, Flags, PSOTime, Magic, Len_u16, Len_u32, FixedLen, OnlyOn,
-        NotOn
-    )
+    attributes(Id, Seek, SeekAfter, Const_u16, Flags, Magic, OnlyOn, NotOn)
 )]
 pub fn packet_read_write_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -25,10 +22,7 @@ pub fn packet_read_write_derive(input: TokenStream) -> TokenStream {
 // Public derive.
 #[proc_macro_derive(
     PacketRW,
-    attributes(
-        Id, Seek, SeekAfter, Const_u16, Flags, PSOTime, Magic, Len_u16, Len_u32, FixedLen, OnlyOn,
-        NotOn
-    )
+    attributes(Id, Seek, SeekAfter, Const_u16, Flags, Magic, OnlyOn, NotOn)
 )]
 pub fn pub_packet_read_write_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -42,15 +36,10 @@ pub fn pub_packet_read_write_derive(input: TokenStream) -> TokenStream {
         Seek,
         SeekAfter,
         Const_u16,
-        PSOTime,
-        Len_u16,
-        Len_u32,
-        FixedLen,
         Read_default,
         Skip,
         Flags,
         BitFlags,
-        NoPadding,
         ManualRW,
         OnlyOn,
         NotOn,
@@ -68,15 +57,10 @@ pub fn helper_read_write_derive(input: TokenStream) -> TokenStream {
         Seek,
         SeekAfter,
         Const_u16,
-        PSOTime,
-        Len_u16,
-        Len_u32,
-        FixedLen,
         Read_default,
         Skip,
         Flags,
         BitFlags,
-        NoPadding,
         ManualRW,
         OnlyOn,
         NotOn,

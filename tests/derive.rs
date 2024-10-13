@@ -1,4 +1,7 @@
-use pso2packetlib::protocol::{PacketType, ProtocolRW};
+use pso2packetlib::{
+    fixed_types::{FixedString, VecUSize},
+    protocol::{PacketType, ProtocolRW},
+};
 
 // we use pso2packetlib_impl instead of pso2packetlib to bypass `derive` feature requirement
 #[derive(pso2packetlib_impl::ProtocolRW)]
@@ -42,20 +45,15 @@ struct Numbers {
 #[Flags(pso2packetlib::protocol::Flags::PACKED)]
 #[Magic(0x10, 0x10)]
 struct Variables {
-    vec: Vec<u8>,
-    #[FixedLen(10)]
-    fixed_vec: Vec<u8>,
+    vec: pso2packetlib::fixed_types::Bytes,
+    fixed_vec: pso2packetlib::fixed_types::FixedBytes<10>,
     str: String,
-    #[FixedLen(5)]
-    fixed_str: String,
+    fixed_str: FixedString<5>,
     astr: pso2packetlib::asciistring::AsciiString,
-    #[FixedLen(10)]
-    fixed_astr: pso2packetlib::asciistring::AsciiString,
+    fixed_astr: pso2packetlib::fixed_types::FixedAsciiString<10>,
 
-    #[Len_u16]
-    var_1: Vec<u8>,
-    #[Len_u32]
-    var_2: Vec<u8>,
+    var_1: VecUSize<u16, u8>,
+    var_2: VecUSize<u32, u8>,
 }
 
 #[derive(Debug, PartialEq, pso2packetlib_impl::PacketRW)]
@@ -63,8 +61,7 @@ struct Variables {
 struct Misc {
     ip: std::net::Ipv4Addr,
     time: std::time::Duration,
-    #[PSOTime]
-    pso2_time: std::time::Duration,
+    pso2_time: pso2packetlib::fixed_types::WinTime,
 }
 
 #[derive(Debug, PartialEq, pso2packetlib_impl::PacketRW)]
@@ -174,13 +171,15 @@ fn test_numbers() {
         float64: 1.0,
     };
     assert_eq!(packet, expected_packet);
+    let data2 = Packet::Numbers(packet).write(PacketType::Classic);
+    assert_eq!(data, data2);
 }
 
 #[test]
 fn test_variable() {
     let mut data = vec![
         0, 0, 0, 0, // len
-        1, 2, 0, 0, // id
+        1, 2, 4, 0, // id
         3, 0, 0, 0, // len
         1, 2, 3, // vec
         0, // padding
@@ -197,7 +196,7 @@ fn test_variable() {
         0, 0, 0, // padding
         2, 0, 0, 0, // len
         15, 16, // var_2
-        0, 0, // padding
+        0, 0, 0, 0, // padding
     ];
     let len = data.len() as u32;
     data[..4].copy_from_slice(&len.to_le_bytes());
@@ -209,16 +208,18 @@ fn test_variable() {
         panic!("Got incorrect packet")
     };
     let expected_packet = Variables {
-        vec: vec![1, 2, 3],
-        fixed_vec: vec![4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+        vec: vec![1, 2, 3].into(),
+        fixed_vec: vec![4, 5, 6, 7, 8, 9, 10, 11, 12, 13].into(),
         str: String::from("ABC"),
-        fixed_str: String::from("ABC"),
+        fixed_str: String::from("ABC").into(),
         astr: String::from("ABC").into(),
         fixed_astr: String::from("ABC").into(),
-        var_1: vec![14],
-        var_2: vec![15, 16],
+        var_1: vec![14].into(),
+        var_2: vec![15, 16].into(),
     };
     assert_eq!(packet, expected_packet);
+    let data2 = Packet::Variables(packet).write(PacketType::Classic);
+    assert_eq!(data, data2);
 }
 
 #[test]
@@ -242,9 +243,11 @@ fn test_misc() {
     let expected_packet = Misc {
         ip: std::net::Ipv4Addr::LOCALHOST,
         time: std::time::Duration::from_secs(0),
-        pso2_time: std::time::Duration::from_secs(0),
+        pso2_time: std::time::Duration::from_secs(0).into(),
     };
     assert_eq!(packet, expected_packet);
+    let data2 = Packet::Misc(packet).write(PacketType::Classic);
+    assert_eq!(data, data2);
 }
 
 #[test]
@@ -290,6 +293,8 @@ fn test_attrs() {
         d: 3,
     };
     assert_eq!(packet, expected_packet);
+    let data2 = Packet::Attributes(packet).write(PacketType::Classic);
+    assert_eq!(data, data2);
 }
 
 #[test]
@@ -316,4 +321,6 @@ fn test_helpers() {
         e: Enum::B,
     };
     assert_eq!(packet, expected_packet);
+    let data2 = Packet::Helpers(packet).write(PacketType::Classic);
+    assert_eq!(data, data2);
 }

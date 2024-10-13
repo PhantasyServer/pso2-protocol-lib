@@ -10,6 +10,7 @@ pub use traits::*;
 
 // Packet definitions modules
 pub mod chat;
+pub mod default_types;
 pub mod emergency;
 pub mod flag;
 pub mod friendavatar;

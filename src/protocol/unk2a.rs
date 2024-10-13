@@ -1,4 +1,5 @@
 //! Unknown \[0x2A\] packets.
+use crate::fixed_types::{Bytes, FixedBytes};
 use super::{HelperReadWrite, PacketReadWrite};
 
 // ----------------------------------------------------------------
@@ -18,7 +19,7 @@ pub struct Unk2A08Packet {
     pub unk1: Vec<Unk2A08_1>,
     pub unk2: Vec<u32>,
     pub unk3: Vec<Unk2A08_2>,
-    pub unk4: Vec<u8>,
+    pub unk4: Bytes,
     pub unk5: Vec<Unk2A08_3>,
     pub unk6: Vec<Unk2A08_4>,
     pub unk7: Vec<Unk2A08_5>,
@@ -36,45 +37,37 @@ pub struct Unk2A08Packet {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Unk2A08_1 {
-    #[FixedLen(0x10)]
-    pub unk1: Vec<u8>,
+    pub unk1: FixedBytes<0x10>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
     #[OnlyOn(super::PacketType::NGS)]
-    #[FixedLen(0x04)]
-    pub unk2: Vec<u8>,
+    pub unk2: FixedBytes<0x4>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Unk2A08_2 {
-    #[FixedLen(0xE)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0xE, true>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-#[NoPadding]
 pub struct Unk2A08_3 {
-    #[FixedLen(0x6)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x6, true>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Unk2A08_4 {
-    #[FixedLen(0x8)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x8>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Unk2A08_5 {
-    #[FixedLen(0x4)]
-    pub unk: Vec<u8>,
+    pub unk: FixedBytes<0x4>,
 }
