@@ -1098,7 +1098,7 @@ pub struct EmailCodeRequestPacket {
 /// (? -> ?)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
-#[derive(Debug, Clone, PartialEq, PacketReadWrite)]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x11, 0xFF)]
 #[Flags(Flags::PACKED)]
 #[Magic(0x3DD3, 0x3D)]
@@ -1703,7 +1703,9 @@ impl PacketReadWrite for EncryptionRequestPacket {
             tmp_data.push(x);
             tmp_data.extend(iter);
         }
-        Ok(Self { rsa_data: tmp_data.into() })
+        Ok(Self {
+            rsa_data: tmp_data.into(),
+        })
     }
     fn write(&self, packet_type: PacketType) -> Result<Vec<u8>, PacketError> {
         let mut buf = PacketHeader::new(0x11, 0x0B, Flags::default()).write(packet_type);
@@ -1896,21 +1898,6 @@ impl Default for NicknameErrorPacket {
         Self {
             unk1: 2,
             nickname: String::new(),
-        }
-    }
-}
-
-impl Default for Unk11FFPacket {
-    fn default() -> Self {
-        Self {
-            unk1: 0,
-            unk2: 0,
-            unk3: 0,
-            unk4: 0,
-            unk5: String::new(),
-            unk6: [0; 0xC],
-            unk7: Default::default(),
-            unk8: [0; 0x20],
         }
     }
 }

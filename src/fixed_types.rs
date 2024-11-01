@@ -4,7 +4,10 @@ use crate::{
     AsciiString,
 };
 use std::{
-    fmt::Display, marker::PhantomData, ops::{Deref, DerefMut}, time::Duration
+    fmt::Display,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+    time::Duration,
 };
 
 // ----------------------------------------------------------------
@@ -423,14 +426,13 @@ impl<S: SizeProvider, T: HelperReadWrite> HelperReadWrite for VecUSize<S, T> {
         let mut data = vec![];
         data.reserve_exact(len as usize);
 
-        let seek1 =
-            reader
-                .seek(std::io::SeekFrom::Current(0))
-                .map_err(|e| PacketError::PaddingError {
-                    packet_name: "VecUSize",
-                    field_name: "pre_read",
-                    error: e,
-                })?;
+        let seek1 = reader
+            .stream_position()
+            .map_err(|e| PacketError::PaddingError {
+                packet_name: "VecUSize",
+                field_name: "pre_read",
+                error: e,
+            })?;
         for _ in 0..len {
             data.push(T::read(reader, packet_type, xor, sub).map_err(|e| {
                 PacketError::CompositeFieldError {
@@ -440,14 +442,13 @@ impl<S: SizeProvider, T: HelperReadWrite> HelperReadWrite for VecUSize<S, T> {
                 }
             })?);
         }
-        let seek2 =
-            reader
-                .seek(std::io::SeekFrom::Current(0))
-                .map_err(|e| PacketError::PaddingError {
-                    packet_name: "VecUSize",
-                    field_name: "post_read",
-                    error: e,
-                })?;
+        let seek2 = reader
+            .stream_position()
+            .map_err(|e| PacketError::PaddingError {
+                packet_name: "VecUSize",
+                field_name: "post_read",
+                error: e,
+            })?;
         let len = (seek2 - seek1) as usize;
         reader
             .seek(std::io::SeekFrom::Current(
@@ -540,7 +541,7 @@ impl<const NO_PADDING: bool> HelperReadWrite for Bytes<NO_PADDING> {
         let len = read_magic(reader, sub, xor).map_err(|e| PacketError::FieldLengthError {
             packet_name: "Bytes",
             field_name: "len",
-            error: e.into(),
+            error: e,
         })?;
         let mut bytes = vec![0; len as usize];
         reader
@@ -548,7 +549,7 @@ impl<const NO_PADDING: bool> HelperReadWrite for Bytes<NO_PADDING> {
             .map_err(|e| PacketError::FieldError {
                 packet_name: "Bytes",
                 field_name: "bytes",
-                error: e.into(),
+                error: e,
             })?;
         if !NO_PADDING {
             reader
@@ -558,7 +559,7 @@ impl<const NO_PADDING: bool> HelperReadWrite for Bytes<NO_PADDING> {
                 .map_err(|e| PacketError::PaddingError {
                     packet_name: "Bytes",
                     field_name: "padding",
-                    error: e.into(),
+                    error: e,
                 })?;
         }
         Ok(Self { bytes })
@@ -583,7 +584,7 @@ impl<const NO_PADDING: bool> HelperReadWrite for Bytes<NO_PADDING> {
             .map_err(|e| PacketError::FieldError {
                 packet_name: "Bytes",
                 field_name: "bytes",
-                error: e.into(),
+                error: e,
             })?;
         if !NO_PADDING {
             let len = self.bytes.len();
@@ -592,7 +593,7 @@ impl<const NO_PADDING: bool> HelperReadWrite for Bytes<NO_PADDING> {
                 .map_err(|e| PacketError::PaddingError {
                     packet_name: "Bytes",
                     field_name: "padding",
-                    error: e.into(),
+                    error: e,
                 })?;
         }
 
@@ -644,7 +645,7 @@ impl<const N: usize, const NO_PADDING: bool> HelperReadWrite for FixedBytes<N, N
             .map_err(|e| PacketError::FieldError {
                 packet_name: "FixedBytes",
                 field_name: "bytes",
-                error: e.into(),
+                error: e,
             })?;
         if !NO_PADDING {
             reader
@@ -654,7 +655,7 @@ impl<const N: usize, const NO_PADDING: bool> HelperReadWrite for FixedBytes<N, N
                 .map_err(|e| PacketError::PaddingError {
                     packet_name: "FixedBytes",
                     field_name: "padding",
-                    error: e.into(),
+                    error: e,
                 })?;
         }
         Ok(Self { bytes })
@@ -680,7 +681,7 @@ impl<const N: usize, const NO_PADDING: bool> HelperReadWrite for FixedBytes<N, N
                 .map_err(|e| PacketError::PaddingError {
                     packet_name: "FixedBytes",
                     field_name: "padding",
-                    error: e.into(),
+                    error: e,
                 })?;
         }
         Ok(())

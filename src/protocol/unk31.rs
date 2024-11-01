@@ -422,7 +422,7 @@ impl PacketReadWrite for PlayAchievementsResponsePacket {
             c_ranks: self.c_ranks,
             deaths: self.deaths,
             max_damage: self.max_damage,
-            unk2: self.unk2.clone(),
+            unk2: self.unk2,
             quest_records: self.quest_records.clone(),
             rare_items: self.rare_items.clone(),
             boss_enemies,

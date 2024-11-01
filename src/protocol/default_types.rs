@@ -157,15 +157,11 @@ impl HelperReadWrite for String {
         xor: u32,
         sub: u32,
     ) -> Result<Self, crate::protocol::PacketError> {
-        Ok(
-            <String as StringRW>::read_variable(reader, sub, xor).map_err(|e| {
-                PacketError::FieldError {
-                    packet_name: "String",
-                    field_name: "str",
-                    error: e,
-                }
-            })?,
-        )
+        <String as StringRW>::read_variable(reader, sub, xor).map_err(|e| PacketError::FieldError {
+            packet_name: "String",
+            field_name: "str",
+            error: e,
+        })
     }
 
     fn write(
@@ -192,15 +188,13 @@ impl HelperReadWrite for AsciiString {
         xor: u32,
         sub: u32,
     ) -> Result<Self, crate::protocol::PacketError> {
-        Ok(
-            <AsciiString as StringRW>::read_variable(reader, sub, xor).map_err(|e| {
-                PacketError::FieldError {
-                    packet_name: "AsciiString",
-                    field_name: "str",
-                    error: e,
-                }
-            })?,
-        )
+        <AsciiString as StringRW>::read_variable(reader, sub, xor).map_err(|e| {
+            PacketError::FieldError {
+                packet_name: "AsciiString",
+                field_name: "str",
+                error: e,
+            }
+        })
     }
 
     fn write(
@@ -235,14 +229,13 @@ impl<T: HelperReadWrite> HelperReadWrite for Vec<T> {
         let mut data = vec![];
         data.reserve_exact(len as usize);
 
-        let seek1 =
-            reader
-                .seek(std::io::SeekFrom::Current(0))
-                .map_err(|e| PacketError::PaddingError {
-                    packet_name: "Vec",
-                    field_name: "pre_read",
-                    error: e,
-                })?;
+        let seek1 = reader
+            .stream_position()
+            .map_err(|e| PacketError::PaddingError {
+                packet_name: "Vec",
+                field_name: "pre_read",
+                error: e,
+            })?;
         for _ in 0..len {
             data.push(T::read(reader, packet_type, xor, sub).map_err(|e| {
                 PacketError::CompositeFieldError {
@@ -252,14 +245,13 @@ impl<T: HelperReadWrite> HelperReadWrite for Vec<T> {
                 }
             })?);
         }
-        let seek2 =
-            reader
-                .seek(std::io::SeekFrom::Current(0))
-                .map_err(|e| PacketError::PaddingError {
-                    packet_name: "Vec",
-                    field_name: "post_read",
-                    error: e,
-                })?;
+        let seek2 = reader
+            .stream_position()
+            .map_err(|e| PacketError::PaddingError {
+                packet_name: "Vec",
+                field_name: "post_read",
+                error: e,
+            })?;
         let len = (seek2 - seek1) as usize;
         reader
             .seek(std::io::SeekFrom::Current(
