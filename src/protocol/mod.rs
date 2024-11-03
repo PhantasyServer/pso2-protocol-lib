@@ -1434,26 +1434,6 @@ pub enum Packet {
     Unknown((PacketHeader, Vec<u8>)),
 }
 
-#[cfg(feature = "proxy")]
-#[cfg_attr(docsrs, doc(cfg(feature = "proxy")))]
-#[derive(Debug, Default, Clone, PartialEq, ProtocolReadWrite)]
-/// Minimal packet definitions for proxies
-pub enum ProxyPacket {
-    #[default]
-    #[Empty]
-    None,
-    #[Id(0x11, 0x0B)]
-    EncryptionRequest(EncryptionRequestPacket),
-    #[Id(0x11, 0x0C)]
-    EncryptionResponse(EncryptionResponsePacket),
-    #[Id(0x11, 0x3D)]
-    ShipList(ShipListPacket),
-    #[Raw]
-    Raw(Vec<u8>),
-    #[Unknown]
-    Unknown((PacketHeader, Vec<u8>)),
-}
-
 /// Known packet categories
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub enum PacketCategory {
@@ -1522,26 +1502,6 @@ pub enum PacketCategory {
 // PacketEncryption impls
 // ----------------------------------------------------------------
 impl PacketEncryption for Packet {
-    fn is_enc_data(&self) -> bool {
-        matches!(self, Self::EncryptionRequest(_))
-    }
-    fn as_enc_data(&self) -> Option<&[u8]> {
-        if let Self::EncryptionRequest(data) = self {
-            Some(&data.rsa_data)
-        } else {
-            None
-        }
-    }
-    fn mut_enc_data(&mut self) -> Option<&mut Vec<u8>> {
-        if let Self::EncryptionRequest(data) = self {
-            Some(&mut data.rsa_data)
-        } else {
-            None
-        }
-    }
-}
-#[cfg(feature = "proxy")]
-impl PacketEncryption for ProxyPacket {
     fn is_enc_data(&self) -> bool {
         matches!(self, Self::EncryptionRequest(_))
     }

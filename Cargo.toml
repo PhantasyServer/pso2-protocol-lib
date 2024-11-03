@@ -15,7 +15,6 @@ rust-version = "1.75"
 [features]
 derive = []
 connection = ["dep:rsa"]
-proxy = []
 ppac = ["dep:zstd"]
 ngs_packets = []
 item_attrs = []
