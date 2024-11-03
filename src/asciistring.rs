@@ -174,7 +174,7 @@ impl<'de> serde::Deserialize<'de> for AsciiString {
         D: serde::Deserializer<'de>,
     {
         let string = String::deserialize(deser)?;
-        if string.chars().any(|c| !c.is_ascii()) {
+        if !string.is_ascii() {
             return Err(serde::de::Error::custom(
                 "String contains non-ascii charactes",
             ));

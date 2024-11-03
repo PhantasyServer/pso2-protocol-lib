@@ -84,7 +84,7 @@ pub struct ItemAttributesVita {
     pub data17: VecUSize<u16, Data17>,
     // #[FixedLen(46)] // inside game files
     pub data18: FixedVec<406, ShortData>,
-    pub data19: VecUSize<u16, Data19>,
+    pub data19: VecUSize<u16, Data19Vita>,
     pub data20: VecUSize<u16, Data20>,
 }
 
