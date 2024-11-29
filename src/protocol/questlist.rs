@@ -1,6 +1,15 @@
 //! Quest list related packets. \[0x0B\]
+use std::{ops::Index, fmt::Debug};
 use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
-use crate::{fixed_types::{FixedAsciiString, FixedBytes, FixedVec}, AsciiString};
+use crate::{
+    fixed_types::{FixedAsciiString, FixedBytes, FixedVec},
+    protocol::PacketError,
+    AsciiString,
+};
+use bitvec::{
+    prelude::{BitArr, Lsb0},
+    slice::BitSlice,
+};
 use half::f16;
 
 // ----------------------------------------------------------------
@@ -61,10 +70,13 @@ pub struct MinimapRevealRequestPacket {
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
 #[Id(0x0B, 0x13)]
 pub struct MinimapRevealPacket {
-    pub unk1: ObjectHeader,
+    /// World object where revealing was done.
+    pub world: ObjectHeader,
+    /// Receivers party object (?).
     pub party: ObjectHeader,
     pub zone_id: u32,
-    pub unk3: [u8; 10],
+    /// Bitset of revealed regions.
+    pub revealed_zones: RevealedRegions,
 }
 
 /// (0x0B, 0x15) Available Quests Request.
@@ -722,6 +734,43 @@ pub struct UnlockedQuest {
     pub _padding: [u8; 3],
 }
 
+/// Revealed minimap regions
+///
+/// # Internals
+///
+/// Internally this struct consists of one `[u8; 10]` array, that represents a 8x10 grid of
+/// revealed regions bits (so 10 columns by 8 rows). Bits are indexed from right to left (i.e. LSB
+/// to MSB), bytes are indexed from left to right (arr\[0\] is region A1-8).
+///
+/// So getting a value from this array could be done as:
+/// ```rust
+/// # fn main() {
+/// fn get_bit(arr: &[u8; 10], row: usize, col: usize) -> bool {
+///     assert!(row < 8);
+///     assert!(col < 10);
+///     let offset = row * 10 + col;
+///     let byte_offset = offset / 8;
+///     let bit_offset = offset % 8;
+///     (arr[byte_offset] >> bit_offset) & 1 == 1
+/// }
+/// # let data: [u8; 10] = [1, 12, 112, 192, 1, 1, 4, 16, 0, 0];
+/// # assert!(get_bit(&data, 0, 0));
+/// # assert!(!get_bit(&data, 0, 1));
+/// # assert!(!get_bit(&data, 0, 9));
+/// # assert!(get_bit(&data, 1, 0));
+/// # assert!(get_bit(&data, 1, 1));
+/// # assert!(!get_bit(&data, 1, 2));
+/// # assert!(get_bit(&data, 6, 0));
+/// # assert!(!get_bit(&data, 6, 1));
+/// # }
+/// ```
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Default, Clone, PartialEq)]
+pub struct RevealedRegions {
+    zones: BitArr!(for 80, in u8, Lsb0),
+}
+
 // ----------------------------------------------------------------
 // Default implementations
 // ----------------------------------------------------------------
@@ -733,5 +782,102 @@ impl Default for UnlockedQuest {
             quest_type: QuestType::Unk0,
             _padding: [0, 0, 0],
         }
+    }
+}
+
+// ----------------------------------------------------------------
+// Read/Write implementations
+// ----------------------------------------------------------------
+
+impl HelperReadWrite for RevealedRegions {
+    fn read(
+        reader: &mut (impl std::io::Read + std::io::Seek),
+        packet_type: super::PacketType,
+        _: u32,
+        _: u32,
+    ) -> Result<Self, PacketError> {
+        let data = <[u8; 10]>::read(reader, packet_type, 0, 0).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "RevealedRegions",
+                field_name: "zone_bits",
+                error: Box::new(e),
+            }
+        })?;
+        Ok(Self { zones: data.into() })
+    }
+
+    fn write(
+        &self,
+        writer: &mut impl std::io::Write,
+        packet_type: super::PacketType,
+        _: u32,
+        _: u32,
+    ) -> Result<(), PacketError> {
+        self.zones
+            .data
+            .write(writer, packet_type, 0, 0)
+            .map_err(|e| PacketError::CompositeFieldError {
+                packet_name: "RevealedRegions",
+                field_name: "zone_bits",
+                error: Box::new(e),
+            })
+    }
+}
+
+// ----------------------------------------------------------------
+// Other implementations
+// ----------------------------------------------------------------
+
+impl Index<usize> for RevealedRegions {
+    type Output = BitSlice<u8, Lsb0>;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        assert!(index < 8);
+        &self.zones[index * 10..(index + 1) * 10]
+    }
+}
+
+impl From<[u8; 10]> for RevealedRegions {
+    fn from(value: [u8; 10]) -> Self {
+        Self {
+            zones: value.into(),
+        }
+    }
+}
+
+impl Debug for RevealedRegions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut list = f.debug_list();
+        for i in 0..8 {
+            list.entry(&self[i].to_string());
+        }
+        list.finish()
+    }
+}
+
+impl RevealedRegions {
+    pub fn new(data: [u8; 10]) -> Self {
+        Self { zones: data.into() }
+    }
+}
+
+// ----------------------------------------------------------------
+// Tests
+// ----------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_revealed_regs() {
+        let data: [u8; 10] = [1, 12, 112, 192, 1, 1, 4, 16, 0, 0];
+        let regs = crate::protocol::RevealedRegions::new(data);
+        assert!(regs[0][0]);
+        assert!(!regs[0][1]);
+        assert!(!regs[0][9]);
+        assert!(regs[1][0]);
+        assert!(regs[1][1]);
+        assert!(!regs[1][2]);
+        assert!(regs[6][0]);
+        assert!(!regs[6][1]);
     }
 }

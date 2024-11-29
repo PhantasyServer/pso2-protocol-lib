@@ -43,7 +43,7 @@ pub struct ItemAttributesPacket {
 ///
 /// Respond with:
 /// [`crate::protocol::Packet::InventoryMeseta`] (if the item is meseta),
-/// [`crate::protocol::Packet::ItemPickedUp`] (if the item was actually picked up),
+/// [`crate::protocol::Packet::DespawnObject`] (if the item was actually picked up),
 /// [`crate::protocol::Packet::ItemPickupResponse`]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
