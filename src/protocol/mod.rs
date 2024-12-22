@@ -527,6 +527,11 @@ pub enum Packet {
     /// (0x0E, 0x11) Party Member Kicked (broadcast).
     #[Id(0x0E, 0x11)]
     KickedMember(KickedMemberPacket),
+    #[Id(0x0E, 0x12)]
+    /// (0x0E, 0x12) Abandon Quest Request.
+    ///
+    /// (C -> S) Sent when the player wants to abandon their current quest.
+    AbandonQuestRequest,
     /// (0x0E, 0x17) Disband Party Request.
     #[Id(0x0E, 0x17)]
     DisbandParty(DisbandPartyPacket),
