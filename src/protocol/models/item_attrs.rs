@@ -342,7 +342,7 @@ pub struct Data16 {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct Data17 {
-    pub unk: FixedBytes<0x5A>,
+    pub unk: FixedBytes<0x5A, true>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

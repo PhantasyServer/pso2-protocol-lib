@@ -426,13 +426,13 @@ impl<S: SizeProvider, T: HelperReadWrite> HelperReadWrite for VecUSize<S, T> {
         let mut data = vec![];
         data.reserve_exact(len as usize);
 
-        let seek1 = reader
-            .stream_position()
-            .map_err(|e| PacketError::PaddingError {
-                packet_name: "VecUSize",
-                field_name: "pre_read",
-                error: e,
-            })?;
+        // let seek1 = reader
+        //     .stream_position()
+        //     .map_err(|e| PacketError::PaddingError {
+        //         packet_name: "VecUSize",
+        //         field_name: "pre_read",
+        //         error: e,
+        //     })?;
         for _ in 0..len {
             data.push(T::read(reader, packet_type, xor, sub).map_err(|e| {
                 PacketError::CompositeFieldError {
@@ -442,23 +442,23 @@ impl<S: SizeProvider, T: HelperReadWrite> HelperReadWrite for VecUSize<S, T> {
                 }
             })?);
         }
-        let seek2 = reader
-            .stream_position()
-            .map_err(|e| PacketError::PaddingError {
-                packet_name: "VecUSize",
-                field_name: "post_read",
-                error: e,
-            })?;
-        let len = (seek2 - seek1) as usize;
-        reader
-            .seek(std::io::SeekFrom::Current(
-                (len.next_multiple_of(4) - len) as i64,
-            ))
-            .map_err(|e| PacketError::PaddingError {
-                packet_name: "VecUSize",
-                field_name: "padding",
-                error: e,
-            })?;
+        // let seek2 = reader
+        //     .stream_position()
+        //     .map_err(|e| PacketError::PaddingError {
+        //         packet_name: "VecUSize",
+        //         field_name: "post_read",
+        //         error: e,
+        //     })?;
+        // let len = (seek2 - seek1) as usize;
+        // reader
+        //     .seek(std::io::SeekFrom::Current(
+        //         (len.next_multiple_of(4) - len) as i64,
+        //     ))
+        //     .map_err(|e| PacketError::PaddingError {
+        //         packet_name: "VecUSize",
+        //         field_name: "padding",
+        //         error: e,
+        //     })?;
         Ok(Self {
             data,
             _p_data: PhantomData,
@@ -489,7 +489,7 @@ impl<S: SizeProvider, T: HelperReadWrite> HelperReadWrite for VecUSize<S, T> {
                 }
             })?;
         }
-        let len = buf.len();
+        // let len = buf.len();
         writer
             .write_all(&buf)
             .map_err(|e| PacketError::FieldError {
@@ -497,13 +497,13 @@ impl<S: SizeProvider, T: HelperReadWrite> HelperReadWrite for VecUSize<S, T> {
                 field_name: "value",
                 error: e,
             })?;
-        writer
-            .write_all(&vec![0; len.next_multiple_of(4) - len])
-            .map_err(|e| PacketError::PaddingError {
-                packet_name: "VecUSize",
-                field_name: "padding",
-                error: e,
-            })?;
+        // writer
+        //     .write_all(&vec![0; len.next_multiple_of(4) - len])
+        //     .map_err(|e| PacketError::PaddingError {
+        //         packet_name: "VecUSize",
+        //         field_name: "padding",
+        //         error: e,
+        //     })?;
 
         Ok(())
     }
