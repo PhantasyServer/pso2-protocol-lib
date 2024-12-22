@@ -334,7 +334,7 @@ impl<const N: usize, T> From<FixedVec<N, T>> for Vec<T> {
         value.data
     }
 }
-impl<const N: usize, T: HelperReadWrite> HelperReadWrite for FixedVec<N, T> {
+impl<const N: usize, T: HelperReadWrite + Default> HelperReadWrite for FixedVec<N, T> {
     fn read(
         reader: &mut (impl std::io::Read + std::io::Seek),
         packet_type: crate::protocol::PacketType,
@@ -363,7 +363,7 @@ impl<const N: usize, T: HelperReadWrite> HelperReadWrite for FixedVec<N, T> {
         xor: u32,
         sub: u32,
     ) -> Result<(), crate::protocol::PacketError> {
-        for i in self.iter() {
+        for i in self.iter().chain(std::iter::repeat(&T::default())).take(N) {
             i.write(writer, packet_type, xor, sub).map_err(|e| {
                 PacketError::CompositeFieldError {
                     packet_name: "FixedVec",
@@ -668,13 +668,24 @@ impl<const N: usize, const NO_PADDING: bool> HelperReadWrite for FixedBytes<N, N
         _: u32,
         _: u32,
     ) -> Result<(), crate::protocol::PacketError> {
+        let size = self.bytes.len().min(N);
         writer
-            .write_all(&self.bytes)
+            .write_all(&self.bytes[..size])
             .map_err(|e| PacketError::FieldError {
                 packet_name: "FixedBytes",
                 field_name: "bytes",
                 error: e,
             })?;
+        let remainder = N - size;
+        if remainder != 0 {
+            writer
+                .write_all(&vec![0; remainder])
+                .map_err(|e| PacketError::PaddingError {
+                    packet_name: "FixedBytes",
+                    field_name: "padding",
+                    error: e,
+                })?;
+        }
         if !NO_PADDING {
             writer
                 .write_all(&vec![0u8; N.next_multiple_of(4) - N])
