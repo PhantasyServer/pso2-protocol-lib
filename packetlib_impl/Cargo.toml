@@ -1,7 +1,7 @@
 [package]
 name = "pso2packetlib_impl"
 description = "Derive backend for pso2packetlib"
-version = "0.2.0"
+version = "0.3.0"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/PhantasyServer/pso2-protocol-lib"
 readme = false
@@ -11,6 +11,6 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
-syn = { version = "2.0.60", features = ["printing"] }
-proc-macro2 = "1.0.81"
-quote = "1.0.36"
+syn = { version = "2.0.92", features = ["printing"] }
+proc-macro2 = "1.0.92"
+quote = "1.0.38"

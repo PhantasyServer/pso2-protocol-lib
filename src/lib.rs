@@ -27,10 +27,10 @@ pub use asciistring::AsciiString;
 /// # Note
 /// This macro makes few assumtions about the protocol enum:
 /// - All packet must either have no fields or only one with a type that implements
-/// [`protocol::PacketReadWrite`].
+///   [`protocol::PacketReadWrite`].
 /// - Raw packet must either have no fields or only one with a [`Vec<u8>`] inside.
 /// - Unknown packet must either have no fields or only one with a tuple of
-/// ([`protocol::PacketHeader`], [`Vec<u8>`]) inside.
+///   ([`protocol::PacketHeader`], [`Vec<u8>`]) inside.
 ///
 /// # Attribute explanation
 /// - `#[Id(_id_, _subid_)]` sets the ID and subID of the packet variant.
@@ -53,23 +53,23 @@ pub use pso2packetlib_impl::ProtocolRW;
 /// This macro makes few assumtions about the packet struct:
 /// - The only container type currently allowed is [`Vec<T>`].
 /// - Any type that is not hardcoded (i.e integers, floats, [`half::f16`], [`std::net::Ipv4Addr`],
-/// [`std::time::Duration`], [`String`], [`AsciiString`]) must implement
-/// [`protocol::HelperReadWrite`] or have the `read`, `write` functions with the same prototype.
+///   [`std::time::Duration`], [`String`], [`AsciiString`]) must implement
+///   [`protocol::HelperReadWrite`] or have the `read`, `write` functions with the same prototype.
 ///
 /// # Attribute explanation
 /// ## Container attributes
 /// - `#[Id(_id_, _subid_)]` sets the ID and subID of the packet.
 /// - `#[Flags(_`[`protocol::Flags`]`_)]` sets the flags of the packet.
 /// - `#[Magic(_xor_, _sub_)]`. If the `packed` flag is set, then this attribute sets the
-/// deciphering xor and sub for variable length types.
+///   deciphering xor and sub for variable length types.
 /// ## Field attributes
 /// - `#[Seek(_seek-amount_)]` sets the padding before the field data.
 /// - `#[SeekAfter(_seek-amount_)]` sets the padding after the field data.
 /// - `#[Const_u16(_const-int_)]` sets the constant u16 before the field data.
 /// - `#[OnlyOn(_`[`protocol::PacketType`]`_)]`. If set then the field will only be read/written if
-/// the reader packet type matches the specified packet type.
+///   the reader packet type matches the specified packet type.
 /// - `#[NotOn(_`[`protocol::PacketType`]`_)]`. If set then the field will only be read/written if
-/// the reader packet type differs from the specified packet type.
+///   the reader packet type differs from the specified packet type.
 #[cfg(feature = "derive")]
 #[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub use pso2packetlib_impl::PacketRW;
@@ -97,13 +97,13 @@ pub use pso2packetlib_impl::PacketRW;
 /// - `#[Const_u16(_const-int_)]` sets the constant u16 before the field data.
 /// - `#[Read_default]` sets the default enum variant for reading.
 /// - `#[Skip]`. If applied to a field struct field, then this attribute will skip one bit of the
-/// flags.
+///   flags.
 /// - `#[ManualRW(_readfn_, _writefn_)]` sets the read/write functions for the variant. Specified
-/// functions must have the same prototype as the [`protocol::HelperReadWrite`] functions.
+///   functions must have the same prototype as the [`protocol::HelperReadWrite`] functions.
 /// - `#[OnlyOn(_`[`protocol::PacketType`]`_)]`. If set then the field will only be read/written if
-/// the reader packet type matches the specified packet type.
+///   the reader packet type matches the specified packet type.
 /// - `#[NotOn(_`[`protocol::PacketType`]`_)]`. If set then the field will only be read/written if
-/// the reader packet type differs from the specified packet type.
+///   the reader packet type differs from the specified packet type.
 #[cfg(feature = "derive")]
 #[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub use pso2packetlib_impl::HelperRW;

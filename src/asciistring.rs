@@ -54,6 +54,7 @@ impl StringRW for String {
         for word in buf.chunks(2) {
             words.push(u16::from_le_bytes(word.try_into().unwrap()))
         }
+        #[allow(unused_mut)]
         let mut string = String::from_utf16_lossy(&words);
         #[cfg(not(test))]
         if let Some(x) = string.find('\0') {
@@ -188,6 +189,7 @@ impl StringRW for AsciiString {
     fn read_fixed(reader: &mut impl Read, len: u64) -> std::io::Result<Self> {
         let mut buf = vec![];
         reader.take(len).read_to_end(&mut buf)?;
+        #[allow(unused_mut)]
         let mut string = String::from_utf8_lossy(&buf).to_string();
         #[cfg(not(test))]
         if let Some(x) = string.find('\0') {
