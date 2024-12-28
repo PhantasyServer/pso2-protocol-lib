@@ -245,6 +245,9 @@ pub enum Packet {
     /// (0x03, 0x3C) Move Lobby -> Cafe.
     #[Id(0x03, 0x3C)]
     CafeTransport(CafeTransportPacket),
+    /// (0x03, 0x41) Move Story Quest Selection -> Lobby.
+    #[Id(0x03, 0x41)]
+    StoryToLobby(StoryToLobbyPacket),
 
     // Object related packets [0x04]
     #[Category(PacketCategory::Object)]

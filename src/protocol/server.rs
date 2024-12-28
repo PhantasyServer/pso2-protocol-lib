@@ -274,6 +274,22 @@ pub struct CafeTransportPacket {
     pub unk3: u32,
 }
 
+/// (0x03, 0x41) Move Story Quest Selection -> Lobby.
+///
+/// (C -> S) Sent when the client wants to move from the story quest selection screen
+/// to lobby.
+///
+/// Respond with: load lobby map.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x41)]
+pub struct StoryToLobbyPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+}
+
 // ----------------------------------------------------------------
 // Additional structs
 // ----------------------------------------------------------------
