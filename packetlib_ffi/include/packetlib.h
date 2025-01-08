@@ -9,15 +9,28 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define PLIB_API_VERSION 5
+/**
+ * Current library version.
+ */
+#define PLIB_LIBRARY_VERSION 4
 
-#define PLIB_PROTOCOL_VERSION 4
-
+/**
+ * Packet direction.
+ */
 typedef enum PLIB_Direction {
+  /**
+   * Packet was sent to the server.
+   */
   ToServer,
+  /**
+   * Packet was sent to the client.
+   */
   ToClient,
 } PLIB_Direction;
 
+/**
+ * Packet output format.
+ */
 typedef enum PLIB_OutputType {
   /**
    * Output only parsed packet.
@@ -45,37 +58,104 @@ typedef enum PLIB_PacketType {
   Raw,
 } PLIB_PacketType;
 
+/**
+ * Result of reader operations.
+ */
 typedef enum PLIB_ReaderResult {
+  /**
+   * Read operation was successful.
+   */
   Ok,
+  /**
+   * Only raw packet was read.
+   */
   RawOnly,
+  /**
+   * Reader reached end of file.
+   */
   ReaderEOF,
+  /**
+   * Reader produced an error, call [`get_reader_error`] to get an error message.
+   */
   PPACError,
 } PLIB_ReaderResult;
 
 /**
- * Serialized packet format
+ * Serialized packet format.
  */
 typedef enum PLIB_SerializedFormat {
+  /**
+   * Packets are serialized in JSON format.
+   */
   JSON,
+  /**
+   * Packets are serialized in MessagePack format (all fields are arrays).
+   */
   MessagePack,
+  /**
+   * Packets are serialized in MessagePack format (fields are named).
+   */
   MessagePackNamed,
 } PLIB_SerializedFormat;
 
+/**
+ * Result of socket operations.
+ */
 typedef enum PLIB_SocketResult {
+  /**
+   * Socket/Data is ready.
+   */
   Ready,
+  /**
+   * Socket would block.
+   */
   Blocked,
+  /**
+   * No socket is actually open.
+   */
   NoSocket,
+  /**
+   * Socket operation produced an error, call [`get_sf_error`] or [`get_conn_error`] to get an
+   * error message.
+   */
   SocketError,
 } PLIB_SocketResult;
 
+/**
+ * Connection between a client and a server.
+ */
 typedef struct PLIB_Connection PLIB_Connection;
 
+/**
+ * PPAC archive reader.
+ */
 typedef struct PLIB_PPACReader PLIB_PPACReader;
 
+/**
+ * Wrapper type for [`pso2packetlib::protocol::Packet`].
+ */
 typedef struct PLIB_Packet PLIB_Packet;
 
+/**
+ * Factory for [`Packet`]. Handles error messages, stores packets and current serialization
+ * format.
+ */
 typedef struct PLIB_PacketWorker PLIB_PacketWorker;
 
+/**
+ * Wrapper for [`pso2packetlib::PrivateKey`]
+ */
+typedef struct PLIB_PrivateKey PLIB_PrivateKey;
+
+/**
+ * Wrapper for [`pso2packetlib::PublicKey`]
+ */
+typedef struct PLIB_PublicKey PLIB_PublicKey;
+
+/**
+ * Factory for [`Connection`]. Handles error messages, listen sockets and temporarily stores
+ * accepted connections.
+ */
 typedef struct PLIB_SocketFactory PLIB_SocketFactory;
 
 /**
@@ -84,8 +164,15 @@ typedef struct PLIB_SocketFactory PLIB_SocketFactory;
 typedef struct PLIB_DataBuffer {
   const uint8_t *ptr;
   size_t size;
+  /**
+   * INTERNAL: vector capacity
+   */
+  size_t _cap;
 } PLIB_DataBuffer;
 
+/**
+ * Read packet data
+ */
 typedef struct PLIB_PacketData {
   /**
    * When was the packet stored (in secs).
@@ -114,9 +201,10 @@ typedef struct PLIB_PacketData {
 extern "C" {
 #endif // __cplusplus
 
-uint32_t get_api_version(void);
-
-uint32_t get_protocol_version(void);
+/**
+ * Returns the compiled library version.
+ */
+uint32_t get_library_version(void);
 
 /**
  * Returns whether the library is built with connection support.
@@ -130,42 +218,85 @@ bool have_ppac(void);
 
 /**
  * Creates a new packet worker.
+ *
+ * # Safety
+ * - `packet_type` must be a valid variant of `PacketType`.
+ * - `serde_format` must be a valid variant of [`SerializedFormat`].
  */
 struct PLIB_PacketWorker *new_worker(enum PLIB_PacketType packet_type,
                                      enum PLIB_SerializedFormat serde_format);
 
 /**
  * Destroys a packet worker.
+ *
+ * # Safety
+ * `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
  */
 void free_worker(struct PLIB_PacketWorker *_worker);
 
 /**
  * Destroys a packet.
+ *
+ * # Safety
+ * `packet` must either be NULL or it must point to a valid [`Packet`] structure.
  */
 void free_packet(struct PLIB_Packet *_packet);
 
 /**
+ * Destroys a data pointer and deallocates pointed at memory.
+ *
+ * # Safety
+ * - `data` must be a valid [`DataBuffer`] structure with valid data pointer.
+ */
+void free_data(struct PLIB_DataBuffer data);
+
+/**
+ * Clones the data pointer.
+ *
+ * # Safety
+ * - `data` must be a valid [`DataBuffer`] structure with valid data pointer.
+ */
+struct PLIB_DataBuffer clone_data(struct PLIB_DataBuffer data);
+
+/**
  * Clones the packet.
+ *
+ * # Safety
+ * `packet` must either be NULL or it must point to a valid [`Packet`] structure.
  */
 struct PLIB_Packet *clone_packet(const struct PLIB_Packet *packet);
 
 /**
  * Checks if the packet is empty.
+ *
+ * # Safety
+ * `packet` must either be NULL or it must point to a valid [`Packet`] structure.
  */
 bool packet_is_empty(const struct PLIB_Packet *packet);
 
 /**
  * Sets a new packet type.
+ *
+ * # Safety
+ * - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+ * - `packet_type` must be a valid variant of `PacketType`.
  */
 void set_packet_type(struct PLIB_PacketWorker *worker, enum PLIB_PacketType packet_type);
 
 /**
  * Sets a new serde format.
+ *
+ * # Safety
+ * - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+ * - `format` must be a valid variant of [`SerializedFormat`].
  */
 void set_serde_format(struct PLIB_PacketWorker *worker, enum PLIB_SerializedFormat format);
 
 /**
  * Checks if the specified serde format is supported.
+ *
+ * # Safety
+ * `format` must be a valid variant of [`SerializedFormat`].
  */
 bool serde_supported(enum PLIB_SerializedFormat serde_format);
 
@@ -173,7 +304,8 @@ bool serde_supported(enum PLIB_SerializedFormat serde_format);
  * Parses raw packet data and returns a [`Packet`] type or a null pointer if an error occured.
  *
  * # Safety
- * `data_ptr' must point to valid packet data up to `size` bytes.
+ * - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+ * - `data_ptr' must point to valid packet data up to `size` bytes.
  */
 struct PLIB_Packet *raw_to_packet(struct PLIB_PacketWorker *worker,
                                   const uint8_t *data_ptr,
@@ -184,7 +316,8 @@ struct PLIB_Packet *raw_to_packet(struct PLIB_PacketWorker *worker,
  * occurred.
  *
  * # Safety
- * `data_ptr' must point to valid serialied data up to `size` bytes.
+ * - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+ * - `data_ptr' must point to valid serialied data up to `size` bytes.
  */
 struct PLIB_Packet *ser_to_packet(struct PLIB_PacketWorker *worker,
                                   const uint8_t *data_ptr,
@@ -194,9 +327,9 @@ struct PLIB_Packet *ser_to_packet(struct PLIB_PacketWorker *worker,
  * Parses [`Packet`] and returns raw packet data.
  *
  * # Safety
- * The returned pointer is only valid until the next data-returning function call.
- * If the returned array is empty, the pointer might be non-null but still invalid. This is not
- * considered an error.
+ * - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+ * - If the returned array is empty, the pointer might be non-null but still invalid. This is not
+ *   considered an error.
  */
 struct PLIB_DataBuffer packet_to_raw(struct PLIB_PacketWorker *worker,
                                      const struct PLIB_Packet *packet);
@@ -205,9 +338,9 @@ struct PLIB_DataBuffer packet_to_raw(struct PLIB_PacketWorker *worker,
  * Parses [`Packet`] and returns serialized packet data or a null pointer if an error occured.
  *
  * # Safety
- * The returned pointer is only valid until the next data-returning function call.
- * If the returned array is empty, the pointer might be non-null but still invalid. This is not
- * considered an error.
+ * - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+ * - If the returned array is empty, the pointer might be non-null but still invalid. This is not
+ *   considered an error.
  */
 struct PLIB_DataBuffer packet_to_ser(struct PLIB_PacketWorker *worker,
                                      const struct PLIB_Packet *packet);
@@ -217,11 +350,10 @@ struct PLIB_DataBuffer packet_to_ser(struct PLIB_PacketWorker *worker,
  * an error occurred.
  *
  * # Safety
- * `data_ptr' must point to valid packet data up to `size` bytes.
- *
- * The returned pointer is only valid until the next data-returning function call.
- * If the returned array is empty, the pointer might be non-null but still invalid. This is not
- * considered an error.
+ * - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+ * - `data_ptr' must point to valid packet data up to `size` bytes.
+ * - If the returned array is empty, the pointer might be non-null but still invalid. This is not
+ *   considered an error.
  */
 struct PLIB_DataBuffer parse_packet(struct PLIB_PacketWorker *worker,
                                     const uint8_t *data_ptr,
@@ -232,11 +364,10 @@ struct PLIB_DataBuffer parse_packet(struct PLIB_PacketWorker *worker,
  * occured.
  *
  * # Safety
- * `data_ptr' must point to valid packet data up to `size` bytes.
- *
- * The returned pointer is only valid until the next data-returning function call.
- * If the returned array is empty, the pointer might be non-null but still invalid. This is not
- * considered an error.
+ * - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+ * - `data_ptr' must point to valid packet data up to `size` bytes.
+ * - If the returned array is empty, the pointer might be non-null but still invalid. This is not
+ *   considered an error.
  */
 struct PLIB_DataBuffer create_packet(struct PLIB_PacketWorker *worker,
                                      const uint8_t *data_ptr,
@@ -247,7 +378,8 @@ struct PLIB_DataBuffer create_packet(struct PLIB_PacketWorker *worker,
  * occurred.
  *
  * # Safety
- * The returned pointer is only valid until the next failable function call.
+ * - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+ * - The returned pointer is only valid until the next failable function call.
  */
 const uint8_t *get_pw_error(const struct PLIB_PacketWorker *worker);
 
@@ -258,38 +390,61 @@ struct PLIB_SocketFactory *new_factory(void);
 
 /**
  * Destroys a socket factory.
+ *
+ * # Safety
+ * `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
  */
 void free_factory(struct PLIB_SocketFactory *_factory);
 
 /**
  * Creates a new listener on the specified address.
+ *
+ * # Safety
+ * - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+ * - `addr` must be a valid NULL terminated string in the form of "ip:port"
  */
 bool create_listener(struct PLIB_SocketFactory *factory, const int8_t *addr);
 
 /**
  * Sets the blocking mode of the listener.
+ *
+ * # Safety
+ * `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
  */
 void listener_nonblocking(const struct PLIB_SocketFactory *factory, bool nonblocking);
 
 /**
  * Accepts a new incoming connection from installed listener. To collect the resulting connection
- * call `get_connection` or `stream_into_fd".
+ * call [`get_connection`] or [`stream_into_fd`].
+ *
+ * # Safety
+ * `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
  */
 enum PLIB_SocketResult accept_listener(struct PLIB_SocketFactory *factory);
 
 /**
  * Creates a new stream to the specified address. To collect the resulting stream
- * call `get_connection` or `stream_into_fd".
+ * call [`get_connection`] or [`stream_into_fd`].
+ *
+ * # Safety
+ * - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+ * - `addr` must be a valid NULL terminated string in the form of "ip:port"
  */
 bool create_stream(struct PLIB_SocketFactory *factory, const int8_t *addr);
 
 /**
  * Sets the blocking mode of the stream.
+ *
+ * # Safety
+ * `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
  */
 void stream_nonblocking(struct PLIB_SocketFactory *factory, bool nonblocking);
 
 /**
  * Returns the IP address of the stream.
+ *
+ * # Safety
+ * `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
  */
 uint32_t get_stream_ip(const struct PLIB_SocketFactory *factory);
 
@@ -297,35 +452,51 @@ uint32_t get_stream_ip(const struct PLIB_SocketFactory *factory);
  * Creates a new connection from incoming connection.
  *
  * # Safety
- * 'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
- * path to a PKCS#8 file containing a private key for decryption.
- * 'out_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
- * path to a PKCS#8 file containing a public key for encryption.
+ * - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+ * - `packet_type` must be a valid variant of `PacketType`.
+ * - 'in_key' must either be null or it must point to a valid [`PrivateKey`] strucure
+ * - 'out_key' must either be null or it must point to a valid [`PublicKey`] structure.
+ *
+ * # Note
+ * This function takes ownership of `in_key` and `out_key`.
  */
 struct PLIB_Connection *get_connection(struct PLIB_SocketFactory *factory,
                                        enum PLIB_PacketType packet_type,
-                                       const int8_t *in_key,
-                                       const int8_t *out_key);
+                                       struct PLIB_PrivateKey *in_key,
+                                       struct PLIB_PublicKey *out_key);
 
 /**
  * Returns an incoming connection descriptor. Caller is responsible for closing the returned descriptor.
  * If no stream was opened, returns -1.
+ *
+ * # Safety
+ * `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
  */
 int64_t stream_into_fd(struct PLIB_SocketFactory *factory);
 
 /**
  * Clones the descriptor. Returns the cloned descriptor or -1 if an error occurred.
+ *
+ * # Safety
+ * - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+ * - `fd` must be a valid descriptor.
  */
 int64_t clone_fd(struct PLIB_SocketFactory *factory, int64_t fd);
 
 /**
  * Closes the file descriptor.
+ *
+ * # Safety
+ * `fd` must be a valid descriptor.
  */
 void close_fd(int64_t fd);
 
 /**
  * Returns an owned socket descriptor. Caller is responsible for closing the returned descriptor.
  * If no listener was opened, returns -1.
+ *
+ * # Safety
+ * `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
  */
 int64_t listener_into_fd(struct PLIB_SocketFactory *factory);
 
@@ -333,7 +504,11 @@ int64_t listener_into_fd(struct PLIB_SocketFactory *factory);
  * Installs the provided listener. This function takes ownership of the descriptor.
  *
  * # Safety
- * `fd` must be a valid descriptor.
+ * - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+ * - `fd` must be a valid descriptor.
+ *
+ * # Notes
+ * This function takes ownership of `fd`.
  */
 bool listener_from_fd(struct PLIB_SocketFactory *factory, int64_t fd);
 
@@ -342,7 +517,8 @@ bool listener_from_fd(struct PLIB_SocketFactory *factory, int64_t fd);
  * occurred.
  *
  * # Safety
- * The returned pointer is only valid until the next failable function call.
+ * - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+ * - The returned pointer is only valid until the next failable function call.
  */
 const uint8_t *get_sf_error(const struct PLIB_SocketFactory *factory);
 
@@ -350,30 +526,41 @@ const uint8_t *get_sf_error(const struct PLIB_SocketFactory *factory);
  * Creates a new connection from owned socket descriptor.
  *
  * # Safety
- * `fd` must be a valid descriptor.
+ * - `fd` must be a valid descriptor.
+ * - `packet_type` must be a valid variant of `PacketType`.
+ * - 'in_key' must either be null or it must point to a valid [`PrivateKey`] strucure
+ * - 'out_key' must either be null or it must point to a valid [`PublicKey`] structure.
  *
- * 'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
- * path to a PKCS#8 file containing a private key for decryption.
- * 'out_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
- * path to a PKCS#8 file containing a public key for encryption.
+ * # Note
+ * This function takes ownership of `in_key`, `out_key` and `fd`.
  */
 struct PLIB_Connection *new_connection(int64_t fd,
                                        enum PLIB_PacketType packet_type,
-                                       const int8_t *in_key,
-                                       const int8_t *out_key);
+                                       struct PLIB_PrivateKey *in_key,
+                                       struct PLIB_PublicKey *out_key);
 
 /**
  * Destroys a connection.
+ *
+ * # Safety
+ * `conn` must either be NULL or it must point to a valid [`Connection`] structure.
  */
 void free_connection(struct PLIB_Connection *_conn);
 
 /**
  * Returns the IP address of the connection.
+ *
+ * # Safety
+ * `conn` must either be NULL or it must point to a valid [`Connection`] structure.
  */
 uint32_t get_conn_ip(const struct PLIB_Connection *conn);
 
 /**
  * Changes the connection's packet type.
+ *
+ * # Safety
+ * - `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+ * - `packet_type` must be a valid variant of `PacketType`.
  */
 void conn_set_packet_type(struct PLIB_Connection *conn, enum PLIB_PacketType packet_type);
 
@@ -381,20 +568,26 @@ void conn_set_packet_type(struct PLIB_Connection *conn, enum PLIB_PacketType pac
  * Returns a [`Packet`] or a null pointer if no connection was provided.
  *
  * # Safety
- * The returned pointer is only valid until the next data-returning function call.
- * If the returned array is empty, the pointer might be non-null but still invalid. This is not
- * considered an error.
+ * - `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+ * - The returned pointer is only valid until the next data-returning function call.
  */
 struct PLIB_Packet *conn_get_data(struct PLIB_Connection *conn);
 
 /**
- * Reads a packet from the connection and stores it in the internal buffer. Call `conn_get_data`
+ * Reads a packet from the connection and stores it in the internal buffer. Call [`conn_get_data`]
  * to access it.
+ *
+ * # Safety
+ * `conn` must either be NULL or it must point to a valid [`Connection`] structure.
  */
 enum PLIB_SocketResult conn_read_packet(struct PLIB_Connection *conn);
 
 /**
  * Writes a packet to the connection. If `ptr` is null, flushes the buffer.
+ *
+ * # Safety
+ * - `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+ * - `packet` must either be NULL or it must point to a valid [`Packet`] structure.
  *
  * # Note
  * If this function returns [`SocketResult::Blocked`], then the data has been written to the
@@ -405,6 +598,9 @@ enum PLIB_SocketResult conn_write_packet(struct PLIB_Connection *conn,
 
 /**
  * Returns the encryption key (for [`Packet::EncryptionResponse`]).
+ *
+ * # Safety
+ * `conn` must either be NULL or it must point to a valid [`Connection`] structure.
  */
 struct PLIB_DataBuffer conn_get_key(struct PLIB_Connection *conn);
 
@@ -413,27 +609,117 @@ struct PLIB_DataBuffer conn_get_key(struct PLIB_Connection *conn);
  * occurred.
  *
  * # Safety
- * The returned pointer is only valid until the next failable function call.
+ * - `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+ * - The returned pointer is only valid until the next failable function call.
  */
 const uint8_t *get_conn_error(const struct PLIB_Connection *conn);
 
 /**
+ * Creates a new public key from PEM-encoded PKCS#8 file.
+ *
+ * # Safety
+ * `path` must either be NULL or it must point to a valid NULL terminated string.
+ */
+struct PLIB_PublicKey *new_pub_key_file(const int8_t *path);
+
+/**
+ * Creates a new private key from PEM-encoded PKCS#8 file.
+ *
+ * # Safety
+ * `path` must either be NULL or it must point to a valid NULL terminated string.
+ */
+struct PLIB_PrivateKey *new_priv_key_file(const int8_t *path);
+
+/**
+ * Creates a new public key from RSA parameters.
+ *
+ * # Arguments
+ * - `n` - RSA modulus
+ * - `e` - RSA public exponent
+ *
+ * # Safety
+ * - `n` must either be NULL or it must point to a valid byte array up to `n_size` bytes.
+ * - `e` must either be NULL or it must point to a valid byte array up to `e_size` bytes.
+ */
+struct PLIB_PublicKey *new_pub_key_params(const uint8_t *n,
+                                          size_t n_size,
+                                          const uint8_t *e,
+                                          size_t e_size);
+
+/**
+ * Creates a new private key from RSA parameters.
+ *
+ * # Arguments
+ * - `n` - RSA modulus
+ * - `e` - RSA public exponent
+ * - `d` - RSA private exponent
+ * - `p` - RSA first prime
+ * - `q` - RSA second prime
+ *
+ * # Safety
+ * - `n` must either be NULL or it must point to a valid byte array up to `n_size` bytes.
+ * - `e` must either be NULL or it must point to a valid byte array up to `e_size` bytes.
+ * - `d` must either be NULL or it must point to a valid byte array up to `d_size` bytes.
+ * - `p` must either be NULL or it must point to a valid byte array up to `p_size` bytes.
+ * - `q` must either be NULL or it must point to a valid byte array up to `q_size` bytes.
+ */
+struct PLIB_PrivateKey *new_priv_key_params(const uint8_t *n,
+                                            size_t n_size,
+                                            const uint8_t *e,
+                                            size_t e_size,
+                                            const uint8_t *d,
+                                            size_t d_size,
+                                            const uint8_t *p,
+                                            size_t p_size,
+                                            const uint8_t *q,
+                                            size_t q_size);
+
+/**
+ * Destroys a public key
+ *
+ * # Safety
+ * `key` must either be NULL or it must point to a valid [`PublicKey`] structure.
+ */
+void free_pub_key(struct PLIB_PublicKey *_key);
+
+/**
+ * Destroys a private key
+ *
+ * # Safety
+ * `key` must either be NULL or it must point to a valid [`PrivateKey`] structure.
+ */
+void free_priv_key(struct PLIB_PrivateKey *_key);
+
+/**
  * Creates a new PPAC reader. After creation don't forget to check for errors.
+ *
+ * # Safety
+ * `path` must be a valid NULL terminated string.
  */
 struct PLIB_PPACReader *new_reader(const int8_t *path);
 
 /**
  * Destroys the reader.
+ *
+ * # Safety
+ * `reader` must either be NULL or it must point to a valid [`PPACReader`] structure.
  */
 void free_reader(struct PLIB_PPACReader *_reader);
 
 /**
  * Sets the output type.
+ *
+ * # Safety
+ * - `reader` must either be NULL or it must point to a valid [`PPACReader`] structure.
+ * - `out_type` must be a valid variant of [`OutputType`].
  */
 void set_out_type(struct PLIB_PPACReader *reader, enum PLIB_OutputType out_type);
 
 /**
  * Reads the packet and returns if the function succeeded.
+ *
+ * # Safety
+ * `reader` must either be NULL or it must point to a valid [`PPACReader`] structure.
  */
 enum PLIB_ReaderResult read_packet(struct PLIB_PPACReader *reader);
 
@@ -444,9 +730,9 @@ enum PLIB_ReaderResult read_packet(struct PLIB_PPACReader *reader);
  * [`data`] field is only returned once and must be freed by the caller.
  *
  * # Safety
- * The returned pointer is only valid until the next data-returning function call.
- * If the returned array is empty, the pointer might be non-null but still invalid. This is not
- * considered an error.
+ * - `reader` must either be NULL or it must point to a valid [`PPACReader`] structure.
+ * - If the returned array is empty, the pointer might be non-null but still invalid. This is not
+ *   considered an error.
  */
 struct PLIB_PacketData get_reader_data(struct PLIB_PPACReader *reader);
 
@@ -455,12 +741,13 @@ struct PLIB_PacketData get_reader_data(struct PLIB_PPACReader *reader);
  * occurred.
  *
  * # Safety
- * The returned pointer is only valid until the next failable function call.
+ * - `reader` must either be NULL or it must point to a valid [`PPACReader`] structure.
+ * - The returned pointer is only valid until the next failable function call.
  */
 const uint8_t *get_reader_error(const struct PLIB_PPACReader *reader);
 
 #ifdef __cplusplus
-} // extern "C"
-#endif // __cplusplus
+}  // extern "C"
+#endif  // __cplusplus
 
-#endif /* psopacketlib_ffi_h */
+#endif  /* psopacketlib_ffi_h */

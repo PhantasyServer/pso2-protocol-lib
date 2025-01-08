@@ -78,12 +78,15 @@ cdef class PacketFactory:
         data = packetlib.packet_to_ser(self.pw, packet.p)
         self.__throw_err()
         string = to_unicode(<const char*>data.ptr)
+        packetlib.free_data(data)
         return json.loads(string)
 
     def packet_to_raw(self, Packet packet) -> bytes:
         data = packetlib.packet_to_raw(self.pw, packet.p)
         self.__throw_err()
-        return data.ptr[:data.size]
+        py_data = data.ptr[:data.size]
+        packetlib.free_data(data)
+        return py_data
 
 
 cdef class Connection:

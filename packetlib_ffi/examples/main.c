@@ -24,6 +24,7 @@ void packet_demo() {
   if (buf.ptr != NULL && buf.size != 0)
     printf("%s\n", buf.ptr);
   free_packet(packet);
+  free_data(buf);
 
   // example of creating packets
   char str[] = "{\"LoadLevel\":{}}";
@@ -35,6 +36,7 @@ void packet_demo() {
     for (int i = 0; i < buf.size; i++)
       printf("%x ", buf.ptr[i]);
   printf("\n");
+  free_data(buf);
 
   // example of an error
   char str2[] = "{\"Invalid\":{}}";
@@ -156,6 +158,7 @@ void socket_demo() {
     PLIB_DataBuffer data = packet_to_ser(worker, packet);
     printf("%s\n", data.ptr);
     free_packet(packet);
+    free_data(data);
   } else if (sr == SocketError) {
     const unsigned char *err = get_conn_error(conn);
     if (err != NULL)
@@ -204,6 +207,7 @@ void ppac_demo() {
       PLIB_DataBuffer data = packet_to_ser(worker, pd.data);
       printf("Packet: %s\n", data.ptr);
       free_packet(pd.data);
+      free_data(data);
     } else if (pd.raw_ptr && pd.raw_size) {
       printf("RAW\n");
     }
@@ -214,7 +218,7 @@ void ppac_demo() {
 }
 
 int main(int argc, char **argv) {
-  if (get_api_version() != PLIB_API_VERSION)
+  if (get_library_version() != PLIB_LIBRARY_VERSION)
     return -1;
   packet_demo();
   socket_demo();

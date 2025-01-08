@@ -9,20 +9,29 @@ use std::{
 use crate::protocol::{Packet, PacketType};
 use pso2packetlib::protocol::Packet as ProtocolPacket;
 
+/// Result of reader operations.
 #[repr(C)]
 pub enum ReaderResult {
+    /// Read operation was successful.
     Ok,
+    /// Only raw packet was read.
     RawOnly,
+    /// Reader reached end of file.
     ReaderEOF,
+    /// Reader produced an error, call [`get_reader_error`] to get an error message.
     PPACError,
 }
 
+/// Packet direction.
 #[repr(C)]
 pub enum Direction {
+    /// Packet was sent to the server.
     ToServer,
+    /// Packet was sent to the client.
     ToClient,
 }
 
+/// Packet output format.
 #[repr(C)]
 pub enum OutputType {
     /// Output only parsed packet.
@@ -33,6 +42,7 @@ pub enum OutputType {
     OutputBoth,
 }
 
+/// PPAC archive reader.
 pub struct PPACReader {
     reader: Option<PR<File, ProtocolPacket>>,
     err_str: Option<CString>,
@@ -40,6 +50,7 @@ pub struct PPACReader {
     data_parsed: Vec<u8>,
 }
 
+/// Read packet data
 #[repr(C)]
 pub struct PacketData {
     /// When was the packet stored (in secs).
@@ -56,6 +67,9 @@ pub struct PacketData {
 }
 
 /// Creates a new PPAC reader. After creation don't forget to check for errors.
+///
+/// # Safety
+/// `path` must be a valid NULL terminated string.
 #[no_mangle]
 pub extern "C" fn new_reader(path: *const i8) -> Box<PPACReader> {
     let mut reader = PPACReader {
@@ -76,10 +90,17 @@ pub extern "C" fn new_reader(path: *const i8) -> Box<PPACReader> {
 }
 
 /// Destroys the reader.
+///
+/// # Safety
+/// `reader` must either be NULL or it must point to a valid [`PPACReader`] structure.
 #[no_mangle]
 pub extern "C" fn free_reader(_reader: Option<Box<PPACReader>>) {}
 
 /// Sets the output type.
+///
+/// # Safety
+/// - `reader` must either be NULL or it must point to a valid [`PPACReader`] structure.
+/// - `out_type` must be a valid variant of [`OutputType`].
 #[no_mangle]
 pub extern "C" fn set_out_type(reader: Option<&mut PPACReader>, out_type: OutputType) {
     if let Some(reader) = reader.and_then(|r| r.reader.as_mut()) {
@@ -88,6 +109,9 @@ pub extern "C" fn set_out_type(reader: Option<&mut PPACReader>, out_type: Output
 }
 
 /// Reads the packet and returns if the function succeeded.
+///
+/// # Safety
+/// `reader` must either be NULL or it must point to a valid [`PPACReader`] structure.
 #[no_mangle]
 pub extern "C" fn read_packet(reader: Option<&mut PPACReader>) -> ReaderResult {
     let Some(reader) = reader else {
@@ -108,9 +132,9 @@ pub extern "C" fn read_packet(reader: Option<&mut PPACReader>) -> ReaderResult {
 /// [`data`] field is only returned once and must be freed by the caller.
 ///
 /// # Safety
-/// The returned pointer is only valid until the next data-returning function call.
-/// If the returned array is empty, the pointer might be non-null but still invalid. This is not
-/// considered an error.
+/// - `reader` must either be NULL or it must point to a valid [`PPACReader`] structure.
+/// - If the returned array is empty, the pointer might be non-null but still invalid. This is not
+///   considered an error.
 #[no_mangle]
 pub extern "C" fn get_reader_data(reader: Option<&mut PPACReader>) -> PacketData {
     let mut data = PacketData {
@@ -145,7 +169,8 @@ pub extern "C" fn get_reader_data(reader: Option<&mut PPACReader>) -> PacketData
 /// occurred.
 ///
 /// # Safety
-/// The returned pointer is only valid until the next failable function call.
+/// - `reader` must either be NULL or it must point to a valid [`PPACReader`] structure.
+/// - The returned pointer is only valid until the next failable function call.
 #[no_mangle]
 pub extern "C" fn get_reader_error(reader: Option<&PPACReader>) -> *const u8 {
     match reader.and_then(|r| r.err_str.as_ref()) {
@@ -174,6 +199,7 @@ fn read_packet_failable(reader: &mut PPACReader) -> Result<ReaderResult, Box<dyn
 }
 
 fn new_reader_failable(path: *const i8) -> Result<PR<File, ProtocolPacket>, Box<dyn Error>> {
+    // SAFETY: `path` points to a valid NULL terminated string (caller contract)
     let str = unsafe { CStr::from_ptr(path) }.to_str()?;
     let file = File::open(str)?;
     Ok(PR::open(file)?)

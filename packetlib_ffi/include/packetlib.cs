@@ -16,206 +16,583 @@ namespace packetlib
 
 
 
-        /// <summary>Creates a new packet worker.</summary>
+        /// <summary>
+        ///  Creates a new packet worker.
+        ///
+        ///  # Safety
+        ///  - `packet_type` must be a valid variant of `PacketType`.
+        ///  - `serde_format` must be a valid variant of [`SerializedFormat`].
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "new_worker", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern PacketWorker* new_worker(PacketType packet_type, SerializedFormat serde_format);
+        internal static extern PacketWorker* new_worker(PacketType packet_type, SerializedFormat serde_format);
 
-        /// <summary>Destroys a packet worker.</summary>
+        /// <summary>
+        ///  Destroys a packet worker.
+        ///
+        ///  # Safety
+        ///  `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "free_worker", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void free_worker(PacketWorker* _worker);
+        internal static extern void free_worker(PacketWorker* _worker);
 
-        /// <summary>Destroys a packet.</summary>
+        /// <summary>
+        ///  Destroys a packet.
+        ///
+        ///  # Safety
+        ///  `packet` must either be NULL or it must point to a valid [`Packet`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "free_packet", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void free_packet(Packet* _packet);
+        internal static extern void free_packet(Packet* _packet);
 
-        /// <summary>Clones the packet.</summary>
+        /// <summary>
+        ///  Destroys a data pointer and deallocates pointed at memory.
+        ///
+        ///  # Safety
+        ///  - `data` must be a valid [`DataBuffer`] structure with valid data pointer.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "free_data", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern void free_data(DataBuffer data);
+
+        /// <summary>
+        ///  Clones the data pointer.
+        ///
+        ///  # Safety
+        ///  - `data` must be a valid [`DataBuffer`] structure with valid data pointer.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "clone_data", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern DataBuffer clone_data(DataBuffer data);
+
+        /// <summary>
+        ///  Clones the packet.
+        ///
+        ///  # Safety
+        ///  `packet` must either be NULL or it must point to a valid [`Packet`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "clone_packet", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern Packet* clone_packet(Packet* packet);
+        internal static extern Packet* clone_packet(Packet* packet);
 
-        /// <summary>Checks if the packet is empty.</summary>
+        /// <summary>
+        ///  Checks if the packet is empty.
+        ///
+        ///  # Safety
+        ///  `packet` must either be NULL or it must point to a valid [`Packet`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "packet_is_empty", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool packet_is_empty(Packet* packet);
+        internal static extern bool packet_is_empty(Packet* packet);
 
-        /// <summary>Sets a new packet type.</summary>
+        /// <summary>
+        ///  Sets a new packet type.
+        ///
+        ///  # Safety
+        ///  - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+        ///  - `packet_type` must be a valid variant of `PacketType`.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "set_packet_type", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void set_packet_type(PacketWorker* worker, PacketType packet_type);
+        internal static extern void set_packet_type(PacketWorker* worker, PacketType packet_type);
 
-        /// <summary>Sets a new serde format.</summary>
+        /// <summary>
+        ///  Sets a new serde format.
+        ///
+        ///  # Safety
+        ///  - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+        ///  - `format` must be a valid variant of [`SerializedFormat`].
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "set_serde_format", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void set_serde_format(PacketWorker* worker, SerializedFormat format);
+        internal static extern void set_serde_format(PacketWorker* worker, SerializedFormat format);
 
-        /// <summary>Checks if the specified serde format is supported.</summary>
+        /// <summary>
+        ///  Checks if the specified serde format is supported.
+        ///
+        ///  # Safety
+        ///  `format` must be a valid variant of [`SerializedFormat`].
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "serde_supported", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool serde_supported(SerializedFormat serde_format);
+        internal static extern bool serde_supported(SerializedFormat serde_format);
 
-        /// <summary>Parses raw packet data and returns a [`Packet`] type or a null pointer if an error occured.  # Safety `data_ptr' must point to valid packet data up to `size` bytes.</summary>
+        /// <summary>
+        ///  Parses raw packet data and returns a [`Packet`] type or a null pointer if an error occured.
+        ///
+        ///  # Safety
+        ///  - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+        ///  - `data_ptr' must point to valid packet data up to `size` bytes.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "raw_to_packet", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern Packet* raw_to_packet(PacketWorker* worker, byte* data_ptr, nuint size);
+        internal static extern Packet* raw_to_packet(PacketWorker* worker, byte* data_ptr, nuint size);
 
-        /// <summary>Parses serialized packet data and returns a [`Packet`] type or a null pointer if an error occurred.  # Safety `data_ptr' must point to valid serialied data up to `size` bytes.</summary>
+        /// <summary>
+        ///  Parses serialized packet data and returns a [`Packet`] type or a null pointer if an error
+        ///  occurred.
+        ///
+        ///  # Safety
+        ///  - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+        ///  - `data_ptr' must point to valid serialied data up to `size` bytes.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "ser_to_packet", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern Packet* ser_to_packet(PacketWorker* worker, byte* data_ptr, nuint size);
+        internal static extern Packet* ser_to_packet(PacketWorker* worker, byte* data_ptr, nuint size);
 
-        /// <summary>Parses [`Packet`] and returns raw packet data.  # Safety The returned pointer is only valid until the next data-returning function call. If the returned array is empty, the pointer might be non-null but still invalid. This is not considered an error.</summary>
+        /// <summary>
+        ///  Parses [`Packet`] and returns raw packet data.
+        ///
+        ///  # Safety
+        ///  - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+        ///  - If the returned array is empty, the pointer might be non-null but still invalid. This is not
+        ///    considered an error.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "packet_to_raw", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern DataBuffer packet_to_raw(PacketWorker* worker, Packet* packet);
+        internal static extern DataBuffer packet_to_raw(PacketWorker* worker, Packet* packet);
 
-        /// <summary>Parses [`Packet`] and returns serialized packet data or a null pointer if an error occured.  # Safety The returned pointer is only valid until the next data-returning function call. If the returned array is empty, the pointer might be non-null but still invalid. This is not considered an error.</summary>
+        /// <summary>
+        ///  Parses [`Packet`] and returns serialized packet data or a null pointer if an error occured.
+        ///
+        ///  # Safety
+        ///  - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+        ///  - If the returned array is empty, the pointer might be non-null but still invalid. This is not
+        ///    considered an error.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "packet_to_ser", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern DataBuffer packet_to_ser(PacketWorker* worker, Packet* packet);
+        internal static extern DataBuffer packet_to_ser(PacketWorker* worker, Packet* packet);
 
-        /// <summary>Parses packet data and returns a fat pointer to the serialized packet or a null pointer if an error occurred.  # Safety `data_ptr' must point to valid packet data up to `size` bytes.  The returned pointer is only valid until the next data-returning function call. If the returned array is empty, the pointer might be non-null but still invalid. This is not considered an error.</summary>
+        /// <summary>
+        ///  Parses packet data and returns a fat pointer to the serialized packet or a null pointer if
+        ///  an error occurred.
+        ///
+        ///  # Safety
+        ///  - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+        ///  - `data_ptr' must point to valid packet data up to `size` bytes.
+        ///  - If the returned array is empty, the pointer might be non-null but still invalid. This is not
+        ///    considered an error.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "parse_packet", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern DataBuffer parse_packet(PacketWorker* worker, byte* data_ptr, nuint size);
+        internal static extern DataBuffer parse_packet(PacketWorker* worker, byte* data_ptr, nuint size);
 
-        /// <summary>Deserializes packet and returns a fat pointer to the packet data or a null pointer if an error occured.  # Safety `data_ptr' must point to valid packet data up to `size` bytes.  The returned pointer is only valid until the next data-returning function call. If the returned array is empty, the pointer might be non-null but still invalid. This is not considered an error.</summary>
+        /// <summary>
+        ///  Deserializes packet and returns a fat pointer to the packet data or a null pointer if an error
+        ///  occured.
+        ///
+        ///  # Safety
+        ///  - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+        ///  - `data_ptr' must point to valid packet data up to `size` bytes.
+        ///  - If the returned array is empty, the pointer might be non-null but still invalid. This is not
+        ///    considered an error.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "create_packet", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern DataBuffer create_packet(PacketWorker* worker, byte* data_ptr, nuint size);
+        internal static extern DataBuffer create_packet(PacketWorker* worker, byte* data_ptr, nuint size);
 
-        /// <summary>Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error occurred.  # Safety The returned pointer is only valid until the next failable function call.</summary>
+        /// <summary>
+        ///  Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error
+        ///  occurred.
+        ///
+        ///  # Safety
+        ///  - `worker` must either be NULL or it must point to a valid [`PacketWorker`] structure.
+        ///  - The returned pointer is only valid until the next failable function call.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "get_pw_error", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern byte* get_pw_error(PacketWorker* worker);
+        internal static extern byte* get_pw_error(PacketWorker* worker);
 
-        [DllImport(__DllName, EntryPoint = "get_api_version", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern uint get_api_version();
+        /// <summary>
+        ///  Returns the compiled library version.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "get_library_version", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern uint get_library_version();
 
-        [DllImport(__DllName, EntryPoint = "get_protocol_version", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern uint get_protocol_version();
-
-        /// <summary>Returns whether the library is built with connection support.</summary>
+        /// <summary>
+        ///  Returns whether the library is built with connection support.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "have_connection", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool have_connection();
+        internal static extern bool have_connection();
 
-        /// <summary>Returns whether the library is built with PPAC support.</summary>
+        /// <summary>
+        ///  Returns whether the library is built with PPAC support.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "have_ppac", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool have_ppac();
+        internal static extern bool have_ppac();
 
-        /// <summary>Creates a new socket factory.</summary>
+        /// <summary>
+        ///  Creates a new socket factory.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "new_factory", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern SocketFactory* new_factory();
+        internal static extern SocketFactory* new_factory();
 
-        /// <summary>Destroys a socket factory.</summary>
+        /// <summary>
+        ///  Destroys a socket factory.
+        ///
+        ///  # Safety
+        ///  `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "free_factory", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void free_factory(SocketFactory* _factory);
+        internal static extern void free_factory(SocketFactory* _factory);
 
-        /// <summary>Creates a new listener on the specified address.</summary>
+        /// <summary>
+        ///  Creates a new listener on the specified address.
+        ///
+        ///  # Safety
+        ///  - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+        ///  - `addr` must be a valid NULL terminated string in the form of "ip:port"
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "create_listener", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool create_listener(SocketFactory* factory, sbyte* addr);
+        internal static extern bool create_listener(SocketFactory* factory, sbyte* addr);
 
-        /// <summary>Sets the blocking mode of the listener.</summary>
+        /// <summary>
+        ///  Sets the blocking mode of the listener.
+        ///
+        ///  # Safety
+        ///  `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "listener_nonblocking", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void listener_nonblocking(SocketFactory* factory, [MarshalAs(UnmanagedType.U1)] bool nonblocking);
+        internal static extern void listener_nonblocking(SocketFactory* factory, [MarshalAs(UnmanagedType.U1)] bool nonblocking);
 
-        /// <summary>Accepts a new incoming connection from installed listener. To collect the resulting connection call `get_connection` or `stream_into_fd\".</summary>
+        /// <summary>
+        ///  Accepts a new incoming connection from installed listener. To collect the resulting connection
+        ///  call [`get_connection`] or [`stream_into_fd`].
+        ///
+        ///  # Safety
+        ///  `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "accept_listener", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern SocketResult accept_listener(SocketFactory* factory);
+        internal static extern SocketResult accept_listener(SocketFactory* factory);
 
-        /// <summary>Creates a new stream to the specified address. To collect the resulting stream call `get_connection` or `stream_into_fd\".</summary>
+        /// <summary>
+        ///  Creates a new stream to the specified address. To collect the resulting stream
+        ///  call [`get_connection`] or [`stream_into_fd`].
+        ///
+        ///  # Safety
+        ///  - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+        ///  - `addr` must be a valid NULL terminated string in the form of "ip:port"
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "create_stream", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool create_stream(SocketFactory* factory, sbyte* addr);
+        internal static extern bool create_stream(SocketFactory* factory, sbyte* addr);
 
-        /// <summary>Sets the blocking mode of the stream.</summary>
+        /// <summary>
+        ///  Sets the blocking mode of the stream.
+        ///
+        ///  # Safety
+        ///  `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "stream_nonblocking", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void stream_nonblocking(SocketFactory* factory, [MarshalAs(UnmanagedType.U1)] bool nonblocking);
+        internal static extern void stream_nonblocking(SocketFactory* factory, [MarshalAs(UnmanagedType.U1)] bool nonblocking);
 
-        /// <summary>Returns the IP address of the stream.</summary>
+        /// <summary>
+        ///  Returns the IP address of the stream.
+        ///
+        ///  # Safety
+        ///  `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "get_stream_ip", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern uint get_stream_ip(SocketFactory* factory);
+        internal static extern uint get_stream_ip(SocketFactory* factory);
 
-        /// <summary>Creates a new connection from incoming connection.  # Safety 'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated path to a PKCS#8 file containing a private key for decryption. 'out_key' must either be null or it must point to a UTF-8-encoded, zero-terminated path to a PKCS#8 file containing a public key for encryption.</summary>
+        /// <summary>
+        ///  Creates a new connection from incoming connection.
+        ///
+        ///  # Safety
+        ///  - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+        ///  - `packet_type` must be a valid variant of `PacketType`.
+        ///  - 'in_key' must either be null or it must point to a valid [`PrivateKey`] strucure
+        ///  - 'out_key' must either be null or it must point to a valid [`PublicKey`] structure.
+        ///
+        ///  # Note
+        ///  This function takes ownership of `in_key` and `out_key`.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "get_connection", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern Connection* get_connection(SocketFactory* factory, PacketType packet_type, sbyte* in_key, sbyte* out_key);
+        internal static extern Connection* get_connection(SocketFactory* factory, PacketType packet_type, PrivateKey* in_key, PublicKey* out_key);
 
-        /// <summary>Returns an incoming connection descriptor. Caller is responsible for closing the returned descriptor. If no stream was opened, returns -1.</summary>
+        /// <summary>
+        ///  Returns an incoming connection descriptor. Caller is responsible for closing the returned descriptor.
+        ///  If no stream was opened, returns -1.
+        ///
+        ///  # Safety
+        ///  `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "stream_into_fd", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern long stream_into_fd(SocketFactory* factory);
+        internal static extern long stream_into_fd(SocketFactory* factory);
 
-        /// <summary>Clones the descriptor. Returns the cloned descriptor or -1 if an error occurred.</summary>
+        /// <summary>
+        ///  Clones the descriptor. Returns the cloned descriptor or -1 if an error occurred.
+        ///
+        ///  # Safety
+        ///  - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+        ///  - `fd` must be a valid descriptor.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "clone_fd", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern long clone_fd(SocketFactory* factory, long fd);
+        internal static extern long clone_fd(SocketFactory* factory, long fd);
 
-        /// <summary>Closes the file descriptor.</summary>
+        /// <summary>
+        ///  Closes the file descriptor.
+        ///
+        ///  # Safety
+        ///  `fd` must be a valid descriptor.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "close_fd", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void close_fd(long fd);
+        internal static extern void close_fd(long fd);
 
-        /// <summary>Returns an owned socket descriptor. Caller is responsible for closing the returned descriptor. If no listener was opened, returns -1.</summary>
+        /// <summary>
+        ///  Returns an owned socket descriptor. Caller is responsible for closing the returned descriptor.
+        ///  If no listener was opened, returns -1.
+        ///
+        ///  # Safety
+        ///  `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "listener_into_fd", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern long listener_into_fd(SocketFactory* factory);
+        internal static extern long listener_into_fd(SocketFactory* factory);
 
-        /// <summary>Installs the provided listener. This function takes ownership of the descriptor.  # Safety `fd` must be a valid descriptor.</summary>
+        /// <summary>
+        ///  Installs the provided listener. This function takes ownership of the descriptor.
+        ///
+        ///  # Safety
+        ///  - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+        ///  - `fd` must be a valid descriptor.
+        ///
+        ///  # Notes
+        ///  This function takes ownership of `fd`.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "listener_from_fd", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool listener_from_fd(SocketFactory* factory, long fd);
+        internal static extern bool listener_from_fd(SocketFactory* factory, long fd);
 
-        /// <summary>Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error occurred.  # Safety The returned pointer is only valid until the next failable function call.</summary>
+        /// <summary>
+        ///  Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error
+        ///  occurred.
+        ///
+        ///  # Safety
+        ///  - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+        ///  - The returned pointer is only valid until the next failable function call.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "get_sf_error", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern byte* get_sf_error(SocketFactory* factory);
+        internal static extern byte* get_sf_error(SocketFactory* factory);
 
-        /// <summary>Creates a new connection from owned socket descriptor.  # Safety `fd` must be a valid descriptor.  'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated path to a PKCS#8 file containing a private key for decryption. 'out_key' must either be null or it must point to a UTF-8-encoded, zero-terminated path to a PKCS#8 file containing a public key for encryption.</summary>
+        /// <summary>
+        ///  Creates a new connection from owned socket descriptor.
+        ///
+        ///  # Safety
+        ///  - `fd` must be a valid descriptor.
+        ///  - `packet_type` must be a valid variant of `PacketType`.
+        ///  - 'in_key' must either be null or it must point to a valid [`PrivateKey`] strucure
+        ///  - 'out_key' must either be null or it must point to a valid [`PublicKey`] structure.
+        ///
+        ///  # Note
+        ///  This function takes ownership of `in_key`, `out_key` and `fd`.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "new_connection", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern Connection* new_connection(long fd, PacketType packet_type, sbyte* in_key, sbyte* out_key);
+        internal static extern Connection* new_connection(long fd, PacketType packet_type, PrivateKey* in_key, PublicKey* out_key);
 
-        /// <summary>Destroys a connection.</summary>
+        /// <summary>
+        ///  Destroys a connection.
+        ///
+        ///  # Safety
+        ///  `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "free_connection", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void free_connection(Connection* _conn);
+        internal static extern void free_connection(Connection* _conn);
 
-        /// <summary>Returns the IP address of the connection.</summary>
+        /// <summary>
+        ///  Returns the IP address of the connection.
+        ///
+        ///  # Safety
+        ///  `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "get_conn_ip", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern uint get_conn_ip(Connection* conn);
+        internal static extern uint get_conn_ip(Connection* conn);
 
-        /// <summary>Changes the connection's packet type.</summary>
+        /// <summary>
+        ///  Changes the connection's packet type.
+        ///
+        ///  # Safety
+        ///  - `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+        ///  - `packet_type` must be a valid variant of `PacketType`.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "conn_set_packet_type", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void conn_set_packet_type(Connection* conn, PacketType packet_type);
+        internal static extern void conn_set_packet_type(Connection* conn, PacketType packet_type);
 
-        /// <summary>Returns a [`Packet`] or a null pointer if no connection was provided.  # Safety The returned pointer is only valid until the next data-returning function call. If the returned array is empty, the pointer might be non-null but still invalid. This is not considered an error.</summary>
+        /// <summary>
+        ///  Returns a [`Packet`] or a null pointer if no connection was provided.
+        ///
+        ///  # Safety
+        ///  - `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+        ///  - The returned pointer is only valid until the next data-returning function call.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "conn_get_data", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern Packet* conn_get_data(Connection* conn);
+        internal static extern Packet* conn_get_data(Connection* conn);
 
-        /// <summary>Reads a packet from the connection and stores it in the internal buffer. Call `conn_get_data` to access it.</summary>
+        /// <summary>
+        ///  Reads a packet from the connection and stores it in the internal buffer. Call [`conn_get_data`]
+        ///  to access it.
+        ///
+        ///  # Safety
+        ///  `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "conn_read_packet", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern SocketResult conn_read_packet(Connection* conn);
+        internal static extern SocketResult conn_read_packet(Connection* conn);
 
-        /// <summary>Writes a packet to the connection. If `ptr` is null, flushes the buffer.  # Note If this function returns [`SocketResult::Blocked`], then the data has been written to the buffer.</summary>
+        /// <summary>
+        ///  Writes a packet to the connection. If `ptr` is null, flushes the buffer.
+        ///
+        ///  # Safety
+        ///  - `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+        ///  - `packet` must either be NULL or it must point to a valid [`Packet`] structure.
+        ///
+        ///  # Note
+        ///  If this function returns [`SocketResult::Blocked`], then the data has been written to the
+        ///  buffer.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "conn_write_packet", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern SocketResult conn_write_packet(Connection* conn, Packet* packet);
+        internal static extern SocketResult conn_write_packet(Connection* conn, Packet* packet);
 
-        /// <summary>Returns the encryption key (for [`Packet::EncryptionResponse`]).</summary>
+        /// <summary>
+        ///  Returns the encryption key (for [`Packet::EncryptionResponse`]).
+        ///
+        ///  # Safety
+        ///  `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "conn_get_key", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern DataBuffer conn_get_key(Connection* conn);
+        internal static extern DataBuffer conn_get_key(Connection* conn);
 
-        /// <summary>Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error occurred.  # Safety The returned pointer is only valid until the next failable function call.</summary>
+        /// <summary>
+        ///  Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error
+        ///  occurred.
+        ///
+        ///  # Safety
+        ///  - `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+        ///  - The returned pointer is only valid until the next failable function call.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "get_conn_error", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern byte* get_conn_error(Connection* conn);
+        internal static extern byte* get_conn_error(Connection* conn);
 
-        /// <summary>Creates a new PPAC reader. After creation don't forget to check for errors.</summary>
+        /// <summary>
+        ///  Creates a new public key from PEM-encoded PKCS#8 file.
+        ///
+        ///  # Safety
+        ///  `path` must either be NULL or it must point to a valid NULL terminated string.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "new_pub_key_file", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern PublicKey* new_pub_key_file(sbyte* path);
+
+        /// <summary>
+        ///  Creates a new private key from PEM-encoded PKCS#8 file.
+        ///
+        ///  # Safety
+        ///  `path` must either be NULL or it must point to a valid NULL terminated string.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "new_priv_key_file", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern PrivateKey* new_priv_key_file(sbyte* path);
+
+        /// <summary>
+        ///  Creates a new public key from RSA parameters.
+        ///
+        ///  # Arguments
+        ///  - `n` - RSA modulus
+        ///  - `e` - RSA public exponent
+        ///
+        ///  # Safety
+        ///  - `n` must either be NULL or it must point to a valid byte array up to `n_size` bytes.
+        ///  - `e` must either be NULL or it must point to a valid byte array up to `e_size` bytes.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "new_pub_key_params", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern PublicKey* new_pub_key_params(byte* n, nuint n_size, byte* e, nuint e_size);
+
+        /// <summary>
+        ///  Creates a new private key from RSA parameters.
+        ///
+        ///  # Arguments
+        ///  - `n` - RSA modulus
+        ///  - `e` - RSA public exponent
+        ///  - `d` - RSA private exponent
+        ///  - `p` - RSA first prime
+        ///  - `q` - RSA second prime
+        ///
+        ///  # Safety
+        ///  - `n` must either be NULL or it must point to a valid byte array up to `n_size` bytes.
+        ///  - `e` must either be NULL or it must point to a valid byte array up to `e_size` bytes.
+        ///  - `d` must either be NULL or it must point to a valid byte array up to `d_size` bytes.
+        ///  - `p` must either be NULL or it must point to a valid byte array up to `p_size` bytes.
+        ///  - `q` must either be NULL or it must point to a valid byte array up to `q_size` bytes.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "new_priv_key_params", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern PrivateKey* new_priv_key_params(byte* n, nuint n_size, byte* e, nuint e_size, byte* d, nuint d_size, byte* p, nuint p_size, byte* q, nuint q_size);
+
+        /// <summary>
+        ///  Destroys a public key
+        ///
+        ///  # Safety
+        ///  `key` must either be NULL or it must point to a valid [`PublicKey`] structure.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "free_pub_key", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern void free_pub_key(PublicKey* _key);
+
+        /// <summary>
+        ///  Destroys a private key
+        ///
+        ///  # Safety
+        ///  `key` must either be NULL or it must point to a valid [`PrivateKey`] structure.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "free_priv_key", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern void free_priv_key(PrivateKey* _key);
+
+        /// <summary>
+        ///  Creates a new PPAC reader. After creation don't forget to check for errors.
+        ///
+        ///  # Safety
+        ///  `path` must be a valid NULL terminated string.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "new_reader", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern PPACReader* new_reader(sbyte* path);
+        internal static extern PPACReader* new_reader(sbyte* path);
 
-        /// <summary>Destroys the reader.</summary>
+        /// <summary>
+        ///  Destroys the reader.
+        ///
+        ///  # Safety
+        ///  `reader` must either be NULL or it must point to a valid [`PPACReader`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "free_reader", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void free_reader(PPACReader* _reader);
+        internal static extern void free_reader(PPACReader* _reader);
 
-        /// <summary>Sets the output type.</summary>
+        /// <summary>
+        ///  Sets the output type.
+        ///
+        ///  # Safety
+        ///  - `reader` must either be NULL or it must point to a valid [`PPACReader`] structure.
+        ///  - `out_type` must be a valid variant of [`OutputType`].
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "set_out_type", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void set_out_type(PPACReader* reader, OutputType out_type);
+        internal static extern void set_out_type(PPACReader* reader, OutputType out_type);
 
-        /// <summary>Reads the packet and returns if the function succeeded.</summary>
+        /// <summary>
+        ///  Reads the packet and returns if the function succeeded.
+        ///
+        ///  # Safety
+        ///  `reader` must either be NULL or it must point to a valid [`PPACReader`] structure.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "read_packet", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern ReaderResult read_packet(PPACReader* reader);
+        internal static extern ReaderResult read_packet(PPACReader* reader);
 
-        /// <summary>Returns a pointer to the packet data or a null pointer if no data exists.  # Note [`data`] field is only returned once and must be freed by the caller.  # Safety The returned pointer is only valid until the next data-returning function call. If the returned array is empty, the pointer might be non-null but still invalid. This is not considered an error.</summary>
+        /// <summary>
+        ///  Returns a pointer to the packet data or a null pointer if no data exists.
+        ///
+        ///  # Note
+        ///  [`data`] field is only returned once and must be freed by the caller.
+        ///
+        ///  # Safety
+        ///  - `reader` must either be NULL or it must point to a valid [`PPACReader`] structure.
+        ///  - If the returned array is empty, the pointer might be non-null but still invalid. This is not
+        ///    considered an error.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "get_reader_data", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern PacketData get_reader_data(PPACReader* reader);
+        internal static extern PacketData get_reader_data(PPACReader* reader);
 
-        /// <summary>Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error occurred.  # Safety The returned pointer is only valid until the next failable function call.</summary>
+        /// <summary>
+        ///  Returns a pointer to a UTF-8-encoded zero-terminated error string or a null pointer if no error
+        ///  occurred.
+        ///
+        ///  # Safety
+        ///  - `reader` must either be NULL or it must point to a valid [`PPACReader`] structure.
+        ///  - The returned pointer is only valid until the next failable function call.
+        /// </summary>
         [DllImport(__DllName, EntryPoint = "get_reader_error", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern byte* get_reader_error(PPACReader* reader);
+        internal static extern byte* get_reader_error(PPACReader* reader);
 
 
     }
@@ -225,6 +602,7 @@ namespace packetlib
     {
         public byte* ptr;
         public nuint size;
+        public nuint _cap;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -244,6 +622,16 @@ namespace packetlib
 
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe partial struct Connection
+    {
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe partial struct PublicKey
+    {
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe partial struct PrivateKey
     {
     }
 

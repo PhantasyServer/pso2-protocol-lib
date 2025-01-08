@@ -1,30 +1,53 @@
+use crate::protocol::{DataBuffer, Packet};
+use pso2packetlib::connection::ConnectionError;
 use std::{
     error::Error,
     ffi::{CStr, CString},
     net::{TcpListener, TcpStream},
 };
 
-use pso2packetlib::{connection::ConnectionError, PrivateKey, PublicKey};
-
-use crate::protocol::{DataBuffer, Packet};
-
+/// Result of socket operations.
 #[repr(C)]
 pub enum SocketResult {
+    /// Socket/Data is ready.
     Ready,
+    /// Socket would block.
     Blocked,
+    /// No socket is actually open.
     NoSocket,
+    /// Socket operation produced an error, call [`get_sf_error`] or [`get_conn_error`] to get an
+    /// error message.
     SocketError,
 }
 
-//------------------------------------------
-// Helper functions for working with sockets
-//------------------------------------------
-
+/// Factory for [`Connection`]. Handles error messages, listen sockets and temporarily stores
+/// accepted connections.
 pub struct SocketFactory {
     err_str: Option<CString>,
     listener: Option<TcpListener>,
     stream: Option<TcpStream>,
 }
+
+/// Connection between a client and a server.
+pub struct Connection {
+    err_str: Option<CString>,
+    con: Option<pso2packetlib::Connection<pso2packetlib::protocol::Packet>>,
+    data: Option<Packet>,
+}
+
+/// Wrapper for [`pso2packetlib::PublicKey`]
+pub struct PublicKey {
+    key: pso2packetlib::PublicKey,
+}
+
+/// Wrapper for [`pso2packetlib::PrivateKey`]
+pub struct PrivateKey {
+    key: pso2packetlib::PrivateKey,
+}
+
+//------------------------------------------
+// Helper functions for working with sockets
+//------------------------------------------
 
 /// Creates a new socket factory.
 #[no_mangle]
@@ -37,15 +60,26 @@ pub extern "C" fn new_factory() -> Box<SocketFactory> {
 }
 
 /// Destroys a socket factory.
+///
+/// # Safety
+/// `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
 #[no_mangle]
 pub extern "C" fn free_factory(_factory: Option<Box<SocketFactory>>) {}
 
 /// Creates a new listener on the specified address.
+///
+/// # Safety
+/// - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+/// - `addr` must be a valid NULL terminated string in the form of "ip:port"
 #[no_mangle]
-pub extern "C" fn create_listener(factory: Option<&mut SocketFactory>, addr: *const i8) -> bool {
+pub unsafe extern "C" fn create_listener(
+    factory: Option<&mut SocketFactory>,
+    addr: *const i8,
+) -> bool {
     let Some(factory) = factory else { return false };
     factory.err_str = None;
-    match create_listener_failable(addr) {
+    // SAFETY: `addr` is a valid NULL terminated string (caller contract)
+    match unsafe { create_listener_failable(addr) } {
         Ok(listener) => {
             factory.listener = Some(listener);
             true
@@ -58,6 +92,9 @@ pub extern "C" fn create_listener(factory: Option<&mut SocketFactory>, addr: *co
 }
 
 /// Sets the blocking mode of the listener.
+///
+/// # Safety
+/// `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
 #[no_mangle]
 pub extern "C" fn listener_nonblocking(factory: Option<&SocketFactory>, nonblocking: bool) {
     let _ = factory
@@ -66,7 +103,10 @@ pub extern "C" fn listener_nonblocking(factory: Option<&SocketFactory>, nonblock
 }
 
 /// Accepts a new incoming connection from installed listener. To collect the resulting connection
-/// call `get_connection` or `stream_into_fd".
+/// call [`get_connection`] or [`stream_into_fd`].
+///
+/// # Safety
+/// `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
 #[no_mangle]
 pub extern "C" fn accept_listener(factory: Option<&mut SocketFactory>) -> SocketResult {
     let Some(factory) = factory else {
@@ -90,12 +130,20 @@ pub extern "C" fn accept_listener(factory: Option<&mut SocketFactory>) -> Socket
 }
 
 /// Creates a new stream to the specified address. To collect the resulting stream
-/// call `get_connection` or `stream_into_fd".
+/// call [`get_connection`] or [`stream_into_fd`].
+///
+/// # Safety
+/// - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+/// - `addr` must be a valid NULL terminated string in the form of "ip:port"
 #[no_mangle]
-pub extern "C" fn create_stream(factory: Option<&mut SocketFactory>, addr: *const i8) -> bool {
+pub unsafe extern "C" fn create_stream(
+    factory: Option<&mut SocketFactory>,
+    addr: *const i8,
+) -> bool {
     let Some(factory) = factory else { return false };
     factory.err_str = None;
-    match create_stream_failable(addr) {
+    // SAFETY: `addr` is a valid NULL terminated string (caller contract)
+    match unsafe { create_stream_failable(addr) } {
         Ok(stream) => {
             factory.stream = Some(stream);
             true
@@ -108,6 +156,9 @@ pub extern "C" fn create_stream(factory: Option<&mut SocketFactory>, addr: *cons
 }
 
 /// Sets the blocking mode of the stream.
+///
+/// # Safety
+/// `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
 #[no_mangle]
 pub extern "C" fn stream_nonblocking(factory: Option<&mut SocketFactory>, nonblocking: bool) {
     let _ = factory
@@ -116,6 +167,9 @@ pub extern "C" fn stream_nonblocking(factory: Option<&mut SocketFactory>, nonblo
 }
 
 /// Returns the IP address of the stream.
+///
+/// # Safety
+/// `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
 #[no_mangle]
 pub extern "C" fn get_stream_ip(factory: Option<&SocketFactory>) -> u32 {
     let Some(addr) = factory
@@ -133,42 +187,28 @@ pub extern "C" fn get_stream_ip(factory: Option<&SocketFactory>) -> u32 {
 /// Creates a new connection from incoming connection.
 ///
 /// # Safety
-/// 'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
-/// path to a PKCS#8 file containing a private key for decryption.
-/// 'out_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
-/// path to a PKCS#8 file containing a public key for encryption.
+/// - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+/// - `packet_type` must be a valid variant of `PacketType`.
+/// - 'in_key' must either be null or it must point to a valid [`PrivateKey`] strucure
+/// - 'out_key' must either be null or it must point to a valid [`PublicKey`] structure.
+///
+/// # Note
+/// This function takes ownership of `in_key` and `out_key`.
 #[no_mangle]
-pub unsafe extern "C" fn get_connection(
+pub extern "C" fn get_connection(
     factory: Option<&mut SocketFactory>,
     packet_type: crate::protocol::PacketType,
-    in_key: *const i8,
-    out_key: *const i8,
+    in_key: Option<Box<PrivateKey>>,
+    out_key: Option<Box<PublicKey>>,
 ) -> Option<Box<Connection>> {
-    let Some(factory) = factory else {
-        return None;
+    let con = factory?.stream.take()?;
+    let in_key = match in_key {
+        Some(k) => k.key,
+        None => pso2packetlib::PrivateKey::None,
     };
-    let Some(con) = factory.stream.take() else {
-        return None;
-    };
-    let in_key = if !in_key.is_null() {
-        PrivateKey::Path(
-            unsafe { CStr::from_ptr(in_key) }
-                .to_string_lossy()
-                .to_string()
-                .into(),
-        )
-    } else {
-        PrivateKey::None
-    };
-    let out_key = if !out_key.is_null() {
-        PublicKey::Path(
-            unsafe { CStr::from_ptr(out_key) }
-                .to_string_lossy()
-                .to_string()
-                .into(),
-        )
-    } else {
-        PublicKey::None
+    let out_key = match out_key {
+        Some(k) => k.key,
+        None => pso2packetlib::PublicKey::None,
     };
     Some(Box::new(Connection {
         err_str: None,
@@ -179,12 +219,14 @@ pub unsafe extern "C" fn get_connection(
             out_key,
         )),
         data: None,
-        key: vec![],
     }))
 }
 
 /// Returns an incoming connection descriptor. Caller is responsible for closing the returned descriptor.
 /// If no stream was opened, returns -1.
+///
+/// # Safety
+/// `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
 #[no_mangle]
 pub extern "C" fn stream_into_fd(factory: Option<&mut SocketFactory>) -> i64 {
     let Some(factory) = factory else {
@@ -208,6 +250,10 @@ pub extern "C" fn stream_into_fd(factory: Option<&mut SocketFactory>) -> i64 {
 }
 
 /// Clones the descriptor. Returns the cloned descriptor or -1 if an error occurred.
+///
+/// # Safety
+/// - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+/// - `fd` must be a valid descriptor.
 #[no_mangle]
 pub extern "C" fn clone_fd(factory: Option<&mut SocketFactory>, fd: i64) -> i64 {
     let Some(factory) = factory else {
@@ -224,6 +270,9 @@ pub extern "C" fn clone_fd(factory: Option<&mut SocketFactory>, fd: i64) -> i64 
 }
 
 /// Closes the file descriptor.
+///
+/// # Safety
+/// `fd` must be a valid descriptor.
 #[no_mangle]
 pub extern "C" fn close_fd(fd: i64) {
     if fd == i64::MAX {
@@ -232,17 +281,22 @@ pub extern "C" fn close_fd(fd: i64) {
     #[cfg(windows)]
     {
         use std::os::windows::io::{FromRawSocket, OwnedSocket, RawSocket};
+        // SAFETY: fd is a valid descriptor that is owned (caller contract)
         unsafe { OwnedSocket::from_raw_socket(fd as RawSocket) };
     }
     #[cfg(not(windows))]
     {
         use std::os::fd::{FromRawFd, OwnedFd, RawFd};
+        // SAFETY: fd is a valid descriptor that is owned (caller contract)
         unsafe { OwnedFd::from_raw_fd(fd as RawFd) };
     }
 }
 
 /// Returns an owned socket descriptor. Caller is responsible for closing the returned descriptor.
 /// If no listener was opened, returns -1.
+///
+/// # Safety
+/// `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
 #[no_mangle]
 pub extern "C" fn listener_into_fd(factory: Option<&mut SocketFactory>) -> i64 {
     let Some(factory) = factory else {
@@ -268,7 +322,11 @@ pub extern "C" fn listener_into_fd(factory: Option<&mut SocketFactory>) -> i64 {
 /// Installs the provided listener. This function takes ownership of the descriptor.
 ///
 /// # Safety
-/// `fd` must be a valid descriptor.
+/// - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+/// - `fd` must be a valid descriptor.
+///
+/// # Notes
+/// This function takes ownership of `fd`.
 #[no_mangle]
 pub unsafe extern "C" fn listener_from_fd(factory: Option<&mut SocketFactory>, fd: i64) -> bool {
     let Some(factory) = factory else {
@@ -280,12 +338,14 @@ pub unsafe extern "C" fn listener_from_fd(factory: Option<&mut SocketFactory>, f
     #[cfg(windows)]
     {
         use std::os::windows::io::{FromRawSocket, RawSocket};
+        // SAFETY: fd is a valid descriptor that is owned (caller contract)
         factory.listener = Some(unsafe { TcpListener::from_raw_socket(fd as RawSocket) });
         true
     }
     #[cfg(not(windows))]
     {
         use std::os::fd::{FromRawFd, RawFd};
+        // SAFETY: fd is a valid descriptor that is owned (caller contract)
         factory.listener = Some(unsafe { TcpListener::from_raw_fd(fd as RawFd) });
         true
     }
@@ -295,7 +355,8 @@ pub unsafe extern "C" fn listener_from_fd(factory: Option<&mut SocketFactory>, f
 /// occurred.
 ///
 /// # Safety
-/// The returned pointer is only valid until the next failable function call.
+/// - `factory` must either be NULL or it must point to a valid [`SocketFactory`] structure.
+/// - The returned pointer is only valid until the next failable function call.
 #[no_mangle]
 pub extern "C" fn get_sf_error(factory: Option<&SocketFactory>) -> *const u8 {
     match factory.and_then(|f| f.err_str.as_ref()) {
@@ -304,13 +365,15 @@ pub extern "C" fn get_sf_error(factory: Option<&SocketFactory>) -> *const u8 {
     }
 }
 
-fn create_listener_failable(str: *const i8) -> Result<TcpListener, Box<dyn Error>> {
+unsafe fn create_listener_failable(str: *const i8) -> Result<TcpListener, Box<dyn Error>> {
+    // SAFETY: `str` points to a valid NULL terminated string.
     let str = unsafe { CStr::from_ptr(str) }.to_str()?;
     let listener = TcpListener::bind(str)?;
     Ok(listener)
 }
 
-fn create_stream_failable(str: *const i8) -> Result<TcpStream, Box<dyn Error>> {
+unsafe fn create_stream_failable(str: *const i8) -> Result<TcpStream, Box<dyn Error>> {
+    // SAFETY: `str` points to a valid NULL terminated string.
     let str = unsafe { CStr::from_ptr(str) }.to_str()?;
     let listener = TcpStream::connect(str)?;
     Ok(listener)
@@ -323,6 +386,7 @@ fn copy_fd_failable(fd: i64) -> Result<i64, Box<dyn Error>> {
     #[cfg(windows)]
     {
         use std::os::windows::io::{BorrowedSocket, IntoRawSocket, RawSocket};
+        // SAFETY: `fd` is a valid descriptor that will outlive this function call
         let socket = unsafe { BorrowedSocket::borrow_raw(fd as RawSocket) };
         let socket = socket.try_clone_to_owned()?;
         Ok(socket.into_raw_socket() as i64)
@@ -330,66 +394,51 @@ fn copy_fd_failable(fd: i64) -> Result<i64, Box<dyn Error>> {
     #[cfg(not(windows))]
     {
         use std::os::fd::{BorrowedFd, IntoRawFd, RawFd};
+        // SAFETY: `fd` is a valid descriptor that will outlive this function call
         let fd = unsafe { BorrowedFd::borrow_raw(fd as RawFd) };
         let fd = fd.try_clone_to_owned()?;
         Ok(fd.into_raw_fd() as i64)
     }
 }
 
-pub struct Connection {
-    err_str: Option<CString>,
-    con: Option<pso2packetlib::Connection<pso2packetlib::protocol::Packet>>,
-    data: Option<Packet>,
-    key: Vec<u8>,
-}
-
 /// Creates a new connection from owned socket descriptor.
 ///
 /// # Safety
-/// `fd` must be a valid descriptor.
+/// - `fd` must be a valid descriptor.
+/// - `packet_type` must be a valid variant of `PacketType`.
+/// - 'in_key' must either be null or it must point to a valid [`PrivateKey`] strucure
+/// - 'out_key' must either be null or it must point to a valid [`PublicKey`] structure.
 ///
-/// 'in_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
-/// path to a PKCS#8 file containing a private key for decryption.
-/// 'out_key' must either be null or it must point to a UTF-8-encoded, zero-terminated
-/// path to a PKCS#8 file containing a public key for encryption.
+/// # Note
+/// This function takes ownership of `in_key`, `out_key` and `fd`.
 #[no_mangle]
-pub unsafe extern "C" fn new_connection(
+pub extern "C" fn new_connection(
     fd: i64,
     packet_type: crate::protocol::PacketType,
-    in_key: *const i8,
-    out_key: *const i8,
+    in_key: Option<Box<PrivateKey>>,
+    out_key: Option<Box<PublicKey>>,
 ) -> Box<Connection> {
     let con = {
         #[cfg(windows)]
         {
             use std::os::windows::io::{FromRawSocket, RawSocket};
+            // SAFETY: fd is a valid descriptor that is owned (caller contract)
             unsafe { TcpStream::from_raw_socket(fd as RawSocket) }
         }
         #[cfg(not(windows))]
         {
             use std::os::fd::{FromRawFd, RawFd};
+            // SAFETY: fd is a valid descriptor that is owned (caller contract)
             unsafe { TcpStream::from_raw_fd(fd as RawFd) }
         }
     };
-    let in_key = if !in_key.is_null() {
-        PrivateKey::Path(
-            unsafe { CStr::from_ptr(in_key) }
-                .to_string_lossy()
-                .to_string()
-                .into(),
-        )
-    } else {
-        PrivateKey::None
+    let in_key = match in_key {
+        Some(k) => k.key,
+        None => pso2packetlib::PrivateKey::None,
     };
-    let out_key = if !out_key.is_null() {
-        PublicKey::Path(
-            unsafe { CStr::from_ptr(out_key) }
-                .to_string_lossy()
-                .to_string()
-                .into(),
-        )
-    } else {
-        PublicKey::None
+    let out_key = match out_key {
+        Some(k) => k.key,
+        None => pso2packetlib::PublicKey::None,
     };
     Box::new(Connection {
         err_str: None,
@@ -400,15 +449,20 @@ pub unsafe extern "C" fn new_connection(
             out_key,
         )),
         data: None,
-        key: vec![],
     })
 }
 
 /// Destroys a connection.
+///
+/// # Safety
+/// `conn` must either be NULL or it must point to a valid [`Connection`] structure.
 #[no_mangle]
 pub extern "C" fn free_connection(_conn: Option<Box<Connection>>) {}
 
 /// Returns the IP address of the connection.
+///
+/// # Safety
+/// `conn` must either be NULL or it must point to a valid [`Connection`] structure.
 #[no_mangle]
 pub extern "C" fn get_conn_ip(conn: Option<&Connection>) -> u32 {
     conn.and_then(|c| c.con.as_ref())
@@ -418,6 +472,10 @@ pub extern "C" fn get_conn_ip(conn: Option<&Connection>) -> u32 {
 }
 
 /// Changes the connection's packet type.
+///
+/// # Safety
+/// - `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+/// - `packet_type` must be a valid variant of `PacketType`.
 #[no_mangle]
 pub extern "C" fn conn_set_packet_type(
     conn: Option<&mut Connection>,
@@ -431,9 +489,8 @@ pub extern "C" fn conn_set_packet_type(
 /// Returns a [`Packet`] or a null pointer if no connection was provided.
 ///
 /// # Safety
-/// The returned pointer is only valid until the next data-returning function call.
-/// If the returned array is empty, the pointer might be non-null but still invalid. This is not
-/// considered an error.
+/// - `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+/// - The returned pointer is only valid until the next data-returning function call.
 #[no_mangle]
 pub extern "C" fn conn_get_data(conn: Option<&mut Connection>) -> Option<Box<Packet>> {
     match conn {
@@ -442,8 +499,11 @@ pub extern "C" fn conn_get_data(conn: Option<&mut Connection>) -> Option<Box<Pac
     }
 }
 
-/// Reads a packet from the connection and stores it in the internal buffer. Call `conn_get_data`
+/// Reads a packet from the connection and stores it in the internal buffer. Call [`conn_get_data`]
 /// to access it.
+///
+/// # Safety
+/// `conn` must either be NULL or it must point to a valid [`Connection`] structure.
 #[no_mangle]
 pub extern "C" fn conn_read_packet(conn: Option<&mut Connection>) -> SocketResult {
     let Some(conn) = conn else {
@@ -462,6 +522,10 @@ pub extern "C" fn conn_read_packet(conn: Option<&mut Connection>) -> SocketResul
 }
 
 /// Writes a packet to the connection. If `ptr` is null, flushes the buffer.
+///
+/// # Safety
+/// - `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+/// - `packet` must either be NULL or it must point to a valid [`Packet`] structure.
 ///
 /// # Note
 /// If this function returns [`SocketResult::Blocked`], then the data has been written to the
@@ -487,6 +551,9 @@ pub extern "C" fn conn_write_packet(
 }
 
 /// Returns the encryption key (for [`Packet::EncryptionResponse`]).
+///
+/// # Safety
+/// `conn` must either be NULL or it must point to a valid [`Connection`] structure.
 #[no_mangle]
 pub extern "C" fn conn_get_key(conn: Option<&mut Connection>) -> DataBuffer {
     let Some(conn) = conn else {
@@ -494,10 +561,11 @@ pub extern "C" fn conn_get_key(conn: Option<&mut Connection>) -> DataBuffer {
     };
     match conn.con.as_mut().map(|c| c.get_key()) {
         Some(key) => {
-            conn.key = key;
+            let key = std::mem::ManuallyDrop::new(key);
             DataBuffer {
-                ptr: conn.key.as_ptr(),
-                size: conn.key.len(),
+                ptr: key.as_ptr(),
+                size: key.len(),
+                _cap: key.capacity(),
             }
         }
         None => crate::protocol::NULL_BUF,
@@ -508,7 +576,8 @@ pub extern "C" fn conn_get_key(conn: Option<&mut Connection>) -> DataBuffer {
 /// occurred.
 ///
 /// # Safety
-/// The returned pointer is only valid until the next failable function call.
+/// - `conn` must either be NULL or it must point to a valid [`Connection`] structure.
+/// - The returned pointer is only valid until the next failable function call.
 #[no_mangle]
 pub extern "C" fn get_conn_error(conn: Option<&Connection>) -> *const u8 {
     match conn.and_then(|c| c.err_str.as_ref()) {
@@ -516,6 +585,148 @@ pub extern "C" fn get_conn_error(conn: Option<&Connection>) -> *const u8 {
         None => std::ptr::null(),
     }
 }
+
+/// Creates a new public key from PEM-encoded PKCS#8 file.
+///
+/// # Safety
+/// `path` must either be NULL or it must point to a valid NULL terminated string.
+#[no_mangle]
+pub unsafe extern "C" fn new_pub_key_file(path: *const i8) -> Option<Box<PublicKey>> {
+    if path.is_null() {
+        return None;
+    }
+    // SAFETY: `path` is a valid NULL terminated string (caller contract)
+    let path = unsafe { CStr::from_ptr(path) }.to_str().ok()?;
+    Some(Box::new(PublicKey {
+        key: pso2packetlib::PublicKey::Path(path.into()),
+    }))
+}
+
+/// Creates a new private key from PEM-encoded PKCS#8 file.
+///
+/// # Safety
+/// `path` must either be NULL or it must point to a valid NULL terminated string.
+#[no_mangle]
+pub unsafe extern "C" fn new_priv_key_file(path: *const i8) -> Option<Box<PrivateKey>> {
+    if path.is_null() {
+        return None;
+    }
+    // SAFETY: `path` is a valid NULL terminated string (caller contract)
+    let path = unsafe { CStr::from_ptr(path) }.to_str().ok()?;
+    Some(Box::new(PrivateKey {
+        key: pso2packetlib::PrivateKey::Path(path.into()),
+    }))
+}
+
+/// Creates a new public key from RSA parameters.
+///
+/// # Arguments
+/// - `n` - RSA modulus
+/// - `e` - RSA public exponent
+///
+/// # Safety
+/// - `n` must either be NULL or it must point to a valid byte array up to `n_size` bytes.
+/// - `e` must either be NULL or it must point to a valid byte array up to `e_size` bytes.
+#[no_mangle]
+pub unsafe extern "C" fn new_pub_key_params(
+    n: *const u8,
+    n_size: usize,
+    e: *const u8,
+    e_size: usize,
+) -> Option<Box<PublicKey>> {
+    let n = if !n.is_null() {
+        // SAFETY: `n` points to a valid array up to `n_size` bytes (caller contract)
+        unsafe { std::slice::from_raw_parts(n, n_size) }.to_vec()
+    } else {
+        vec![]
+    };
+    let e = if !e.is_null() {
+        // SAFETY: `e` points to a valid array up to `e_size` bytes (caller contract)
+        unsafe { std::slice::from_raw_parts(e, e_size) }.to_vec()
+    } else {
+        vec![]
+    };
+    Some(Box::new(PublicKey {
+        key: pso2packetlib::PublicKey::Params { n, e },
+    }))
+}
+
+/// Creates a new private key from RSA parameters.
+///
+/// # Arguments
+/// - `n` - RSA modulus
+/// - `e` - RSA public exponent
+/// - `d` - RSA private exponent
+/// - `p` - RSA first prime
+/// - `q` - RSA second prime
+///
+/// # Safety
+/// - `n` must either be NULL or it must point to a valid byte array up to `n_size` bytes.
+/// - `e` must either be NULL or it must point to a valid byte array up to `e_size` bytes.
+/// - `d` must either be NULL or it must point to a valid byte array up to `d_size` bytes.
+/// - `p` must either be NULL or it must point to a valid byte array up to `p_size` bytes.
+/// - `q` must either be NULL or it must point to a valid byte array up to `q_size` bytes.
+#[no_mangle]
+pub unsafe extern "C" fn new_priv_key_params(
+    n: *const u8,
+    n_size: usize,
+    e: *const u8,
+    e_size: usize,
+    d: *const u8,
+    d_size: usize,
+    p: *const u8,
+    p_size: usize,
+    q: *const u8,
+    q_size: usize,
+) -> Option<Box<PrivateKey>> {
+    let n = if !n.is_null() {
+        // SAFETY: `n` points to a valid array up to `n_size` bytes (caller contract)
+        unsafe { std::slice::from_raw_parts(n, n_size) }.to_vec()
+    } else {
+        vec![]
+    };
+    let e = if !e.is_null() {
+        // SAFETY: `e` points to a valid array up to `e_size` bytes (caller contract)
+        unsafe { std::slice::from_raw_parts(e, e_size) }.to_vec()
+    } else {
+        vec![]
+    };
+    let d = if !d.is_null() {
+        // SAFETY: `d` points to a valid array up to `d_size` bytes (caller contract)
+        unsafe { std::slice::from_raw_parts(d, d_size) }.to_vec()
+    } else {
+        vec![]
+    };
+    let p = if !p.is_null() {
+        // SAFETY: `p` points to a valid array up to `p_size` bytes (caller contract)
+        unsafe { std::slice::from_raw_parts(p, p_size) }.to_vec()
+    } else {
+        vec![]
+    };
+    let q = if !q.is_null() {
+        // SAFETY: `q` points to a valid array up to `q_size` bytes (caller contract)
+        unsafe { std::slice::from_raw_parts(q, q_size) }.to_vec()
+    } else {
+        vec![]
+    };
+    Some(Box::new(PrivateKey {
+        key: pso2packetlib::PrivateKey::Params { n, e, d, p, q },
+    }))
+}
+
+/// Destroys a public key
+///
+/// # Safety
+/// `key` must either be NULL or it must point to a valid [`PublicKey`] structure.
+#[no_mangle]
+pub extern "C" fn free_pub_key(_key: Option<Box<PublicKey>>) {}
+
+/// Destroys a private key
+///
+/// # Safety
+/// `key` must either be NULL or it must point to a valid [`PrivateKey`] structure.
+#[no_mangle]
+pub extern "C" fn free_priv_key(_key: Option<Box<PrivateKey>>) {}
 
 fn conn_read_packet_failable(conn: &mut Connection) -> Result<SocketResult, Box<dyn Error>> {
     let packet = match conn.con.as_mut().unwrap().read_packet() {

@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -13,7 +14,7 @@ internal class Program
 
     static void packet_demo()
     {
-        using PacketWorker pw = new PacketWorker(packetlib.PLIB_PacketType.Classic, packetlib.PLIB_SerializedFormat.JSON);
+        using PacketWorker pw = new PacketWorker(packetlib.PacketType.Classic, packetlib.SerializedFormat.JSON);
         //example of parsing packets
         {
             byte[] data = { 8, 0, 0, 0, 3, 4, 0, 0 };
@@ -44,7 +45,7 @@ internal class Program
     }
     static void socket_demo()
     {
-        using PacketWorker pw = new PacketWorker(packetlib.PLIB_PacketType.NGS, packetlib.PLIB_SerializedFormat.JSON);
+        using PacketWorker pw = new PacketWorker(packetlib.PacketType.NGS, packetlib.SerializedFormat.JSON);
 
         using SocketFactory sf = new SocketFactory();
         sf.create_listener("0.0.0.0:13370");
@@ -60,7 +61,7 @@ internal class Program
     }
     static void ppac_demo()
     {
-        using PacketWorker pw = new PacketWorker(packetlib.PLIB_PacketType.Classic, packetlib.PLIB_SerializedFormat.JSON);
+        using PacketWorker pw = new PacketWorker(packetlib.PacketType.Classic, packetlib.SerializedFormat.JSON);
         using PPACReader pr = new PPACReader("test.pak");
         while (true)
         {
@@ -84,8 +85,8 @@ internal class Program
 
 class Packet : IDisposable
 {
-    private unsafe packetlib.PLIB_Packet* packet;
-    public unsafe Packet(packetlib.PLIB_Packet* ptr)
+    private unsafe packetlib.Packet* packet;
+    public unsafe Packet(packetlib.Packet* ptr)
     {
         packet = ptr;
     }
@@ -104,7 +105,7 @@ class Packet : IDisposable
         }
     }
 
-    public unsafe packetlib.PLIB_Packet* get_ptr()
+    public unsafe packetlib.Packet* get_ptr()
     {
         return packet;
     }
@@ -112,8 +113,8 @@ class Packet : IDisposable
 
 class PacketWorker : IDisposable
 {
-    private unsafe packetlib.PLIB_PacketWorker *worker;
-    public PacketWorker(packetlib.PLIB_PacketType packetType, packetlib.PLIB_SerializedFormat serdeFormat)
+    private unsafe packetlib.PacketWorker *worker;
+    public PacketWorker(packetlib.PacketType packetType, packetlib.SerializedFormat serdeFormat)
     {
         unsafe
         {
@@ -195,8 +196,9 @@ class PacketWorker : IDisposable
             {
                 byte[] bytes = new byte[buf.size];
                 Marshal.Copy((IntPtr)buf.ptr, bytes, 0, (int)buf.size);
-                string err_str = Encoding.UTF8.GetString(bytes);
-                return err_str;
+                packetlib.NativeMethods.free_data(buf);
+                string data = Encoding.UTF8.GetString(bytes);
+                return data;
             }
         }
         return "";
@@ -210,6 +212,7 @@ class PacketWorker : IDisposable
             {
                 byte[] bytes = new byte[buf.size];
                 Marshal.Copy((IntPtr)buf.ptr, bytes, 0, (int)buf.size);
+                packetlib.NativeMethods.free_data(buf);
                 return bytes;
             }
 
@@ -220,7 +223,7 @@ class PacketWorker : IDisposable
 
 class SocketFactory : IDisposable
 {
-    private unsafe packetlib.PLIB_SocketFactory* sf;
+    private unsafe packetlib.SocketFactory* sf;
     public SocketFactory()
     {
         unsafe
@@ -267,13 +270,13 @@ class SocketFactory : IDisposable
     {
         unsafe
         {
-            packetlib.PLIB_SocketResult sr = packetlib.PLIB_SocketResult.Blocked;
-            while (sr != packetlib.PLIB_SocketResult.Ready)
+            packetlib.SocketResult sr = packetlib.SocketResult.Blocked;
+            while (sr != packetlib.SocketResult.Ready)
             {
                 sr = packetlib.NativeMethods.accept_listener(sf);
-                if (sr == packetlib.PLIB_SocketResult.Blocked)
+                if (sr == packetlib.SocketResult.Blocked)
                     continue;
-                else if (sr == packetlib.PLIB_SocketResult.SocketError)
+                else if (sr == packetlib.SocketResult.SocketError)
                 {
                     var err = packetlib.NativeMethods.get_sf_error(sf);
                     int i = 0;
@@ -292,7 +295,7 @@ class SocketFactory : IDisposable
 
 class Connection : IDisposable
 {
-    private unsafe packetlib.PLIB_Connection* conn;
+    private unsafe packetlib.Connection* conn;
     private TcpClient? socket;
     public Connection(TcpClient client)
     {
@@ -300,14 +303,14 @@ class Connection : IDisposable
         socket = client;
         unsafe
         {
-            conn = packetlib.NativeMethods.new_connection((long)handle, packetlib.PLIB_PacketType.NGS, null, null);
+            conn = packetlib.NativeMethods.new_connection((long)handle, packetlib.PacketType.NGS, null, null);
         }
     }
     public Connection(long fd)
     {
         unsafe
         {
-            conn = packetlib.NativeMethods.new_connection(fd, packetlib.PLIB_PacketType.NGS, null, null);
+            conn = packetlib.NativeMethods.new_connection(fd, packetlib.PacketType.NGS, null, null);
         }
     }
     ~Connection()
@@ -331,8 +334,8 @@ class Connection : IDisposable
     {
         unsafe
         {
-            packetlib.PLIB_SocketResult sr = packetlib.NativeMethods.conn_read_packet(conn);
-            if (sr == packetlib.PLIB_SocketResult.SocketError)
+            packetlib.SocketResult sr = packetlib.NativeMethods.conn_read_packet(conn);
+            if (sr == packetlib.SocketResult.SocketError)
             {
                 var err = packetlib.NativeMethods.get_conn_error(conn);
                 int i = 0;
@@ -349,8 +352,8 @@ class Connection : IDisposable
     {
         unsafe
         {
-            packetlib.PLIB_SocketResult sr = packetlib.NativeMethods.conn_write_packet(conn, packet.get_ptr());
-            if (sr == packetlib.PLIB_SocketResult.SocketError)
+            packetlib.SocketResult sr = packetlib.NativeMethods.conn_write_packet(conn, packet.get_ptr());
+            if (sr == packetlib.SocketResult.SocketError)
             {
                 var err = packetlib.NativeMethods.get_conn_error(conn);
                 int i = 0;
@@ -366,8 +369,8 @@ class Connection : IDisposable
 struct PPACData : IDisposable
 {
     public ulong time;
-    public packetlib.PLIB_Direction direction;
-    public packetlib.PLIB_PacketType protocol;
+    public packetlib.Direction direction;
+    public packetlib.PacketType protocol;
     public bool is_eof;
     public Packet? packet;
     public byte[] raw;
@@ -382,7 +385,7 @@ struct PPACData : IDisposable
 }
 class PPACReader : IDisposable
 {
-    private unsafe packetlib.PLIB_PPACReader* pr;
+    private unsafe packetlib.PPACReader* pr;
     public PPACReader(string path)
     {
         unsafe
@@ -392,19 +395,19 @@ class PPACReader : IDisposable
             str_data.CopyTo(str_data2, 0);
             fixed (byte* ptr = str_data2)
             {
-                packetlib.PLIB_PPACReader* pr_tmp = packetlib.NativeMethods.new_reader((sbyte*)ptr);
+                packetlib.PPACReader* pr_tmp = packetlib.NativeMethods.new_reader((sbyte*)ptr);
                 var err = packetlib.NativeMethods.get_reader_error(pr_tmp);
                 if (err != null)
                 {
-                    packetlib.NativeMethods.free_reader(pr_tmp);
                     int i = 0;
                     for (i = 0; err[i] != 0; i++) { }
                     byte[] bytes = new byte[i];
                     Marshal.Copy((IntPtr)err, bytes, 0, i);
+                    packetlib.NativeMethods.free_reader(pr_tmp);
                     string err_str = Encoding.UTF8.GetString(bytes);
                     throw new Exception(err_str);
                 }
-                packetlib.NativeMethods.set_out_type(pr_tmp, packetlib.PLIB_OutputType.OutputBoth);
+                packetlib.NativeMethods.set_out_type(pr_tmp, packetlib.OutputType.OutputBoth);
                 pr = pr_tmp;
             }
         }
@@ -427,9 +430,9 @@ class PPACReader : IDisposable
         {
             switch (packetlib.NativeMethods.read_packet(pr))
             {
-                case packetlib.PLIB_ReaderResult.Ok:
-                case packetlib.PLIB_ReaderResult.RawOnly:
-                    packetlib.PLIB_PacketData pd = packetlib.NativeMethods.get_reader_data(pr);
+                case packetlib.ReaderResult.Ok:
+                case packetlib.ReaderResult.RawOnly:
+                    packetlib.PacketData pd = packetlib.NativeMethods.get_reader_data(pr);
                     PPACData data = new();
                     data.time = pd.time;
                     data.direction = pd.direction;
@@ -446,11 +449,11 @@ class PPACReader : IDisposable
                         data.raw = raw_bytes;
                     }
                     return data;
-                case packetlib.PLIB_ReaderResult.ReaderEOF:
+                case packetlib.ReaderResult.ReaderEOF:
                     PPACData data_eof = new();
                     data_eof.is_eof = true;
                     return data_eof;
-                case packetlib.PLIB_ReaderResult.PPACError:
+                case packetlib.ReaderResult.PPACError:
                 default:
                     var err = packetlib.NativeMethods.get_reader_error(pr);
                     int i = 0;

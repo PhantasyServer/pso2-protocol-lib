@@ -1,5 +1,6 @@
 #include "../include/packetlib.h"
 #include <algorithm>
+#include <cstddef>
 #include <iostream>
 #include <vector>
 
@@ -37,7 +38,7 @@ public:
     const char *err = (const char *)::get_pw_error(worker);
     if (err) {
       std::string err_str = std::string((const char *)err);
-      throw err_str;
+      throw std::runtime_error(err_str);
     }
     return Packet(packet);
   }
@@ -46,7 +47,7 @@ public:
     const char *err = (const char *)::get_pw_error(worker);
     if (err) {
       std::string err_str = std::string((const char *)err);
-      throw err_str;
+      throw std::runtime_error(err_str);
     }
     return Packet(packet);
   }
@@ -55,10 +56,11 @@ public:
     const char *err = (const char *)::get_pw_error(worker);
     if (err) {
       std::string err_str = std::string((const char *)err);
-      throw err_str;
+      throw std::runtime_error(err_str);
     }
     if (buf.ptr && buf.size) {
       std::string result = std::string((const char *)buf.ptr);
+      ::free_data(buf);
       return result;
     }
     return "";
@@ -68,14 +70,68 @@ public:
     const char *err = (const char *)::get_pw_error(worker);
     if (err) {
       std::string err_str = std::string((const char *)err);
-      throw err_str;
+      throw std::runtime_error(err_str);
     }
     if (buf.ptr && buf.size) {
       std::vector data = std::vector<uint8_t>(buf.size);
       std::copy_n(buf.ptr, buf.size, data.begin());
+      ::free_data(buf);
       return data;
     }
     return std::vector<uint8_t>();
+  }
+};
+
+class PrivateKey {
+private:
+  ::PLIB_PrivateKey *key;
+
+public:
+  PrivateKey() : key(NULL) {}
+  PrivateKey(const char *path)
+      : key(::new_priv_key_file((const int8_t *)path)) {}
+  ~PrivateKey() {
+    if (key) {
+      ::free_priv_key(key);
+      key = NULL;
+    }
+  }
+  PrivateKey(const PrivateKey &) = delete;
+  PrivateKey &operator=(PrivateKey other) {
+    std::swap(key, other.key);
+    return *this;
+  }
+  PrivateKey(PrivateKey &&other) : key(other.key) { other.key = NULL; }
+  ::PLIB_PrivateKey *to_ptr() {
+    ::PLIB_PrivateKey *ptr = key;
+    key = NULL;
+    return ptr;
+  }
+};
+
+class PublicKey {
+private:
+  ::PLIB_PublicKey *key;
+
+public:
+  PublicKey() : key(NULL) {}
+  PublicKey(const char *path) : key(::new_pub_key_file((const int8_t *)path)) {}
+  ~PublicKey() {
+    if (key) {
+      ::free_pub_key(key);
+      key = NULL;
+    }
+  }
+  PublicKey(const PublicKey &) = delete;
+  PublicKey &operator=(PublicKey other) {
+    std::swap(key, other.key);
+    return *this;
+  }
+  PublicKey(PublicKey &&other) : key(other.key) { other.key = NULL; }
+  ::PLIB_PublicKey *to_ptr() {
+    ::PLIB_PublicKey *ptr = key;
+    key = NULL;
+    return ptr;
   }
 };
 
@@ -84,10 +140,9 @@ private:
   ::PLIB_Connection *conn;
 
 public:
-  Connection(uint64_t fd, enum ::PLIB_PacketType packet_type,
-             const char *in_key, const char *out_key) {
-    conn = ::new_connection(fd, packet_type, (const int8_t *)in_key,
-                            (const int8_t *)out_key);
+  Connection(uint64_t fd, enum ::PLIB_PacketType packet_type, PrivateKey in_key,
+             PublicKey out_key) {
+    conn = ::new_connection(fd, packet_type, in_key.to_ptr(), out_key.to_ptr());
   }
   Connection(::PLIB_Connection *other) { conn = other; }
   ~Connection() { ::free_connection(conn); }
@@ -103,7 +158,7 @@ public:
       const char *err = (const char *)::get_conn_error(conn);
       if (err) {
         std::string err_str = std::string((const char *)err);
-        throw err_str;
+        throw std::runtime_error(err_str);
       }
     }
   }
@@ -113,7 +168,7 @@ public:
       const char *err = (const char *)::get_conn_error(conn);
       if (err) {
         std::string err_str = std::string((const char *)err);
-        throw err_str;
+        throw std::runtime_error(err_str);
       }
     } else if (sr == Ready) {
       ::PLIB_Packet *packet = ::conn_get_data(conn);
@@ -140,7 +195,7 @@ public:
     const char *err = (const char *)::get_sf_error(sf);
     if (err) {
       std::string err_str = std::string((const char *)err);
-      throw err_str;
+      throw std::runtime_error(err_str);
     }
   }
   void set_listener(const char *str) {
@@ -148,7 +203,7 @@ public:
     const char *err = (const char *)::get_sf_error(sf);
     if (err) {
       std::string err_str = std::string((const char *)err);
-      throw err_str;
+      throw std::runtime_error(err_str);
     }
   }
   uint64_t get_listener() { return ::listener_into_fd(sf); }
@@ -160,12 +215,12 @@ public:
     const char *err = (const char *)::get_sf_error(sf);
     if (err) {
       std::string err_str = std::string((const char *)err);
-      throw err_str;
+      throw std::runtime_error(err_str);
     }
     return cloned_fd;
   }
   Connection accept_connection(enum ::PLIB_PacketType packet_type,
-                               const char *in_key, const char *out_key) {
+                               PrivateKey in_key, PublicKey out_key) {
     ::PLIB_SocketResult sr = Blocked;
     while (sr != Ready) {
       sr = accept_listener(sf);
@@ -175,23 +230,25 @@ public:
         const char *err = (const char *)::get_sf_error(sf);
         if (err) {
           std::string err_str = std::string((const char *)err);
-          throw err_str;
+          throw std::runtime_error(err_str);
         }
       }
     }
-    return Connection(::stream_into_fd(sf), packet_type, in_key, out_key);
+    return Connection(::stream_into_fd(sf), packet_type, std::move(in_key),
+                      std::move(out_key));
   }
 
   Connection new_connection(const char *ip, enum ::PLIB_PacketType packet_type,
-                            const char *in_key, const char *out_key) {
+                            PrivateKey in_key, PublicKey out_key) {
     if (!::create_stream(sf, (const int8_t *)ip)) {
       const char *err = (const char *)::get_sf_error(sf);
       if (err) {
         std::string err_str = std::string((const char *)err);
-        throw err_str;
+        throw std::runtime_error(err_str);
       }
     }
-    return Connection(::stream_into_fd(sf), packet_type, in_key, out_key);
+    return Connection(::stream_into_fd(sf), packet_type, std::move(in_key),
+                      std::move(out_key));
   }
 };
 
@@ -215,7 +272,7 @@ public:
     if (err) {
       std::string err_str = std::string((const char *)err);
       free_reader(reader);
-      throw err_str;
+      throw std::runtime_error(err_str);
     }
     ::set_out_type(reader, ::OutputBoth);
     pr = reader;
@@ -247,7 +304,7 @@ public:
     case PPACError: {
       const char *err = (const char *)::get_reader_error(pr);
       std::string err_str = std::string((const char *)err);
-      throw err_str;
+      throw std::runtime_error(err_str);
     }
     }
     return {.is_eof = true, .packet = Packet(0)};
@@ -281,8 +338,8 @@ void packet_demo() {
   str = "{\"Invalid\":{}}";
   try {
     pf.ser_to_packet(str.data(), str.length() + 1);
-  } catch (std::string e) {
-    std::cerr << e << std::endl;
+  } catch (std::runtime_error e) {
+    std::cerr << e.what() << std::endl;
   }
 }
 
@@ -307,7 +364,7 @@ void socket_demo() {
   sf.close_fd(fd);
 
   // get received connection
-  packetlib::Connection conn = sf.accept_connection(Classic, NULL, NULL);
+  packetlib::Connection conn = sf.accept_connection(Classic, {}, {});
 
   int ip = conn.get_ip();
   printf("Ip: ");
@@ -321,7 +378,7 @@ void socket_demo() {
   conn.write_packet(packet);
 
   // connect to sega server
-  conn = sf.new_connection("40.91.76.146:12199", NGS, NULL, NULL);
+  conn = sf.new_connection("40.91.76.146:12199", NGS, {}, {});
 
   ip = conn.get_ip();
   printf("Ip: ");
@@ -360,7 +417,7 @@ void ppac_demo() {
 }
 
 int main(int argc, char **argv) {
-  if (get_api_version() != PLIB_API_VERSION)
+  if (get_library_version() != PLIB_LIBRARY_VERSION)
     return -1;
   packet_demo();
   socket_demo();

@@ -1,4 +1,6 @@
 #![deny(unsafe_op_in_unsafe_fn)]
+#![deny(clippy::undocumented_unsafe_blocks)]
+#![warn(clippy::missing_const_for_fn)]
 
 pub mod protocol;
 
@@ -7,41 +9,23 @@ pub mod connection;
 #[cfg(feature = "ppac")]
 pub mod ppac;
 
-pub const API_VERSION: u32 = 5;
-pub const PROTOCOL_VERSION: u32 = 4;
+/// Current library version.
+pub const LIBRARY_VERSION: u32 = 4;
 
+/// Returns the compiled library version.
 #[no_mangle]
-pub extern "C" fn get_api_version() -> u32 {
-    API_VERSION
-}
-
-#[no_mangle]
-pub extern "C" fn get_protocol_version() -> u32 {
-    PROTOCOL_VERSION
+pub const extern "C" fn get_library_version() -> u32 {
+    LIBRARY_VERSION
 }
 
 /// Returns whether the library is built with connection support.
 #[no_mangle]
-pub extern "C" fn have_connection() -> bool {
-    #[cfg(feature = "connection")]
-    {
-        true
-    }
-    #[cfg(not(feature = "connection"))]
-    {
-        false
-    }
+pub const extern "C" fn have_connection() -> bool {
+    cfg!(feature = "connection")
 }
 
 /// Returns whether the library is built with PPAC support.
 #[no_mangle]
-pub extern "C" fn have_ppac() -> bool {
-    #[cfg(feature = "ppac")]
-    {
-        true
-    }
-    #[cfg(not(feature = "ppac"))]
-    {
-        false
-    }
+pub const extern "C" fn have_ppac() -> bool {
+    cfg!(feature = "ppac")
 }

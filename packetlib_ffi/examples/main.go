@@ -68,7 +68,9 @@ func (pw *PacketWorker) ser_to_packet(s string) (Packet, error) {
 func (pw *PacketWorker) packet_to_raw(p Packet) []byte {
 	buf := C.packet_to_raw(pw.worker, p.packet)
 	if buf.size != 0 && buf.ptr != nil {
-		return C.GoBytes(unsafe.Pointer(buf.ptr), (C.int)(buf.size))
+        data := C.GoBytes(unsafe.Pointer(buf.ptr), (C.int)(buf.size))
+        C.free_data(buf)
+        return data
 	}
 	return []byte{}
 }
@@ -81,7 +83,9 @@ func (pw *PacketWorker) packet_to_ser(p Packet) (string, error) {
 		return "", errors.New(err_str)
 	}
 	if buf.size != 0 && buf.ptr != nil {
-		return C.GoString((*C.char)(unsafe.Pointer(buf.ptr))), nil
+        data := C.GoString((*C.char)(unsafe.Pointer(buf.ptr)))
+        C.free_data(buf)
+        return data, nil
 
 	}
 	return "", nil
@@ -387,7 +391,7 @@ func ppac_test() {
 }
 
 func main() {
-	if C.PLIB_API_VERSION != C.get_api_version() {
+	if C.PLIB_LIBRARY_VERSION != C.get_library_version() {
 		return
 	}
 	packet_test()

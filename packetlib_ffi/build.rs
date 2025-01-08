@@ -29,6 +29,7 @@ fn main() {
         .input_extern_file("src/lib.rs")
         .input_extern_file("src/connection.rs")
         .input_extern_file("src/ppac.rs")
+        .always_included_types(["PublicKey", "PrivateKey"])
         .csharp_namespace("packetlib")
         .csharp_dll_name("packetlib_ffi")
         .generate_csharp_file("include/packetlib.cs")
