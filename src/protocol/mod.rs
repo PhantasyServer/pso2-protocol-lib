@@ -183,6 +183,9 @@ pub enum Packet {
     /// Respond with: [`Packet::InitialLoad`] (?, also unsure if it is only sent once).
     #[Id(0x03, 0x04)]
     LoadingScreenTransition,
+    /// (0x03, 0x05) Move Quest Zone.
+    #[Id(0x03, 0x05)]
+    MoveZone(MoveZonePacket),
     /// (0x03, 0x06) Unknown.
     #[Id(0x03, 0x06)]
     Unk0306(Unk0306Packet),
@@ -206,12 +209,27 @@ pub enum Packet {
     /// (0x03, 0x10) Map Loading Finished.
     #[Id(0x03, 0x10)]
     MapLoaded(MapLoadedPacket),
+    /// (0x03, 0x11) Move Campship -> Quest Level (selected area).
+    #[Id(0x03, 0x11)]
+    CampshipDownArea(CampshipDownAreaPacket),
     /// (0x03, 0x12) Move Lobby -> Campship.
     #[Id(0x03, 0x12)]
     ToCampship(ToCampshipPacket),
     /// (0x03, 0x16) Move Campship -> Quest Level.
     #[Id(0x03, 0x16)]
     CampshipDown(CampshipDownPacket),
+    /// (0x03, 0x17) Move Quest Level -> Campship.
+    #[Id(0x03, 0x17)]
+    ReturnToCampship(ReturnToCampshipPacket),
+    /// (0x03, 0x19) Move Quest Level Finish -> Campship.
+    #[Id(0x03, 0x19)]
+    ReturnToCampshipFinal(ReturnToCampshipFinalPacket),
+    /// (0x03, 0x1A) Move Quest Level Death -> Campship.
+    #[Id(0x03, 0x1A)]
+    DeathToCampship(DeathToCampshipPacket),
+    /// (0x03, 0x1C) Move Campship -> Lobby.
+    #[Id(0x03, 0x1C)]
+    CampshipToLobby(CampshipToLobbyPacket),
     /// (0x03, 0x23) Remove Loading Screen.
     ///
     /// (S -> C) Sent to remove the loading screen.

@@ -24,6 +24,24 @@ pub struct MapTransferPacket {
     pub settings: ZoneSettings,
 }
 
+/// (0x03, 0x05) Move Quest Zone.
+///
+/// (C -> S) Sent when the player moves between quest zones.
+///
+/// Respond with: load zone map.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x05)]
+pub struct MoveZonePacket {
+    /// Current world object.
+    pub world: ObjectHeader,
+    /// ID of the zone that the player is currently in.
+    pub current_zone_id: u32,
+    /// Interacted "door" ID.
+    pub door_id: u32,
+}
+
 /// (0x03, 0x06) Unknown.
 ///
 /// (S -> C)
@@ -76,6 +94,21 @@ pub struct MapLoadedPacket {
     pub unk: [u8; 0x20],
 }
 
+/// (0x03, 0x11) Move Campship -> Quest Level (selected area).
+///
+/// (C -> S) Sent when the client wants to move to the quest level with specified area.
+///
+/// Respond with: load quest map.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x11)]
+pub struct CampshipDownAreaPacket {
+    pub world: ObjectHeader,
+    pub unk4: u32,
+    pub area: u32,
+}
+
 /// (0x03, 0x12) Move Lobby -> Campship.
 ///
 /// (C -> S) Sent when the client wants to move to campship.
@@ -86,9 +119,7 @@ pub struct MapLoadedPacket {
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x03, 0x12)]
 pub struct ToCampshipPacket {
-    pub unk1: u32,
-    pub unk2: u32,
-    pub unk3: u32,
+    pub world: ObjectHeader,
     pub unk4: u32,
 }
 
@@ -102,10 +133,61 @@ pub struct ToCampshipPacket {
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
 #[Id(0x03, 0x16)]
 pub struct CampshipDownPacket {
-    pub zone_id: u32,
-    pub unk2: u32,
-    pub unk3: u32,
+    pub world: ObjectHeader,
     pub unk4: u32,
+}
+
+/// (0x03, 0x17) Move Quest Level -> Campship.
+///
+/// (C -> S) Sent when the player interacts with the spawn telepipe
+/// during the quest.
+///
+/// Respond with: load campship map.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x17)]
+pub struct ReturnToCampshipPacket {
+    pub world: ObjectHeader,
+}
+
+/// (0x03, 0x19) Move Quest Level Finish -> Campship.
+///
+/// (C -> S) Sent when the player finishes the quest and interacts with the telepipe.
+///
+/// Respond with: load campship map.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x19)]
+pub struct ReturnToCampshipFinalPacket {
+    pub world: ObjectHeader,
+}
+
+/// (0x03, 0x1A) Move Quest Level Death -> Campship.
+///
+/// (C -> S) Sent when the player dies and selects to teleport to campship
+///
+/// Respond with: load campship map.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x1A)]
+pub struct DeathToCampshipPacket {
+    pub world: ObjectHeader,
+}
+
+/// (0x03, 0x1C) Move Campship -> Lobby.
+///
+/// (C -> S) Sent when the client wants to move to the lobby from campship.
+///
+/// Respond with: load lobby map.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x03, 0x1C)]
+pub struct CampshipToLobbyPacket {
+    pub world: ObjectHeader,
 }
 
 /// (0x03, 0x24) Load Level.
