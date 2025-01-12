@@ -193,10 +193,9 @@ fn test_variable() {
         0x41, 0x42, 0x43, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // fixed_astr
         1, 0,  // len
         14, // var_1
-        0, 0, 0, // padding
         2, 0, 0, 0, // len
         15, 16, // var_2
-        0, 0, 0, 0, // padding
+        0, 0, 0, // padding
     ];
     let len = data.len() as u32;
     data[..4].copy_from_slice(&len.to_le_bytes());
