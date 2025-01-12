@@ -455,6 +455,22 @@ pub struct SetQuestInfoPacket {
     pub quest_type: QuestType,
 }
 
+/// (0x0E, 0x2A) Unknown.
+///
+/// (S -> C)
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0E, 0x2A)]
+pub struct Unk0E2APacket {
+    pub unk1: ObjectHeader,
+    pub unk2: u16,
+    pub unk3: u16,
+    pub unk4: u8,
+    pub unk5: u8,
+    pub unk6: u16,
+}
+
 /// (0x0E, 0x2B) New Busy State (broadcast).
 ///
 /// (S -> C) Sent when a player changes their busy state.

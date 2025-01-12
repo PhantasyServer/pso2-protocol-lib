@@ -66,6 +66,19 @@ pub struct MinimapRevealRequestPacket {
     pub map_row: u32,
 }
 
+/// (0x0B, 0x10) Unknown.
+///
+/// (S -> C)
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0B, 0x10)]
+pub struct Unk0B10Packet {
+    pub world: ObjectHeader,
+    pub party: ObjectHeader,
+    pub unk1: u32,
+}
+
 /// (0x0B, 0x13) Minimap Reveal.
 ///
 /// (S -> C) Sent to reveal a chunk of the minimap.
@@ -376,6 +389,18 @@ pub struct NewUnlockedQuestsPacket {
     pub unlocks: FixedVec<51, UnlockedQuest>,
 }
 
+/// (0x0B, 0x25) Unknown.
+///
+/// (S -> C)
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0B, 0x25)]
+pub struct Unk0B25Packet {
+    pub world: ObjectHeader,
+    pub unk1: u32,
+}
+
 /// (0x0B, 0x28) Add Quest Points. (broadcast)
 ///
 /// (S -> C) Sent when quest points are increase (usually due to killing an enemy).
@@ -412,6 +437,18 @@ pub struct AcceptQuestOtherPacket {
     pub diff: u16,
     pub unk1: u16,
     pub unk2: [u32; 7],
+}
+
+/// (0x0B, 0x42) Unknown.
+///
+/// (S -> C)
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0B, 0x42)]
+pub struct Unk0B42Packet {
+    pub world: ObjectHeader,
+    pub unk1: u32,
 }
 
 /// (0x0B, 0x62) Set EQ ARKS Level. (broadcast)

@@ -419,6 +419,9 @@ pub enum Packet {
     /// (0x0B, 0x09) Minimap Reveal Chunk Request.
     #[Id(0x0B, 0x09)]
     MinimapRevealRequest(MinimapRevealRequestPacket),
+    /// (0x0B, 0x10) Unknown.
+    #[Id(0x0B, 0x10)]
+    Unk0B10(Unk0B10Packet),
     /// (0x0B, 0x13) Minimap Reveal.
     #[Id(0x0B, 0x13)]
     MinimapReveal(MinimapRevealPacket),
@@ -466,6 +469,9 @@ pub enum Packet {
     /// (0x0B, 0x22) New Unlocked Quest List
     #[Id(0x0B, 0x22)]
     NewUnlockedQuests(NewUnlockedQuestsPacket),
+    /// (0x0B, 0x25) Unknown.
+    #[Id(0x0B, 0x25)]
+    Unk0B25(Unk0B25Packet),
     /// (0x0B, 0x28) Add Quest Points. (broadcast)
     #[Id(0x0B, 0x28)]
     QuestPointsAdded(QuestPointsAddedPacket),
@@ -479,6 +485,9 @@ pub enum Packet {
     /// Respond with: (0x0B, 0x22)
     #[Id(0x0B, 0x30)]
     QuestCounterRequest,
+    /// (0x0B, 0x42) Unknown.
+    #[Id(0x0B, 0x42)]
+    Unk0B42(Unk0B42Packet),
     /// (0x0B, 0x62) Set EQ ARKS Level. (broadcast)
     #[Id(0x0B, 0x62)]
     EQARKSLevel(EQARKSLevelPacket),
@@ -616,6 +625,9 @@ pub enum Packet {
     /// Respond with: [`crate::protocol::Packet::NewBusyState`] (except for sender)
     #[Id(0x0E, 0x29)]
     SetNotBusy,
+    /// (0x0E, 0x2A) Unknown.
+    #[Id(0x0E, 0x2A)]
+    Unk0E2A(Unk0E2APacket),
     /// (0x0E, 0x2B) New Busy State (broadcast).
     #[Id(0x0E, 0x2B)]
     NewBusyState(NewBusyStatePacket),
@@ -849,6 +861,9 @@ pub enum Packet {
     /// (0x11, 0x08) Delete Character.
     #[Id(0x11, 0x08)]
     CharacterDeletion(CharacterDeletionPacket),
+    /// (0x11, 0x0A) Unknown
+    #[Id(0x11, 0x0A)]
+    Unk110A(Unk110APacket),
     /// (0x11, 0x0B) Encryption Setup Request.
     #[Id(0x11, 0x0B)]
     EncryptionRequest(EncryptionRequestPacket),
@@ -1070,6 +1085,9 @@ pub enum Packet {
     /// (0x15, 0x11) Available Emergencies (?).
     #[Id(0x15, 0x11)]
     AvailableEmergencies(AvailableEmergenciesPacket),
+    /// (0x15, 0x14) Unknown
+    #[Id(0x15, 0x14)]
+    Unk1514(Unk1514Packet),
 
     // Friends packets [0x18]
     #[Category(PacketCategory::Friends)]

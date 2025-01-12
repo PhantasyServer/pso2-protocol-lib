@@ -115,6 +115,18 @@ pub struct AvailableEmergenciesPacket {
     pub count: u32,
 }
 
+/// (0x15, 0x14) Unknown
+///
+/// (S -> C) 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x15, 0x14)]
+pub struct Unk1514Packet {
+    pub zone_id: u32,
+    pub unk2: u32,
+}
+
 // ----------------------------------------------------------------
 // Additional structs
 // ----------------------------------------------------------------

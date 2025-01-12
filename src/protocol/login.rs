@@ -251,6 +251,17 @@ pub struct CharacterDeletionPacket {
     pub unk6: Vec<ItemId>,
 }
 
+/// (0x11, 0x0A) Unknown
+///
+/// (S -> C)
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x0A)]
+pub struct Unk110APacket {
+    pub player_id: u32,
+}
+
 /// (0x11, 0x0B) Encryption Setup Request.
 ///
 /// (C -> S) Sent when a client wants to setup encryption.
