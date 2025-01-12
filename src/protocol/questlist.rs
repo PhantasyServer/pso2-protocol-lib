@@ -1,6 +1,8 @@
 //! Quest list related packets. \[0x0B\]
-use std::{ops::Index, fmt::Debug};
-use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
+use super::{
+    CollectionFolderItem, CollectionFolderProgress, HelperReadWrite, Item, ObjectHeader,
+    PacketReadWrite,
+};
 use crate::{
     fixed_types::{FixedAsciiString, FixedBytes, FixedVec},
     protocol::PacketError,
@@ -11,6 +13,10 @@ use bitvec::{
     slice::BitSlice,
 };
 use half::f16;
+use std::{
+    fmt::Debug,
+    ops::{Index, IndexMut},
+};
 
 // ----------------------------------------------------------------
 // Quests packets
@@ -77,6 +83,82 @@ pub struct MinimapRevealPacket {
     pub zone_id: u32,
     /// Bitset of revealed regions.
     pub revealed_zones: RevealedRegions,
+    pub unk1: [u8; 6],
+}
+
+/// (0x0B, 0x14) Quest Results.
+///
+/// (S -> C) Sent when a client is transfered onto the campship after completing the quest.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x0B, 0x14)]
+#[Flags(Flags::PACKED)]
+#[Magic(0x06BA, 0x98)]
+pub struct QuestResultPacket {
+    /// Enemy Kills score.
+    pub enemy_kills: QuestResultEntry,
+    /// Damage Taken score.
+    pub damage_taken: QuestResultEntry,
+    /// Times Incapacitated score.
+    pub times_incapacitated: QuestResultEntry,
+    /// Times Recovered score.
+    pub times_recovered: QuestResultEntry,
+    /// Clear time score
+    pub clear_time: QuestResultEntry,
+    /// Time Remaining score.
+    pub time_remaining: QuestResultEntry,
+    /// Quest Points score.
+    pub quest_points: QuestResultEntry,
+    /// Structural Integrity Remaining score.
+    pub structural_integrity: QuestResultEntry,
+    /// EQ Trial Success Rate score.
+    pub trial_success_rate: QuestResultEntry,
+    /// Unnamed score.
+    pub unnamed_score: QuestResultEntry,
+    /// Times AIS Was Boarded score.
+    pub ais_boarding: QuestResultEntry,
+    /// Quest Participation Rate Score.
+    pub quest_part_rate: QuestResultEntry,
+    /// Score This Time.
+    pub current_score: QuestResultEntry,
+    /// AIS or Ridroids shot down score.
+    pub ais_downed: QuestResultEntry,
+    /// Quest Progress score.
+    pub quest_progress: QuestResultEntry,
+    /// Hidden score entry.
+    pub hidden_score: QuestResultEntry,
+    pub unk1: FixedVec<3, QuestResultUnk1>,
+    pub unk2: FixedVec<3, QuestResultUnk1>,
+    pub unk3: FixedVec<5, QuestResultUnk2>,
+    /// Total score achieved by the player.
+    pub total_score_achieved: u32,
+    /// Total possible score.
+    pub total_score: u32,
+    pub unk4: u32,
+    /// Gained quest rank.
+    pub rank: QuestResultRank,
+    /// Meseta earned from quest completion.
+    pub meseta_earned: u32,
+    /// EXP earned from quest completion.
+    pub exp_earned: u32,
+    pub unk5: u32,
+    /// Item gained from quest completion.
+    pub gained_items: FixedVec<8, Item>,
+    pub unk6: u32,
+    pub item_gained_flags: QuestItemFlags,
+    pub unk7: u32,
+    pub unk8: u32,
+    pub unk9: u32,
+    pub collection_folders: Vec<CollectionFolderItem>,
+    pub old_cf_progress: Vec<CollectionFolderProgress>,
+    pub new_cf_progress: Vec<CollectionFolderProgress>,
+    pub dark_blast_exp: Vec<DarkBlastGainedExp>,
+    pub unk10: u32,
+    pub unlocked_quests: FixedVec<51, UnlockedQuest>,
+    /// If set the result screen is not shown.
+    pub hide_results: u8,
+    pub unk11: [u8; 3],
 }
 
 /// (0x0B, 0x15) Available Quests Request.
@@ -771,6 +853,86 @@ pub struct RevealedRegions {
     zones: BitArr!(for 80, in u8, Lsb0),
 }
 
+/// Entry in the quest results screen (e.g. clear time).
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Default, Debug, Clone, PartialEq, HelperReadWrite)]
+pub struct QuestResultEntry {
+    /// Value of the result (e.g. enemy kills).
+    pub value: u32,
+    /// Point gained by the player.
+    pub points_gained: u32,
+    /// Total possible points.
+    pub points_total: u32,
+    pub unk: u32,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Default, Debug, Clone, PartialEq, HelperReadWrite)]
+pub struct QuestResultUnk1 {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+    pub unk4: u32,
+    pub unk5: AsciiString,
+    pub unk6: FixedBytes<0xC>,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Default, Debug, Clone, PartialEq, HelperReadWrite)]
+pub struct QuestResultUnk2 {
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: String,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Default, Debug, Clone, PartialEq, HelperReadWrite)]
+pub struct DarkBlastGainedExp {
+    pub form: u32,
+    pub gained_exp: u32,
+    pub total_exp: u32,
+}
+
+/// Quest completion rank.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
+#[repr(u32)]
+pub enum QuestResultRank {
+    #[default]
+    C,
+    B,
+    A,
+    S,
+
+    #[Read_default]
+    Unknown = 0xFFFF_FFFF,
+}
+
+bitflags::bitflags! {
+    /// Gained quest item flags.
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
+    #[BitFlags(u32)]
+    pub struct QuestItemFlags: u32 {
+        /// No inventory space was available for an item.
+        const NO_SPACE_ITEM = 1 << 0;
+        /// No inventory space was available for meseta.
+        const NO_SPACE_MESETA = 1 << 1;
+        /// Item was moved to storage.
+        const ITEM_MOVED_STORAGE_1 = 1 << 2;
+        /// Item was moved to temporary storage.
+        const ITEM_MOVED_TEMP_STORAGE_1 = 1 << 3;
+        /// Item was moved to storage.
+        const ITEM_MOVED_STORAGE_2 = 1 << 4;
+        /// Item was moved to temporary storage.
+        const ITEM_MOVED_TEMP_STORAGE_2 = 1 << 5;
+    }
+}
+
 // ----------------------------------------------------------------
 // Default implementations
 // ----------------------------------------------------------------
@@ -834,6 +996,13 @@ impl Index<usize> for RevealedRegions {
     fn index(&self, index: usize) -> &Self::Output {
         assert!(index < 8);
         &self.zones[index * 10..(index + 1) * 10]
+    }
+}
+
+impl IndexMut<usize> for RevealedRegions {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        assert!(index < 8);
+        &mut self.zones[index * 10..(index + 1) * 10]
     }
 }
 

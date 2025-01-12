@@ -422,6 +422,9 @@ pub enum Packet {
     /// (0x0B, 0x13) Minimap Reveal.
     #[Id(0x0B, 0x13)]
     MinimapReveal(MinimapRevealPacket),
+    /// (0x0B, 0x14) Quest Results.
+    #[Id(0x0B, 0x14)]
+    QuestResult(QuestResultPacket),
     /// (0x0B, 0x15) Available Quests Request.
     #[Id(0x0B, 0x15)]
     AvailableQuestsRequest(AvailableQuestsRequestPacket),
