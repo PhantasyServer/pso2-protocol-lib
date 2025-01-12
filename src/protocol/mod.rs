@@ -10,6 +10,7 @@ pub use traits::*;
 
 // Packet definitions modules
 pub mod chat;
+pub mod colfolder;
 pub mod default_types;
 pub mod emergency;
 pub mod flag;
@@ -39,6 +40,7 @@ pub mod unk2a;
 pub mod unk31;
 pub mod unk34;
 use chat::*;
+use colfolder::*;
 use emergency::*;
 use flag::*;
 use friendavatar::*;
@@ -1388,6 +1390,44 @@ pub enum Packet {
     #[Id(0x34, 0x71)]
     PlayerShopListResponse(PlayerShopListResponsePacket),
 
+    // Collection Folder packets [0x42]
+    #[Category(PacketCategory::CollectionFolder)]
+    /// (0x42, 0x00) Currently Distibuted Collection Folder List Request.
+    ///
+    /// (C -> S) Sent when the client interacts with Prin (i.e. requests the collection folder list).
+    ///
+    /// Respond with: [`Packet::CollectionNameList`]
+    #[Id(0x42, 0x00)]
+    GetCollectionList,
+    /// (0x42, 0x01) Currently Distibuted Collection Folder List.
+    #[Id(0x42, 0x01)]
+    CollectionNameList(CollectionNameListPacket),
+    /// (0x42, 0x02) Get Collection Folder Rewards List Request.
+    #[Id(0x42, 0x02)]
+    GetFolderItemList(GetFolderItemListPacket),
+    /// (0x42, 0x03) Collection Folder Reward List.
+    #[Id(0x42, 0x03)]
+    FolderItemList(FolderItemListPacket),
+    /// (0x42, 0x04) Active Sheet List Request.
+    ///
+    /// (C -> S) Sent when the client interacts with Prin (i.e. requests the collection folder list).
+    ///
+    /// Respond with: [`Packet::ActiveSheets`]
+    #[Id(0x42, 0x04)]
+    GetActiveSheets,
+    /// (0x42, 0x05) Active Sheets List.
+    #[Id(0x42, 0x05)]
+    ActiveSheets(ActiveSheetsPacket),
+    /// (0x42, 0x06) Claim Collection Sheet Request.
+    #[Id(0x42, 0x06)]
+    ClaimSheetRequest(ClaimSheetRequestPacket),
+    /// (0x42, 0x07) Claim Collection Sheet Result.
+    #[Id(0x42, 0x07)]
+    ClaimSheetResult(ClaimSheetResultPacket),
+    /// (0x42, 0x0F) Claim Collection Sheet Action (?).
+    #[Id(0x42, 0x0F)]
+    ClaimSheetAction(ClaimSheetActionPacket),
+
     // ARKS Misions packets [0x4A]
     #[Category(PacketCategory::ARKSMissions)]
     /// (0x4A, 0x00) ARKS Mission List Request.
@@ -1500,6 +1540,8 @@ pub enum PacketCategory {
     Unk31,
     /// Unknown 0x34 packets. See [`unk34`]
     Unk34,
+    /// Collection Folder related packets. See [`colfolder`]
+    CollectionFolder,
     /// ARKS Missions related packets. See [`missions`]
     ARKSMissions,
     /// Classic Mission pass related packets. See [`missionpass`]

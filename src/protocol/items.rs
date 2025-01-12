@@ -910,6 +910,23 @@ pub struct Item {
     pub unk: [u16; 12],
 }
 
+/// In game items data.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct ItemData {
+    /// Items ID.
+    #[cfg_attr(feature = "serde", serde(flatten))]
+    pub id: ItemId,
+    /// Items data.
+    pub data: ItemType,
+
+    /// Extra NGS data.
+    #[cfg(feature = "ngs_packets")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
+    pub unk: [u16; 12],
+}
+
 /// Items UUID and amount.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -1510,6 +1527,89 @@ impl HelperReadWrite for Item {
                     .write_u16::<LittleEndian>(byte)
                     .map_err(|e| PacketError::FieldError {
                         packet_name: "Item",
+                        field_name: "unk",
+                        error: e,
+                    })?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl HelperReadWrite for ItemData {
+    fn read(
+        reader: &mut (impl std::io::Read + std::io::Seek),
+        packet_type: PacketType,
+        xor: u32,
+        sub: u32,
+    ) -> Result<Self, PacketError> {
+        let id = ItemId::read(reader, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "ItemData",
+                field_name: "id",
+                error: Box::new(e),
+            }
+        })?;
+        let data = ItemType::read(reader, &id, packet_type).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "ItemData",
+                field_name: "data",
+                error: Box::new(e),
+            }
+        })?;
+        #[cfg(feature = "ngs_packets")]
+        let unk = match packet_type {
+            PacketType::NGS => {
+                let mut data = [0u16; 12];
+                for byte in data.iter_mut() {
+                    *byte =
+                        reader
+                            .read_u16::<LittleEndian>()
+                            .map_err(|e| PacketError::FieldError {
+                                packet_name: "ItemData",
+                                field_name: "unk",
+                                error: e,
+                            })?;
+                }
+                data
+            }
+            _ => [0u16; 12],
+        };
+        Ok(Self {
+            id,
+            data,
+            #[cfg(feature = "ngs_packets")]
+            unk,
+        })
+    }
+    fn write(
+        &self,
+        writer: &mut impl std::io::Write,
+        packet_type: PacketType,
+        xor: u32,
+        sub: u32,
+    ) -> Result<(), PacketError> {
+        self.id.write(writer, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "ItemData",
+                field_name: "id",
+                error: Box::new(e),
+            }
+        })?;
+        self.data
+            .write(writer, packet_type)
+            .map_err(|e| PacketError::CompositeFieldError {
+                packet_name: "ItemData",
+                field_name: "data",
+                error: Box::new(e),
+            })?;
+        #[cfg(feature = "ngs_packets")]
+        if packet_type == PacketType::NGS {
+            for byte in self.unk {
+                writer
+                    .write_u16::<LittleEndian>(byte)
+                    .map_err(|e| PacketError::FieldError {
+                        packet_name: "ItemData",
                         field_name: "unk",
                         error: e,
                     })?;
