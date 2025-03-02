@@ -206,13 +206,13 @@ pub struct CampshipToLobbyPacket {
 pub struct LoadLevelPacket {
     /// Initial zone object.
     pub map_object: ObjectHeader,
-    /// Receiving player.
-    pub receiver: ObjectHeader,
+    /// Host player.
+    pub host: ObjectHeader,
     /// Settings for the initial zone (i.e. first zone that the player will appear in).
     pub settings: ZoneSettings,
-    pub unk4: [u8; 0xC],
-    pub unk5: [u8; 0xC],
-    pub unk6: [u8; 0xC],
+    pub world_obj: ObjectHeader,
+    pub quest: ObjectHeader,
+    pub party: ObjectHeader,
     pub unk7: AsciiString,
     /// Settings for other zones.
     pub other_settings: Vec<ZoneSettings>,
