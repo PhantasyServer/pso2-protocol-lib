@@ -34,8 +34,11 @@ pub struct Character {
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
 pub struct HSVColor {
+    /// 0-60000
     pub hue: u16,
+    /// 0-60000
     pub saturation: u16,
+    /// 0-10000
     pub value: u16,
 }
 
