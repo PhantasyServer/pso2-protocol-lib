@@ -11,7 +11,7 @@ pub use traits::*;
 // Packet definitions modules
 pub mod chat;
 pub mod colfolder;
-pub mod default_types;
+mod default_types;
 pub mod emergency;
 pub mod flag;
 pub mod friendavatar;
@@ -28,6 +28,7 @@ pub mod palette;
 pub mod party;
 pub mod playershop;
 pub mod playerstatus;
+pub mod pse_burst;
 pub mod questlist;
 pub mod server;
 pub mod settings;
@@ -56,6 +57,7 @@ use palette::*;
 use party::*;
 use playershop::*;
 use playerstatus::*;
+use pse_burst::*;
 use questlist::*;
 use server::*;
 use settings::*;
@@ -1155,6 +1157,21 @@ pub enum Packet {
     #[Id(0x1A, 0x0D)]
     NewMailMarker,
 
+    // PSE Burst packets [0x1B]
+    #[Category(PacketCategory::PseBurst)]
+    /// (0x1B, 0x00) Start PSE Effect (broadcast).
+    #[Id(0x1B, 0x00)]
+    PseStart(PseStartPacket),
+    /// (0x1B, 0x01) End PSE Effect (broadcast).
+    #[Id(0x1B, 0x01)]
+    PseEnd(PseEndPacket),
+    /// (0x1B, 0x04) Set PSE Effect Level (broadcast).
+    #[Id(0x1B, 0x04)]
+    SetPseLevel(SetPseLevelPacket),
+    /// (0x1B, 0x05) PSE Burst Action (broadcast).
+    #[Id(0x1B, 0x05)]
+    PseBurstAction(PseBurstActionPacket),
+
     // Alliance packets [0x1C]
     #[Category(PacketCategory::Characters)]
     /// (0x1C, 0x10) Get Alliance Status.
@@ -1555,6 +1572,8 @@ pub enum PacketCategory {
     Unk19,
     /// Mail related packets. See [`mail`]
     Mail,
+    /// PSE Burst related packets. See [`pse_burst`]
+    PseBurst,
     /// Charater related packets.
     Characters,
     /// Unknown 0x1E packets. See [`unk1e`]
