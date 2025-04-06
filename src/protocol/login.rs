@@ -640,6 +640,42 @@ pub struct CreateCharacter2ResponsePacket {
     pub referral_flag: u32,
 }
 
+/// (0x11, 0x61) SEGA ID Link Response.
+///
+/// (C -> S) Sent by the client when credentials are entered.
+///
+/// Response to: [`crate::protocol::Packet::SegaIdLinkRequest`]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x61)]
+pub struct SegaIdLinkResponsePacket {
+    /// Sega ID username.
+    pub username: FixedAsciiString<0x60>,
+    /// Sega ID password.
+    pub password: FixedAsciiString<0x48>,
+}
+
+/// (0x11, 0x62) SEGA ID Link Request.
+///
+/// (S -> C) Sent by the server to link SEGA ID to a PSN account.
+///
+/// Respond with: [`crate::protocol::Packet::SegaIdLinkResponse`]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x11, 0x62)]
+#[Flags(Flags::PACKED)]
+#[Magic(0x3882, 0x2C)]
+pub struct SegaIdLinkRequestPacket {
+    pub unk1: u8,
+    /// Link screen type.
+    pub screen: LinkRequestScreen,
+    pub unk3: u16,
+    /// Message (for [`LinkRequestScreen::Message`])
+    pub message: String,
+}
+
 /// (0x11, 0x63) Vita Login.
 ///
 /// (C -> S) Sent when the client wants to auth using PSN.
@@ -1379,6 +1415,19 @@ pub enum CharacterCreationStatus {
     NoAC,
     /// Generic system error message.
     SystemError,
+}
+
+/// Link request screen type.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Default, Clone, Copy, PartialEq, HelperReadWrite)]
+#[repr(u8)]
+pub enum LinkRequestScreen {
+    /// SEGA ID input screen
+    #[default]
+    #[Read_default]
+    LinkRequest = 1,
+    /// Display a message box and disconnect.
+    Message,
 }
 
 // ----------------------------------------------------------------

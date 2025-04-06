@@ -953,6 +953,12 @@ pub enum Packet {
     /// (0x11, 0x55) New Player Referral Response.
     #[Id(0x11, 0x55)]
     CreateCharacter2Response(CreateCharacter2ResponsePacket),
+    /// (0x11, 0x61) SEGA ID Link Response.
+    #[Id(0x11, 0x61)]
+    SegaIdLinkResponse(SegaIdLinkResponsePacket),
+    /// (0x11, 0x62) SEGA ID Link Request.
+    #[Id(0x11, 0x62)]
+    SegaIdLinkRequest(SegaIdLinkRequestPacket),
     /// (0x11, 0x63) Vita Login.
     #[Id(0x11, 0x63)]
     #[Classic]
