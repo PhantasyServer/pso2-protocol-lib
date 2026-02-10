@@ -255,48 +255,53 @@ impl<P: ProtocolRW + Send> Connection<P> {
     ///
     /// If `tokio` feature is enabled this function becomes nonblocking
     pub fn read_packet(&mut self) -> Result<P, ConnectionError> {
-        if !self.read_packets.is_empty() {
-            return Ok(self.read_packets.remove(0));
+        loop {
+            if !self.read_packets.is_empty() {
+                return Ok(self.read_packets.remove(0));
+            }
+            let data = self
+                .read
+                .try_read_data(&mut self.stream, &mut self.encryption)?;
+            #[cfg(feature = "ppac")]
+            if let Some(writer) = &mut self.ppac {
+                let direction = match self.direction {
+                    Direction::ToServer => Direction::ToClient,
+                    Direction::ToClient => Direction::ToServer,
+                };
+                writer.write_data(crate::ppac::get_now(), direction, &data)?;
+            }
+            self.parse_packet(&data)?;
         }
-        let data = self
-            .read
-            .try_read_data(&mut self.stream, &mut self.encryption)?;
-        #[cfg(feature = "ppac")]
-        if let Some(writer) = &mut self.ppac {
-            let direction = match self.direction {
-                Direction::ToServer => Direction::ToClient,
-                Direction::ToClient => Direction::ToServer,
-            };
-            writer.write_data(crate::ppac::get_now(), direction, &data)?;
-        }
-        self.parse_packet(&data)
     }
 
     /// Reads a packet from the stream.
     #[cfg(feature = "tokio")]
     #[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
     pub async fn read_packet_async(&mut self) -> Result<P, ConnectionError> {
-        if !self.read_packets.is_empty() {
-            return Ok(self.read_packets.remove(0));
+        loop {
+            if !self.read_packets.is_empty() {
+                return Ok(self.read_packets.remove(0));
+            }
+            let data = self
+                .read
+                .read_data_async(&mut self.stream, &mut self.encryption)
+                .await?;
+            #[cfg(feature = "ppac")]
+            if let Some(writer) = &mut self.ppac {
+                let direction = match self.direction {
+                    Direction::ToServer => Direction::ToClient,
+                    Direction::ToClient => Direction::ToServer,
+                };
+                writer.write_data(crate::ppac::get_now(), direction, &data)?;
+            }
+            self.parse_packet(&data)?;
         }
-        let data = self
-            .read
-            .read_data_async(&mut self.stream, &mut self.encryption)
-            .await?;
-        #[cfg(feature = "ppac")]
-        if let Some(writer) = &mut self.ppac {
-            let direction = match self.direction {
-                Direction::ToServer => Direction::ToClient,
-                Direction::ToClient => Direction::ToServer,
-            };
-            writer.write_data(crate::ppac::get_now(), direction, &data)?;
-        }
-        self.parse_packet(&data)
     }
-    fn parse_packet(&mut self, data: &[u8]) -> Result<P, ConnectionError> {
+    fn parse_packet(&mut self, data: &[u8]) -> Result<(), ConnectionError> {
         let mut packets = P::read(data, self.packet_type)?;
-        let mut packet = packets.remove(0);
-        self.read_packets.append(&mut packets);
+        let Some(packet) = packets.get_mut(0) else {
+            return Ok(());
+        };
         if let Some(data) = packet.mut_enc_data() {
             if !matches!(&self.in_keyfile, PrivateKey::None) {
                 let dec_data = Encryption::decrypt_rsa_data(data, &self.in_keyfile)?;
@@ -307,7 +312,8 @@ impl<P: ProtocolRW + Send> Connection<P> {
                 *data = dec_data;
             }
         }
-        Ok(packet)
+        self.read_packets.append(&mut packets);
+        Ok(())
     }
 
     /// Creates a packet storage file. `direction` is the direction of the `write` side of the
@@ -489,70 +495,75 @@ impl<P: ProtocolRW + Send> ConnectionRead<P> {
     /// sent) and the stream is in a blocking mode then this function might not setup
     /// encryption correctly  
     pub fn read_packet(&mut self) -> Result<P, ConnectionError> {
-        if !self.read_packets.is_empty() {
-            return Ok(self.get_one_packet());
+        loop {
+            if !self.read_packets.is_empty() {
+                return Ok(self.get_one_packet());
+            }
+            if let Ok(enc) = self.enc_channel.1.try_recv() {
+                self.encryption = enc
+            }
+            let data = self
+                .read
+                .try_read_data(&mut self.stream, &mut self.encryption)?;
+            if let Ok(packet_type) = self.packettype_channel.1.try_recv() {
+                self.packet_type = packet_type
+            }
+            #[cfg(feature = "ppac")]
+            if let Some(writer) = &self.ppac {
+                let direction = match self.direction {
+                    Direction::ToServer => Direction::ToClient,
+                    Direction::ToClient => Direction::ToServer,
+                };
+                let mut lock = writer.lock().unwrap();
+                lock.write_data(crate::ppac::get_now(), direction, &data)?;
+            }
+            self.parse_packet(&data)?;
         }
-        if let Ok(enc) = self.enc_channel.1.try_recv() {
-            self.encryption = enc
-        }
-        let data = self
-            .read
-            .try_read_data(&mut self.stream, &mut self.encryption)?;
-        if let Ok(packet_type) = self.packettype_channel.1.try_recv() {
-            self.packet_type = packet_type
-        }
-        #[cfg(feature = "ppac")]
-        if let Some(writer) = &self.ppac {
-            let direction = match self.direction {
-                Direction::ToServer => Direction::ToClient,
-                Direction::ToClient => Direction::ToServer,
-            };
-            let mut lock = writer.lock().unwrap();
-            lock.write_data(crate::ppac::get_now(), direction, &data)?;
-        }
-        self.parse_packet(&data)
     }
     /// Reads a packet from stream.
     #[cfg(feature = "tokio")]
     #[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
     pub async fn read_packet_async(&mut self) -> Result<P, ConnectionError> {
-        if !self.read_packets.is_empty() {
-            return Ok(self.get_one_packet());
-        }
-        let data = loop {
-            tokio::select! {
-                result = self
-                    .read
-                    .read_data_async(&mut self.stream, &mut self.encryption) =>
-                {
-                    let data = result?;
-                    break data;
-                }
-
-                Some(enc) = self.enc_channel.1.recv() => {
-                    self.encryption = enc
-                }
-
-                Some(packet_type) = self.packettype_channel.1.recv() => {
-                    self.packet_type = packet_type
-                }
+        loop {
+            if !self.read_packets.is_empty() {
+                return Ok(self.get_one_packet());
             }
-        };
-        #[cfg(feature = "ppac")]
-        if let Some(writer) = &self.ppac {
-            let direction = match self.direction {
-                Direction::ToServer => Direction::ToClient,
-                Direction::ToClient => Direction::ToServer,
+            let data = loop {
+                tokio::select! {
+                    result = self
+                        .read
+                        .read_data_async(&mut self.stream, &mut self.encryption) =>
+                    {
+                        let data = result?;
+                        break data;
+                    }
+
+                    Some(enc) = self.enc_channel.1.recv() => {
+                        self.encryption = enc
+                    }
+
+                    Some(packet_type) = self.packettype_channel.1.recv() => {
+                        self.packet_type = packet_type
+                    }
+                }
             };
-            let mut lock = writer.lock().unwrap();
-            lock.write_data(crate::ppac::get_now(), direction, &data)?;
+            #[cfg(feature = "ppac")]
+            if let Some(writer) = &self.ppac {
+                let direction = match self.direction {
+                    Direction::ToServer => Direction::ToClient,
+                    Direction::ToClient => Direction::ToServer,
+                };
+                let mut lock = writer.lock().unwrap();
+                lock.write_data(crate::ppac::get_now(), direction, &data)?;
+            }
+            self.parse_packet(&data)?;
         }
-        self.parse_packet(&data)
     }
-    fn parse_packet(&mut self, data: &[u8]) -> Result<P, ConnectionError> {
+    fn parse_packet(&mut self, data: &[u8]) -> Result<(), ConnectionError> {
         let mut packets = P::read(data, self.packet_type)?;
-        let mut packet = packets.remove(0);
-        self.read_packets.append(&mut packets);
+        let Some(packet) = packets.get_mut(0) else {
+            return Ok(());
+        };
         if let Some(data) = packet.mut_enc_data() {
             if !matches!(&self.in_keyfile, PrivateKey::None) {
                 let dec_data = Encryption::decrypt_rsa_data(data, &self.in_keyfile)?;
@@ -566,7 +577,8 @@ impl<P: ProtocolRW + Send> ConnectionRead<P> {
                 self.encryption = dec;
             }
         }
-        Ok(packet)
+        self.read_packets.append(&mut packets);
+        Ok(())
     }
 
     /// Returns the encryption key (for [`Packet::EncryptionResponse`]).
