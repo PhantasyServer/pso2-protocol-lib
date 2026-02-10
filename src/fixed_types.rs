@@ -80,6 +80,7 @@ pub struct VecUSize<S, T> {
 #[cfg_attr(feature = "serde", serde(default))]
 #[cfg_attr(feature = "serde", serde(transparent))]
 pub struct Bytes<const NO_PADDING: bool = false> {
+    #[cfg_attr(feature = "serde", serde(with = "serde_bytes"))]
     bytes: Vec<u8>,
 }
 
@@ -274,7 +275,10 @@ impl From<Duration> for WinTime {
         Self { time: value }
     }
 }
-const WIN_FT_TIME_TO_TIMESTAMP: u64 = 0x0295_E964_8864;
+// this is the constant for convering between windows FILETIME
+// (modified to use miliseconds instead of 100ns ticks)
+// and unix timestamp
+const WIN_FT_TIME_TO_TIMESTAMP: u64 = 0x0A97_30B6_6800;
 impl HelperReadWrite for WinTime {
     fn read(
         reader: &mut (impl std::io::Read + std::io::Seek),

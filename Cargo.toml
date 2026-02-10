@@ -21,7 +21,7 @@ item_attrs = []
 vita_enc = ["dep:rc4", "dep:rand"]
 base_enc = ["dep:rand", "dep:aes", "dep:cbc", "dep:sha2", "dep:hmac"]
 ngs_enc = ["dep:rand", "dep:aes", "dep:cbc", "dep:sha2", "dep:zstd"]
-serde = ["dep:serde", "half/serde", "bitflags/serde", "bitvec/serde"]
+serde = ["dep:serde", "dep:serde_bytes", "half/serde", "bitflags/serde", "bitvec/serde"]
 tokio = ["dep:tokio" ]
 split_connection = ["connection"]
 
@@ -34,6 +34,7 @@ rand = { version = "0.8.5", optional = true }
 rc4 = { version = "0.1.0", optional = true }
 rsa = { version = "0.9.7", optional = true }
 serde = { version = "1.0.218", optional = true, features = ["derive"] }
+serde_bytes = { version = "0.11.17", optional = true }
 sha2 = { version = "0.10.8", optional = true }
 zstd = { version = "0.13.3", optional = true }
 pso2packetlib_impl = { path = "packetlib_impl", version = "=0.3.0" }
