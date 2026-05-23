@@ -252,15 +252,10 @@ pub struct AvailableQuestsPacket {
     pub damage_calc_count: u16,
     pub etoile_training_count: u16,
     pub divide_count: u16,
-    // unsure
-    pub stars1_count: u16,
-    pub stars2_count: u16,
-    pub stars3_count: u16,
-    pub unk15: [u16; 2],
     #[NotOn(super::PacketType::Vita)]
-    pub unk16: [u16; 2],
+    pub stars_count: [u16; 6],
+    pub unk16: u16,
     pub available_types: AvailableQuestType,
-    #[NotOn(super::PacketType::Vita)]
     pub unk19: AvailableQuestType,
     /// Round boost active flag.
     pub round_boost: u32,
