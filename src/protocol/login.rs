@@ -1910,7 +1910,12 @@ impl Default for ShipListPacket {
     fn default() -> Self {
         Self {
             ships: vec![],
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap(),
+            timestamp: Duration::from_secs(
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs(),
+            ),
             unk: 0,
         }
     }

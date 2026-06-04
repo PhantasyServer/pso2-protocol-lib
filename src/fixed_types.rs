@@ -36,7 +36,7 @@ pub struct FixedAsciiString<const N: usize> {
     string: AsciiString,
 }
 
-/// Opaque type for windows file time(?) (previously attribute `#[PSOTime]`).
+/// Opaque type for windows FILETIME (previously attribute `#[PSOTime]`).
 #[derive(Clone, Default, Debug, Hash, PartialEq, PartialOrd)]
 #[repr(transparent)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -272,6 +272,7 @@ impl DerefMut for WinTime {
 }
 impl From<Duration> for WinTime {
     fn from(value: Duration) -> Self {
+        let value = Duration::from_secs(value.as_secs());
         Self { time: value }
     }
 }
@@ -288,13 +289,13 @@ impl HelperReadWrite for WinTime {
     ) -> Result<Self, crate::protocol::PacketError> {
         Ok(Self {
             time: Duration::from_millis(
-                u64::read(reader, packet_type, 0, 0).map_err(|e| {
-                    PacketError::CompositeFieldError {
+                u64::read(reader, packet_type, 0, 0)
+                    .map_err(|e| PacketError::CompositeFieldError {
                         packet_name: "WinTime",
                         field_name: "time",
                         error: e.into(),
-                    }
-                })? - WIN_FT_TIME_TO_TIMESTAMP,
+                    })?
+                    .saturating_sub(WIN_FT_TIME_TO_TIMESTAMP),
             ),
         })
     }
