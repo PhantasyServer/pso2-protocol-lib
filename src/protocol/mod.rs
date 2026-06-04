@@ -359,6 +359,9 @@ pub enum Packet {
     /// (0x04, 0xB0) Unknown.
     #[pso2packet(id(0x04, 0xB0))]
     Unk04B0(Unk04B0Packet),
+    /// (0x04, 0xAA) Unknown.
+    #[pso2packet(id(0x04, 0xAA))]
+    Unk04AA(Unk04AAPacket),
     /// (0x04, 0xBA) Unknown.
     #[pso2packet(id(0x04, 0xBA))]
     Unk04BA(Unk04BAPacket),

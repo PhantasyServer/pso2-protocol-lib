@@ -622,6 +622,19 @@ pub struct Unk0486Packet {
     pub unk2: ObjectHeader,
 }
 
+/// (0x04, 0xAA) Unknown.
+///
+/// (S -> C)
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0xAA)]
+#[Flags(Flags::OBJECT_RELATED)]
+pub struct Unk04AAPacket {
+    pub unk1: ObjectHeader,
+    pub unk2: ObjectHeader,
+}
+
 /// (0x04, 0xB0) Unknown.
 ///
 /// (S -> C)
