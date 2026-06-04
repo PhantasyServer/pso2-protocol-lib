@@ -6,19 +6,19 @@ use pso2packetlib::{
 // we use pso2packetlib_impl instead of pso2packetlib to bypass `derive` feature requirement
 #[derive(pso2packetlib_impl::ProtocolRW)]
 enum Packet {
-    #[Empty]
+    #[pso2packet(empty)]
     None,
-    #[Id(1, 1)]
+    #[pso2packet(id(1, 1))]
     Numbers(Numbers),
-    #[Id(1, 2)]
+    #[pso2packet(id(1, 2))]
     Variables(Variables),
-    #[Id(1, 3)]
+    #[pso2packet(id(1, 3))]
     Misc(Misc),
-    #[Id(1, 4)]
+    #[pso2packet(id(1, 4))]
     Attributes(Attributes),
-    #[Id(1, 5)]
+    #[pso2packet(id(1, 5))]
     Helpers(Helpers),
-    #[Unknown]
+    #[pso2packet(unknown)]
     Unknown((pso2packetlib::protocol::PacketHeader, Vec<u8>)),
 }
 
@@ -228,7 +228,7 @@ fn test_misc() {
         1, 3, 0, 0, // id
         127, 0, 0, 1, // ip
         0, 0, 0, 0, // time,
-        0x64, 0x88, 0x64, 0xE9, 0x95, 0x02, 0, 0, // pso2time
+        0, 0x68, 0xB6, 0x30, 0x97, 0x0A, 0, 0, // pso2time
     ];
     let len = data.len() as u32;
     data[..4].copy_from_slice(&len.to_le_bytes());

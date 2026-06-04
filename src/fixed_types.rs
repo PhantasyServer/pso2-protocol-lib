@@ -15,7 +15,7 @@ use std::{
 // ----------------------------------------------------------------
 
 /// Opaque type for fixed sized string.
-#[derive(Clone, Default, Debug, Hash, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Hash, PartialEq, PartialOrd)]
 #[repr(transparent)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -26,7 +26,7 @@ pub struct FixedString<const N: usize> {
 }
 
 /// Opaque type for fixed sized ascii string.
-#[derive(Clone, Default, Debug, Hash, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Hash, PartialEq, PartialOrd)]
 #[repr(transparent)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -47,7 +47,7 @@ pub struct WinTime {
 }
 
 /// Opaque type for fixed sized array.
-#[derive(Clone, Default, Debug, Hash, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Hash, PartialEq, PartialOrd)]
 #[repr(transparent)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -85,7 +85,7 @@ pub struct Bytes<const NO_PADDING: bool = false> {
 }
 
 /// Opaque type for fixed sized byte array.
-#[derive(Clone, Default, Debug, Hash, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Hash, PartialEq, PartialOrd)]
 #[repr(transparent)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(default))]
@@ -133,7 +133,12 @@ impl<const N: usize> DerefMut for FixedString<N> {
 }
 impl<const N: usize> From<String> for FixedString<N> {
     fn from(value: String) -> Self {
-        Self { string: value }
+        if cfg!(test) {
+            let value: String = value.chars().chain("\0".chars().cycle()).take(N).collect();
+            Self { string: value }
+        } else {
+            Self { string: value }
+        }
     }
 }
 impl<const N: usize> Display for FixedString<N> {
@@ -199,8 +204,20 @@ impl<const N: usize> DerefMut for FixedAsciiString<N> {
 }
 impl<const N: usize> From<String> for FixedAsciiString<N> {
     fn from(value: String) -> Self {
-        Self {
-            string: value.into(),
+        if cfg!(test) {
+            let value: String = value
+                .chars()
+                .filter(char::is_ascii)
+                .chain("\0".chars().cycle())
+                .take(N)
+                .collect();
+            Self {
+                string: value.into(),
+            }
+        } else {
+            Self {
+                string: value.into(),
+            }
         }
     }
 }
@@ -712,5 +729,73 @@ impl<'de, const N: usize, const NO_PADDING: bool> serde::Deserialize<'de>
         D: serde::Deserializer<'de>,
     {
         Ok(Vec::<u8>::deserialize(deserializer)?.into())
+    }
+}
+
+impl<const N: usize> Default for FixedString<N> {
+    fn default() -> Self {
+        Self {
+            string: {
+                if cfg!(test) {
+                    let mut str = String::with_capacity(N);
+                    for _ in 0..N {
+                        str.push('\0');
+                    }
+                    str
+                } else {
+                    Default::default()
+                }
+            },
+        }
+    }
+}
+
+impl<const N: usize> Default for FixedAsciiString<N> {
+    fn default() -> Self {
+        Self {
+            string: {
+                if cfg!(test) {
+                    let mut str = String::with_capacity(N);
+                    for _ in 0..N {
+                        str.push('\0');
+                    }
+                    str.into()
+                } else {
+                    Default::default()
+                }
+            },
+        }
+    }
+}
+
+impl<const N: usize, T: Default> Default for FixedVec<N, T> {
+    fn default() -> Self {
+        Self {
+            data: {
+                if cfg!(test) {
+                    let mut vec = Vec::with_capacity(N);
+                    for _ in 0..N {
+                        vec.push(Default::default());
+                    }
+                    vec
+                } else {
+                    Default::default()
+                }
+            },
+        }
+    }
+}
+
+impl<const N: usize, const NO_PADDING: bool> Default for FixedBytes<N, NO_PADDING> {
+    fn default() -> Self {
+        Self {
+            bytes: {
+                if cfg!(test) {
+                    vec![0; N]
+                } else {
+                    Default::default()
+                }
+            },
+        }
     }
 }

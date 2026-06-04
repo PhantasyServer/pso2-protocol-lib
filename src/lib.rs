@@ -32,17 +32,21 @@ pub use asciistring::AsciiString;
 /// - Unknown packet must either have no fields or only one with a tuple of
 ///   ([`protocol::PacketHeader`], [`Vec<u8>`]) inside.
 ///
-/// # Attribute explanation
-/// - `#[Id(_id_, _subid_)]` sets the ID and subID of the packet variant.
-/// - `#[Empty]` marks the variant as empty, i.e. it will always return an empty vec.
-/// - `#[Raw]` marks the variant that will receive raw data if requested.
-/// - `#[Unknown]` marks the variant that will receive unknown packets.
-/// - `#[NGS]` marks the packet as NGS-only.
-/// - `#[Classic]` marks the packet as classic only, i.e. non-NGS packet (Vita, JP, NA).
-/// - `#[NA]` marks the packet as NA classic only.
-/// - `#[JP]` marks the packet as JP classic only.
-/// - `#[Vita]` marks the packet as Vita only.
-/// - `#[Category(_category_)]` sets the category of all the packets following this attribute.
+/// # Enum attribute explanation
+/// - `#[pso2packet(gen_tests)]` generates a test function for each packet that tests that writing
+/// and then reading produces the same packet.
+///
+/// # Field attribute explanation
+/// - `#[pso2packet(id(_id_, _subid_))]` sets the ID and subID of the packet variant.
+/// - `#[pso2packet(empty)]` marks the variant as empty, i.e. it will always return an empty vec.
+/// - `#[pso2packet(raw)]` marks the variant that will receive raw data if requested.
+/// - `#[pso2packet(unknown)]` marks the variant that will receive unknown packets.
+/// - `#[pso2packet(NGS)]` marks the packet as NGS-only.
+/// - `#[pso2packet(Classic)]` marks the packet as classic only, i.e. non-NGS packet (Vita, JP, NA).
+/// - `#[pso2packet(NA)]` marks the packet as NA classic only.
+/// - `#[pso2packet(JP)]` marks the packet as JP classic only.
+/// - `#[pso2packet(Vita)]` marks the packet as Vita only.
+/// - `#[pso2packet(category(_category_))]` sets the category of all the packets following this attribute.
 #[cfg(feature = "derive")]
 #[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub use pso2packetlib_impl::ProtocolRW;

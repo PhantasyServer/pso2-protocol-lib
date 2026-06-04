@@ -12,12 +12,23 @@ struct OutputCode {
     write: TS2,
     category: TS2,
     read_raw: TS2,
+
+    tests: TS2,
 }
 
 pub fn protocol_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<TokenStream> {
     let name = &ast.ident;
 
     let mut out_code = OutputCode::default();
+    let mut proto_settings = ProtocolSettings {
+        generate_tests: false,
+        enum_name: name.clone(),
+        crate_location: if is_internal {
+            quote! {crate}
+        } else {
+            quote! {pso2packetlib}
+        },
+    };
 
     let Data::Enum(data) = &ast.data else {
         return Err(syn::Error::new(
@@ -25,20 +36,52 @@ pub fn protocol_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Resul
             "ProtocolRW is only defined for enums",
         ));
     };
-    parse_enum_field(&mut out_code, data)?;
-
-    let crate_location = if is_internal {
-        quote! {crate}
-    } else {
-        quote! {pso2packetlib}
-    };
+    for attr in &ast.attrs {
+        match &attr.meta {
+            syn::Meta::NameValue(_) => {}
+            syn::Meta::Path(path) => {
+                let string = path.get_ident().unwrap().to_string();
+                get_attr_stub(
+                    &mut proto_settings,
+                    &string,
+                    None,
+                    path.span(),
+                    get_proto_attrs,
+                )?;
+            }
+            syn::Meta::List(list) => {
+                let string = list.path.get_ident().unwrap().to_string();
+                get_attr_stub(
+                    &mut proto_settings,
+                    &string,
+                    Some(list),
+                    list.span(),
+                    get_proto_attrs,
+                )?;
+            }
+        }
+    }
+    parse_enum_field(&mut out_code, data, &proto_settings)?;
 
     let OutputCode {
         read,
         write,
         category,
         read_raw,
+        tests,
     } = out_code;
+
+    let tests = if proto_settings.generate_tests {
+        quote! {
+            #[cfg(test)]
+            mod auto_protocol_tests {
+                #tests
+            }
+        }
+    } else {
+        quote! {}
+    };
+    let crate_location = proto_settings.crate_location;
 
     let gen = quote! {
         #[automatically_derived]
@@ -114,17 +157,23 @@ pub fn protocol_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Resul
                 cat
             }
         }
+        #tests
     };
     Ok(gen.into())
 }
 
-fn parse_enum_field(out_code: &mut OutputCode, data: &DataEnum) -> syn::Result<()> {
+fn parse_enum_field(
+    out_code: &mut OutputCode,
+    data: &DataEnum,
+    proto_set: &ProtocolSettings,
+) -> syn::Result<()> {
     let mut category_stream = quote! {Default::default()};
     let OutputCode {
         read,
         write,
         category,
         read_raw,
+        tests,
     } = out_code;
     for variant in &data.variants {
         let name = &variant.ident;
@@ -135,11 +184,11 @@ fn parse_enum_field(out_code: &mut OutputCode, data: &DataEnum) -> syn::Result<(
                 syn::Meta::NameValue(_) => {}
                 syn::Meta::Path(path) => {
                     let string = path.get_ident().unwrap().to_string();
-                    get_attrs(&mut settings, &string, None, path.span())?;
+                    get_attr_stub(&mut settings, &string, None, path.span(), get_attrs)?;
                 }
                 syn::Meta::List(list) => {
                     let string = list.path.get_ident().unwrap().to_string();
-                    get_attrs(&mut settings, &string, Some(list), list.span())?;
+                    get_attr_stub(&mut settings, &string, Some(list), list.span(), get_attrs)?;
                 }
             }
         }
@@ -153,6 +202,79 @@ fn parse_enum_field(out_code: &mut OutputCode, data: &DataEnum) -> syn::Result<(
             && !matches!(settings.packet_type, PacketType::Empty)
         {
             return Err(syn::Error::new(variant.span(), "No Id defined"));
+        }
+
+        if proto_set.generate_tests
+            && !settings.raw
+            && !settings.unknown
+            && !matches!(settings.packet_type, PacketType::Empty)
+        {
+            let test_name = quote::format_ident!("test_proto_{name}");
+            let enum_name = &proto_set.enum_name;
+            let crate_loc = &proto_set.crate_location;
+            let constructor = if matches!(variant.fields, Fields::Unit) {
+                quote! {}
+            } else {
+                quote! {(Default::default())}
+            };
+            let mut read_write_quote = quote! {};
+
+            fn create_packet_type(ty: TS2, enum_name: &syn::Ident) -> TS2 {
+                quote! {
+                    {
+                        println!("Testing: {:?}", #ty);
+                        let write_data = packet.write(#ty);
+                        let read_packet = #enum_name::read(&write_data, #ty).unwrap().remove(0);
+                        assert_eq!(packet, read_packet);
+                    }
+                }
+            }
+
+            match settings.packet_type {
+                PacketType::Both => {
+                    read_write_quote
+                        .extend(create_packet_type(quote! {PacketType::NGS}, enum_name));
+                    read_write_quote
+                        .extend(create_packet_type(quote! {PacketType::Classic}, enum_name));
+                    read_write_quote.extend(create_packet_type(quote! {PacketType::NA}, enum_name));
+                    read_write_quote.extend(create_packet_type(quote! {PacketType::JP}, enum_name));
+                    read_write_quote
+                        .extend(create_packet_type(quote! {PacketType::Vita}, enum_name));
+                }
+                PacketType::Classic => {
+                    read_write_quote
+                        .extend(create_packet_type(quote! {PacketType::Classic}, enum_name));
+                    read_write_quote.extend(create_packet_type(quote! {PacketType::NA}, enum_name));
+                    read_write_quote.extend(create_packet_type(quote! {PacketType::JP}, enum_name));
+                    read_write_quote
+                        .extend(create_packet_type(quote! {PacketType::Vita}, enum_name));
+                }
+                PacketType::Ngs => {
+                    read_write_quote
+                        .extend(create_packet_type(quote! {PacketType::NGS}, enum_name));
+                }
+                PacketType::Na => {
+                    read_write_quote.extend(create_packet_type(quote! {PacketType::NA}, enum_name));
+                }
+                PacketType::Jp => {
+                    read_write_quote.extend(create_packet_type(quote! {PacketType::JP}, enum_name));
+                }
+                PacketType::Vita => {
+                    read_write_quote
+                        .extend(create_packet_type(quote! {PacketType::Vita}, enum_name));
+                }
+                PacketType::Empty => {}
+            }
+
+            tests.extend(quote! {
+                #[test]
+                fn #test_name() {
+                    use super::*;
+                    use #crate_loc::{derive_reexports::*, protocol::PacketType};
+                    let packet = #enum_name::#name #constructor;
+                    #read_write_quote
+                }
+            });
         }
 
         // set ids to a wildcard for unknown packets
@@ -281,6 +403,38 @@ fn parse_enum_field(out_code: &mut OutputCode, data: &DataEnum) -> syn::Result<(
     Ok(())
 }
 
+fn get_attr_stub<S>(
+    set: &mut S,
+    string: &str,
+    list: Option<&MetaList>,
+    span: Span,
+    cb: fn(&mut S, &str, Option<&MetaList>, Span) -> syn::Result<()>,
+) -> syn::Result<()> {
+    if string == "pso2packet" {
+        let Some(list) = list else {
+            return Err(syn::Error::new(
+                span,
+                "Invalid syntax \nPerhaps you ment pso2packet(..)?",
+            ));
+        };
+        let meta: syn::Meta = list.parse_args()?;
+        match &meta {
+            syn::Meta::NameValue(_) => {
+                return Err(syn::Error::new(span, "Invalid syntax"));
+            }
+            syn::Meta::Path(path) => {
+                let string = path.get_ident().unwrap().to_string();
+                cb(set, &string, None, path.span())?;
+            }
+            syn::Meta::List(list) => {
+                let string = list.path.get_ident().unwrap().to_string();
+                cb(set, &string, Some(list), list.span())?;
+            }
+        }
+    }
+    Ok(())
+}
+
 fn get_attrs(
     set: &mut Settings,
     string: &str,
@@ -288,23 +442,19 @@ fn get_attrs(
     span: Span,
 ) -> syn::Result<()> {
     match string {
-        "Empty" => set.packet_type = PacketType::Empty,
-        "Unknown" => {
-            set.unknown = true;
-        }
-        "Raw" => {
-            set.raw = true;
-        }
+        "empty" => set.packet_type = PacketType::Empty,
+        "unknown" => set.unknown = true,
+        "raw" => set.raw = true,
         "NGS" => set.packet_type = PacketType::Ngs,
         "Classic" => set.packet_type = PacketType::Classic,
         "NA" => set.packet_type = PacketType::Na,
         "JP" => set.packet_type = PacketType::Jp,
         "Vita" => set.packet_type = PacketType::Vita,
-        "Id" => {
+        "id" => {
             let Some(list) = list else {
                 return Err(syn::Error::new(
                     span,
-                    "Invalid syntax \nPerhaps you ment Id(..)?",
+                    "Invalid syntax \nPerhaps you ment id(..)?",
                 ));
             };
             let attrs: AttributeList = list.parse_args()?;
@@ -315,16 +465,29 @@ fn get_attrs(
             set.id = attrs.fields[0].base10_parse()?;
             set.subid = attrs.fields[1].base10_parse()?;
         }
-        "Category" => {
+        "category" => {
             let Some(attrs) = list.map(|l| &l.tokens) else {
                 return Err(syn::Error::new(
                     span,
-                    "Invalid syntax \nPerhaps you ment Category(..)?",
+                    "Invalid syntax \nPerhaps you ment category(..)?",
                 ));
             };
             set.category = attrs.clone();
         }
-        _ => {}
+        _ => return Err(syn::Error::new(span, "Unknown attribute")),
+    }
+    Ok(())
+}
+
+fn get_proto_attrs(
+    set: &mut ProtocolSettings,
+    string: &str,
+    _: Option<&MetaList>,
+    span: Span,
+) -> syn::Result<()> {
+    match string {
+        "gen_tests" => set.generate_tests = true,
+        _ => return Err(syn::Error::new(span, "Unknown attribute")),
     }
     Ok(())
 }
@@ -338,6 +501,12 @@ struct Settings {
     unknown: bool,
     skip: bool,
     category: TS2,
+}
+
+struct ProtocolSettings {
+    generate_tests: bool,
+    enum_name: syn::Ident,
+    crate_location: TS2,
 }
 
 #[derive(Default)]
