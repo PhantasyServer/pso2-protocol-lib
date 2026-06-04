@@ -1,6 +1,6 @@
 //! Character related structures.
 use crate::{
-    asciistring::StringRW,
+    fixed_types::FixedString,
     protocol::{HelperReadWrite, PacketError, PacketType},
 };
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
@@ -22,11 +22,11 @@ pub struct Character {
     pub voice_type: u32,
     pub unk2: u16,
     pub voice_pitch: i16,
-    pub name: String,
+    pub name: FixedString<16>,
     pub look: Look,
     pub unk3: u32,
     pub classes: ClassInfo,
-    pub unk4: String,
+    pub unk4: FixedString<32>,
 }
 
 /// HSV color data.
@@ -409,10 +409,12 @@ impl HelperReadWrite for Character {
                     field_name: "voice_pitch",
                     error: e,
                 })?;
-        let name = String::read_fixed(reader, 16).map_err(|e| PacketError::FieldError {
-            packet_name: "Character",
-            field_name: "name",
-            error: e,
+        let name = FixedString::read(reader, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "Character",
+                field_name: "name",
+                error: Box::new(e),
+            }
         })?;
 
         if matches!(packet_type, PacketType::Vita) {
@@ -447,10 +449,12 @@ impl HelperReadWrite for Character {
             }
         })?;
 
-        let unk4 = String::read_fixed(reader, 32).map_err(|e| PacketError::FieldError {
-            packet_name: "Character",
-            field_name: "unk4",
-            error: e,
+        let unk4 = FixedString::read(reader, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "Character",
+                field_name: "unk4",
+                error: Box::new(e),
+            }
         })?;
 
         reader
@@ -533,12 +537,12 @@ impl HelperReadWrite for Character {
                 field_name: "voice_pitch",
                 error: e,
             })?;
-        writer
-            .write_all(&self.name.write_fixed(16))
-            .map_err(|e| PacketError::FieldError {
+        self.name
+            .write(writer, packet_type, xor, sub)
+            .map_err(|e| PacketError::CompositeFieldError {
                 packet_name: "Character",
                 field_name: "name",
-                error: e,
+                error: Box::new(e),
             })?;
 
         if matches!(packet_type, PacketType::Vita) {
@@ -571,12 +575,13 @@ impl HelperReadWrite for Character {
                 field_name: "classes",
                 error: Box::new(e),
             })?;
-        writer
-            .write_all(&self.unk4.write_fixed(32))
-            .map_err(|e| PacketError::FieldError {
+
+        self.unk4
+            .write(writer, packet_type, xor, sub)
+            .map_err(|e| PacketError::CompositeFieldError {
                 packet_name: "Character",
                 field_name: "unk4",
-                error: e,
+                error: Box::new(e),
             })?;
 
         writer
