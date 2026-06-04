@@ -1,6 +1,9 @@
 //! Emergency related packets. \[0x15\]
-use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
-use crate::{fixed_types::{FixedBytes, FixedVec}, AsciiString};
+use super::{items::ItemId, HelperReadWrite, ObjectHeader, PacketReadWrite};
+use crate::{
+    fixed_types::{FixedBytes, FixedVec},
+    AsciiString,
+};
 
 // ----------------------------------------------------------------
 // Emergency packets
@@ -61,7 +64,11 @@ pub struct EmergencyEndPacket {
     pub unk2: u32,
     pub unk3: u32,
     pub unk4: u32,
-    pub unk5: FixedBytes<0x1C>,
+    pub earned_exp: u32,
+    pub earned_meseta: u32,
+    pub unk5_1: u32,
+    pub earned_item_id: ItemId,
+    pub unk5: FixedBytes<0x08>,
     pub unk6: u32,
     pub unk7: AsciiString,
     pub unk8: Vec<Unk1502_1>,
@@ -117,7 +124,7 @@ pub struct AvailableEmergenciesPacket {
 
 /// (0x15, 0x14) Unknown
 ///
-/// (S -> C) 
+/// (S -> C)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
