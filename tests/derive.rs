@@ -81,17 +81,8 @@ struct Attributes {
 #[derive(Debug, PartialEq, pso2packetlib_impl::PacketRW)]
 #[pso2packet(id(1, 5))]
 struct Helpers {
-    flags: HelperFlags,
     bitflags: HelperBitFlags,
     e: Enum,
-}
-
-#[derive(Debug, PartialEq, pso2packetlib_impl::HelperRW)]
-#[pso2packet(flags(u8))]
-struct HelperFlags {
-    #[pso2packet(skip)]
-    a: bool,
-    b: bool,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy, pso2packetlib_impl::HelperRW)]
@@ -301,9 +292,9 @@ fn test_helpers() {
     let mut data = vec![
         0, 0, 0, 0, // len
         1, 5, 0, 0, // id
-        6, // flags,
         5, 0, // bitflags,
         1, // enum,
+        0, // padding
     ];
     let len = data.len() as u32;
     data[..4].copy_from_slice(&len.to_le_bytes());
@@ -315,7 +306,6 @@ fn test_helpers() {
         panic!("Got incorrect packet")
     };
     let expected_packet = Helpers {
-        flags: HelperFlags { a: true, b: true },
         bitflags: HelperBitFlags::A | HelperBitFlags::C,
         e: Enum::B,
     };

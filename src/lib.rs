@@ -87,16 +87,13 @@ pub use pso2packetlib_impl::PacketRW;
 /// - All types used must implement [`protocol::HelperReadWrite`] or use
 ///   `#[pso2packet(manual_rw(..))]` attribute.
 /// attribute.
-/// 2) the flags struct:
-/// - All fields must be of type [`bool`]
-/// 3) the variant enum:
+/// 2) the variant enum:
 /// - None of the fields must contain any data.
 /// - `#[repr(_)]` must be set to an integer.
 /// - Enum must implement [`Copy`].
 ///
 /// # Attribute explanation
 /// ## Container attributes
-/// - `#[pso2packet(flags(u*))]` makes the struct into a flags struct with the specified length.
 /// - `#[pso2packet(bitflags(u*))]` adds read/write support for [`bitflags`] flags containers.
 /// ## Struct field attributes
 /// - `#[pso2packet(only_on(_`[`protocol::PacketType`]`_))]`. If set then the field will only be
@@ -111,8 +108,6 @@ pub use pso2packetlib_impl::PacketRW;
 /// - `#[pso2packet(const_u16(_const-int_))]` sets the constant u16 before the field data.
 /// ## Enum field attributes
 /// - `#[pso2packet(read_default)]` sets the default enum variant for reading.
-/// ## Flag struct field attributes
-/// - `#[pso2packet(skip)]` skips one bit of the flags struct.
 #[cfg(feature = "derive")]
 #[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub use pso2packetlib_impl::HelperRW;

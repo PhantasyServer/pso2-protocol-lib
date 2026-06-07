@@ -90,7 +90,6 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
         &mut quote! {},
         get_helper_container_attrs,
     )?;
-    let is_flags = set.flags_ty;
     let is_bitflags = set.bitflags_ty;
 
     let crate_location = if is_internal {
@@ -105,12 +104,6 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
                 unreachable!()
             };
             parse_bitflags(&mut read, &mut write, repr_type)?
-        }
-        Data::Struct(data) if is_flags.is_some() => {
-            let Some(repr_type) = is_flags else {
-                unreachable!()
-            };
-            parse_flags_struct(&mut read, &mut write, data, repr_type)?
         }
         Data::Struct(data) => parse_struct_field(&mut read, &mut write, data)?,
         Data::Enum(data) => parse_enum(&mut read, &mut write, data, repr_type)?,
@@ -230,86 +223,6 @@ fn parse_enum(
         #match_expr
         #default_token
     })});
-    Ok(())
-}
-
-fn parse_flags_struct(
-    read: &mut TS2,
-    write: &mut TS2,
-    data: &DataStruct,
-    repr: Size,
-) -> syn::Result<()> {
-    let mut return_token = quote! {};
-    let mut discriminant;
-    write.extend(quote! {let mut num = 0;});
-
-    let mut write_after = match repr {
-        Size::U8 => {
-            read.extend(quote! {let num = reader.read_u8()});
-            discriminant = Discriminant::U8(1);
-            quote! {writer.write_u8(num)}
-        }
-        Size::U16 => {
-            read.extend(quote! {let num = reader.read_u16::<LittleEndian>()});
-            discriminant = Discriminant::U16(1);
-            quote! {writer.write_u16::<LittleEndian>(num)}
-        }
-        Size::U32 => {
-            read.extend(quote! {let num = reader.read_u32::<LittleEndian>()});
-            discriminant = Discriminant::U32(1);
-            quote! {writer.write_u32::<LittleEndian>(num)}
-        }
-        Size::U64 => {
-            read.extend(quote! {let num = reader.read_u64::<LittleEndian>()});
-            discriminant = Discriminant::U64(1);
-            quote! {writer.write_u64::<LittleEndian>(num)}
-        }
-        Size::U128 => {
-            read.extend(quote! {let num = reader.read_u128::<LittleEndian>()});
-            discriminant = Discriminant::U128(1);
-            quote! {writer.write_u128::<LittleEndian>(num)}
-        }
-    };
-    read.extend(quote! {.map_err(|e| Error::ValueError{
-            packet_name,
-            error: e,
-        })?;
-    });
-    write_after.extend(quote! {.map_err(|e| Error::ValueError{
-            packet_name,
-            error: e,
-        })?;
-    });
-
-    for field in data.fields.iter() {
-        let field_name = field.ident.as_ref().unwrap();
-        return_token.extend(quote! {#field_name,});
-
-        get_attr_iter(
-            &mut discriminant,
-            &field.attrs,
-            read,
-            write,
-            get_flags_struct_attrs,
-        )?;
-
-        read.extend(quote! {
-            let #field_name = if num & #discriminant != 0 {
-                true
-            } else {
-                false
-            };
-        });
-        write.extend(quote! {
-            if self.#field_name {
-                num += #discriminant;
-            }
-        });
-        discriminant.skip_flag();
-    }
-
-    read.extend(quote! {Ok(Self{#return_token})});
-    write.extend(write_after);
     Ok(())
 }
 
@@ -519,7 +432,6 @@ struct ContainerSettings {
 
 #[derive(Default)]
 struct ContainerHelperSettings {
-    flags_ty: Option<Size>,
     bitflags_ty: Option<Size>,
 }
 
@@ -671,28 +583,8 @@ fn get_helper_container_attrs(
         return Err(syn::Error::new(span, "Invalid syntax"));
     };
     match string {
-        "flags" => {
-            set.flags_ty = Size::from_string(&list.tokens.to_string());
-        }
         "bitflags" => {
             set.bitflags_ty = Size::from_string(&list.tokens.to_string());
-        }
-        _ => return Err(syn::Error::new(span, "Unknown attribute")),
-    }
-    Ok(())
-}
-
-fn get_flags_struct_attrs(
-    discr: &mut Discriminant,
-    string: &str,
-    _: Option<&MetaList>,
-    span: Span,
-    _: &mut TS2,
-    _: &mut TS2,
-) -> syn::Result<()> {
-    match string {
-        "skip" => {
-            discr.skip_flag();
         }
         _ => return Err(syn::Error::new(span, "Unknown attribute")),
     }
@@ -864,15 +756,6 @@ impl Discriminant {
             Discriminant::U32(x) => *x = x.overflowing_add(1).0,
             Discriminant::U64(x) => *x = x.overflowing_add(1).0,
             Discriminant::U128(x) => *x = x.overflowing_add(1).0,
-        }
-    }
-    fn skip_flag(&mut self) {
-        match self {
-            Discriminant::U8(x) => *x <<= 1,
-            Discriminant::U16(x) => *x <<= 1,
-            Discriminant::U32(x) => *x <<= 1,
-            Discriminant::U64(x) => *x <<= 1,
-            Discriminant::U128(x) => *x <<= 1,
         }
     }
 }
