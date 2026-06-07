@@ -24,42 +24,14 @@ pub fn pub_packet_read_write_derive(input: TokenStream) -> TokenStream {
 }
 
 // Internal derive.
-#[proc_macro_derive(
-    HelperReadWrite,
-    attributes(
-        Seek,
-        SeekAfter,
-        Const_u16,
-        Read_default,
-        Skip,
-        Flags,
-        BitFlags,
-        ManualRW,
-        OnlyOn,
-        NotOn,
-    )
-)]
+#[proc_macro_derive(HelperReadWrite, attributes(pso2packet))]
 pub fn helper_read_write_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     helper_deriver(&input, true).unwrap_or_else(|err| output_error(input.to_token_stream(), err))
 }
 
 // External derive.
-#[proc_macro_derive(
-    HelperRW,
-    attributes(
-        Seek,
-        SeekAfter,
-        Const_u16,
-        Read_default,
-        Skip,
-        Flags,
-        BitFlags,
-        ManualRW,
-        OnlyOn,
-        NotOn,
-    )
-)]
+#[proc_macro_derive(HelperRW, attributes(pso2packet))]
 pub fn pub_helper_read_write_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     helper_deriver(&input, false).unwrap_or_else(|err| output_error(input.to_token_stream(), err))

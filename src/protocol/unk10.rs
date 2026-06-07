@@ -13,7 +13,7 @@ use crate::AsciiString;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x10, 0x00)]
+#[pso2packet(id(0x10, 0x00))]
 pub struct LuaPacket {
     pub unk1: u16,
     pub unk2: u16,
@@ -27,9 +27,9 @@ pub struct LuaPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x10, 0x03)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xD975, 0x2F)]
+#[pso2packet(id(0x10, 0x03))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xD975, 0x2F))]
 pub struct Unk1003Packet {
     pub unk1: u16,
     pub unk2: u16,

@@ -14,9 +14,9 @@ use std::time::Duration;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x19, 0x01)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x78F7, 0xA2)]
+#[pso2packet(id(0x19, 0x01))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x78F7, 0xA2))]
 pub struct SystemMessagePacket {
     /// Message to be broadcast.
     pub message: String,
@@ -32,9 +32,9 @@ pub struct SystemMessagePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x19, 0x09)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xA6E4, 0xFB)]
+#[pso2packet(id(0x19, 0x09))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xA6E4, 0xFB))]
 pub struct SetLobbyEventPacket {
     /// Event string ID.
     pub event_name: AsciiString,
@@ -55,7 +55,7 @@ pub struct SetLobbyEventPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x19, 0x0F)]
+#[pso2packet(id(0x19, 0x0F))]
 pub struct LobbyMonitorPacket {
     /// Video ID to play.
     pub video_id: u32,
@@ -67,7 +67,7 @@ pub struct LobbyMonitorPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x19, 0x1C)]
+#[pso2packet(id(0x19, 0x1C))]
 pub struct Unk191CPacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -99,6 +99,6 @@ pub enum MessageType {
     ImportantMessage,
     PopupMessage,
 
-    #[Read_default]
+    #[pso2packet(read_default)]
     Undefined = 0xFFFF_FFFF,
 }

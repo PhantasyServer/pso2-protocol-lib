@@ -35,9 +35,9 @@ use std::{
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x00)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x5E6, 0x6B)]
+#[pso2packet(id(0x11, 0x00))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x5E6, 0x6B))]
 pub struct SegaIDLoginPacket {
     //FIXME: fix data sizes
     pub unk1: u32,
@@ -47,11 +47,11 @@ pub struct SegaIDLoginPacket {
     pub ver_id: [u8; 0x20],
     /// Clients active network interfaces.
     pub interfaces: Vec<NetInterface>,
-    #[Seek(0x14)]
+    #[pso2packet(seek(0x14))]
     pub unk4: FixedBytes<0x90>,
-    #[Seek(0x10)]
+    #[pso2packet(seek(0x10))]
     pub unk5: [u8; 0x10],
-    #[Seek(0x10)]
+    #[pso2packet(seek(0x10))]
     /// Clients text language.
     pub text_lang: Language,
     /// Clients voice language.
@@ -61,7 +61,7 @@ pub struct SegaIDLoginPacket {
     /// Clients language.
     pub lang_lang: Language,
     /// Language code (in game lang?).
-    #[Seek(0x8)]
+    #[pso2packet(seek(0x8))]
     pub language: FixedString<0x10>,
     pub unk6: u32,
     pub unk7: u32,
@@ -69,14 +69,14 @@ pub struct SegaIDLoginPacket {
     pub unk8: [u8; 0x20],
     pub unk9: FixedBytes<0x44>,
     /// Sega ID username.
-    #[Seek(0x104)]
+    #[pso2packet(seek(0x104))]
     pub username: FixedAsciiString<0x40>,
     /// Sega ID password.
-    #[Seek(0x20)]
+    #[pso2packet(seek(0x20))]
     pub password: FixedAsciiString<0x40>,
-    #[Seek(0x4)]
+    #[pso2packet(seek(0x4))]
     pub unk10: u32,
-    #[SeekAfter(0x4)]
+    #[pso2packet(seek_after(0x4))]
     pub unk11: AsciiString,
 }
 
@@ -95,9 +95,9 @@ pub struct SegaIDLoginPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x01)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x8BA4, 0xB6)]
+#[pso2packet(id(0x11, 0x01))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x8BA4, 0xB6))]
 pub struct LoginResponsePacket {
     /// Login status.
     pub status: LoginStatus,
@@ -176,7 +176,7 @@ pub struct CharacterListPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x04)]
+#[pso2packet(id(0x11, 0x04))]
 pub struct StartGamePacket {
     /// Selected character ID.
     pub char_id: u32,
@@ -193,7 +193,7 @@ pub struct StartGamePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x05)]
+#[pso2packet(id(0x11, 0x05))]
 pub struct CharacterCreatePacket {
     /// New character data.
     pub character: Character,
@@ -207,7 +207,7 @@ pub struct CharacterCreatePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x06)]
+#[pso2packet(id(0x11, 0x06))]
 pub struct CharacterDeletionRequestPacket {
     /// Deleted character ID.
     pub char_id: u32,
@@ -221,7 +221,7 @@ pub struct CharacterDeletionRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x07)]
+#[pso2packet(id(0x11, 0x07))]
 pub struct CharacterCreateResponsePacket {
     /// Creation result.
     pub status: CharacterCreationStatus,
@@ -237,9 +237,9 @@ pub struct CharacterCreateResponsePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x08)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x33D4, 0xC4)]
+#[pso2packet(id(0x11, 0x08))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x33D4, 0xC4))]
 pub struct CharacterDeletionPacket {
     /// Deletion request status.
     pub status: DeletionStatus,
@@ -257,7 +257,7 @@ pub struct CharacterDeletionPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x0A)]
+#[pso2packet(id(0x11, 0x0A))]
 pub struct Unk110APacket {
     pub player_id: u32,
 }
@@ -303,7 +303,7 @@ pub struct EncryptionResponsePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x0D)]
+#[pso2packet(id(0x11, 0x0D))]
 pub struct ClientPingPacket {
     /// Ping timestamp.
     pub time: WinTime,
@@ -318,7 +318,7 @@ pub struct ClientPingPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x0E)]
+#[pso2packet(id(0x11, 0x0E))]
 pub struct ClientPongPacket {
     /// Ping timestamp.
     pub client_time: WinTime,
@@ -336,7 +336,7 @@ pub struct ClientPongPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x10)]
+#[pso2packet(id(0x11, 0x10))]
 pub struct BlockListPacket {
     pub blocks: FixedVec<200, BlockInfo>,
     pub unk: u32,
@@ -350,7 +350,7 @@ pub struct BlockListPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Default, Debug, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x11)]
+#[pso2packet(id(0x11, 0x11))]
 pub struct BlockSwitchRequestPacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -368,7 +368,7 @@ pub struct BlockSwitchRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x13)]
+#[pso2packet(id(0x11, 0x13))]
 pub struct BlockSwitchResponsePacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -396,9 +396,9 @@ pub struct BlockSwitchResponsePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, Default, PacketReadWrite)]
-#[Id(0x11, 0x14)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x78B8, 0x49)]
+#[pso2packet(id(0x11, 0x14))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x78B8, 0x49))]
 pub struct BlockLoginPacket {
     /// Player ID.
     pub player_id: u64,
@@ -425,7 +425,7 @@ pub struct BlockLoginPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x1B)]
+#[pso2packet(id(0x11, 0x1B))]
 pub struct UserInfoPacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -474,7 +474,7 @@ pub struct UserInfoPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x1B)]
+#[pso2packet(id(0x11, 0x1B))]
 pub struct UserInfoNGSPacket {
     // i'm unsure about real types, just deriving from base version struct
     pub unk1: [u32; 22],
@@ -515,10 +515,10 @@ pub struct UserInfoNGSPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x1E)]
+#[pso2packet(id(0x11, 0x1E))]
 pub struct NicknameRequestPacket {
     /// Error flag.
-    #[SeekAfter(0x42)]
+    #[pso2packet(seek_after(0x42))]
     pub error: u16,
 }
 
@@ -530,7 +530,7 @@ pub struct NicknameRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x1D)]
+#[pso2packet(id(0x11, 0x1D))]
 pub struct NicknameResponsePacket {
     /// Desired nickname.
     pub nickname: FixedString<0x20>,
@@ -542,7 +542,7 @@ pub struct NicknameResponsePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x2C)]
+#[pso2packet(id(0x11, 0x2C))]
 pub struct BlockBalancePacket {
     pub unk1: [u8; 0x20],
     /// Target block name.
@@ -560,9 +560,9 @@ pub struct BlockBalancePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x2D)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x883D, 0x9F)]
+#[pso2packet(id(0x11, 0x2D))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x883D, 0x9F))]
 pub struct SystemInformationPacket {
     /// CPU Model.
     pub cpu_info: AsciiString,
@@ -595,9 +595,9 @@ pub struct SystemInformationPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x3D)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xE418, 0x51)]
+#[pso2packet(id(0x11, 0x3D))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xE418, 0x51))]
 pub struct ShipListPacket {
     /// Known ship infos.
     pub ships: Vec<ShipEntry>,
@@ -616,7 +616,7 @@ pub struct ShipListPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x42)]
+#[pso2packet(id(0x11, 0x42))]
 pub struct CreateCharacter1ResponsePacket {
     /// Creation status.
     pub status: u32,
@@ -634,7 +634,7 @@ pub struct CreateCharacter1ResponsePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x55)]
+#[pso2packet(id(0x11, 0x55))]
 pub struct CreateCharacter2ResponsePacket {
     /// Player already referred flag.
     pub referral_flag: u32,
@@ -648,7 +648,7 @@ pub struct CreateCharacter2ResponsePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x61)]
+#[pso2packet(id(0x11, 0x61))]
 pub struct SegaIdLinkResponsePacket {
     /// Sega ID username.
     pub username: FixedAsciiString<0x60>,
@@ -664,9 +664,9 @@ pub struct SegaIdLinkResponsePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x62)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x3882, 0x2C)]
+#[pso2packet(id(0x11, 0x62))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x3882, 0x2C))]
 pub struct SegaIdLinkRequestPacket {
     pub unk1: u8,
     /// Link screen type.
@@ -688,9 +688,9 @@ pub struct SegaIdLinkRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x63)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xBE3F, 0x77)]
+#[pso2packet(id(0x11, 0x63))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xBE3F, 0x77))]
 pub struct VitaLoginPacket {
     pub unk1: u8,
     pub unk2: u8,
@@ -701,11 +701,11 @@ pub struct VitaLoginPacket {
     /// Client netword interfaces.
     pub interfaces: Vec<NetInterface>,
     pub unk6: [u8; 0x10],
-    #[Seek(0x4)]
+    #[pso2packet(seek(0x4))]
     pub unk7: FixedBytes<0x90>,
-    #[Seek(0x10)]
+    #[pso2packet(seek(0x10))]
     pub unk8: [u8; 0x10],
-    #[Seek(0x10)]
+    #[pso2packet(seek(0x10))]
     pub flag1: u32,
     pub flag2: u32,
     pub flag3: u32,
@@ -720,11 +720,11 @@ pub struct VitaLoginPacket {
     pub unk11: [u8; 0x20],
     pub unk12: FixedBytes<0x44>,
     /// PSN username.
-    #[Seek(0xFC)]
+    #[pso2packet(seek(0xFC))]
     pub username: FixedAsciiString<0x40>,
-    #[Seek(0x20)]
+    #[pso2packet(seek(0x20))]
     pub password: FixedAsciiString<0x40>,
-    #[Seek(0x4)]
+    #[pso2packet(seek(0x4))]
     pub unk13: u8,
     pub unk14: u8,
     pub unk15: u16,
@@ -742,7 +742,7 @@ pub struct VitaLoginPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x65)]
+#[pso2packet(id(0x11, 0x65))]
 pub struct AllBlocksListPacket {
     /// All blocks.
     pub blocks: FixedVec<200, BlockInfo>,
@@ -757,9 +757,9 @@ pub struct AllBlocksListPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x67)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xD536, 0xA4)]
+#[pso2packet(id(0x11, 0x67))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xD536, 0xA4))]
 pub struct SalonResponse {
     /// Available edit pass time.
     pub reedit_time: u32,
@@ -779,9 +779,9 @@ pub struct SalonResponse {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x68)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x5AF4, 0xEF)]
+#[pso2packet(id(0x11, 0x68))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x5AF4, 0xEF))]
 pub struct ChallengeRequestPacket {
     /// Challenge data.
     pub data: Bytes,
@@ -795,9 +795,9 @@ pub struct ChallengeRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x69)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xE0B1, 0x3A)]
+#[pso2packet(id(0x11, 0x69))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xE0B1, 0x3A))]
 pub struct ChallengeResponsePacket {
     /// Response data.
     pub data: Bytes,
@@ -809,15 +809,15 @@ pub struct ChallengeResponsePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x6F)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x0323, 0xFD)]
+#[pso2packet(id(0x11, 0x6F))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x0323, 0xFD))]
 pub struct Unk116FPacket {
     pub unk1: String,
     pub unk2: u32,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(PacketType::NGS)]
+    #[pso2packet(only_on(PacketType::NGS))]
     pub unk3: u32,
 }
 
@@ -827,7 +827,7 @@ pub struct Unk116FPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x71)]
+#[pso2packet(id(0x11, 0x71))]
 pub struct NotificationStatusPacket {
     /// Number of new mails.
     pub new_mail: u32,
@@ -846,9 +846,9 @@ pub struct NotificationStatusPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x87)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x8CEB, 0x8)]
+#[pso2packet(id(0x11, 0x87))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x8CEB, 0x8))]
 pub struct LoginHistoryPacket {
     /// List of login attempts (max 50).
     pub attempts: Vec<LoginAttempt>,
@@ -863,7 +863,7 @@ pub struct LoginHistoryPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x8B)]
+#[pso2packet(id(0x11, 0x8B))]
 pub struct SecondPwdOperationRequestPacket {
     // 0 - unlock
     // 1 - set new pwd
@@ -879,9 +879,9 @@ pub struct SecondPwdOperationRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x8C)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x29A0, 0x7F)]
+#[pso2packet(id(0x11, 0x8C))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x29A0, 0x7F))]
 pub struct SecondPwdOperationPacket {
     pub unk1: u32,
     pub unk2: u8,
@@ -901,7 +901,7 @@ pub struct SecondPwdOperationPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x90)]
+#[pso2packet(id(0x11, 0x90))]
 pub struct CharacterUndeletionRequestPacket {
     /// Character ID to cancel deletion.
     pub char_id: u32,
@@ -915,7 +915,7 @@ pub struct CharacterUndeletionRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x91)]
+#[pso2packet(id(0x11, 0x91))]
 pub struct CharacterUndeletionPacket {
     /// Undeletion status.
     pub status: UndeletionStatus,
@@ -929,7 +929,7 @@ pub struct CharacterUndeletionPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x97)]
+#[pso2packet(id(0x11, 0x97))]
 pub struct CharacterRenameRequestPacket {
     /// Character ID for renaming.
     pub char_id: u32,
@@ -945,7 +945,7 @@ pub struct CharacterRenameRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x98)]
+#[pso2packet(id(0x11, 0x98))]
 pub struct CharacterRenamePacket {
     /// Renaming availability status.
     pub status: RenameRequestStatus,
@@ -967,7 +967,7 @@ pub struct CharacterRenamePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x9B)]
+#[pso2packet(id(0x11, 0x9B))]
 pub struct CharacterNewNameRequestPacket {
     /// Character ID for renaming.
     pub char_id: u32,
@@ -983,7 +983,7 @@ pub struct CharacterNewNameRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0x9C)]
+#[pso2packet(id(0x11, 0x9C))]
 pub struct CharacterNewNamePacket {
     /// Renaming status.
     pub status: NewNameStatus,
@@ -999,7 +999,7 @@ pub struct CharacterNewNamePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0xAF)]
+#[pso2packet(id(0x11, 0xAF))]
 pub struct Unk11AFPacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -1013,7 +1013,7 @@ pub struct Unk11AFPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0xB0)]
+#[pso2packet(id(0x11, 0xB0))]
 pub struct Unk11B0Packet {
     pub unk1: u32,
     pub unk2: u32,
@@ -1028,7 +1028,7 @@ pub struct Unk11B0Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0xB8)]
+#[pso2packet(id(0x11, 0xB8))]
 pub struct CharacterMoveRequestPacket {
     /// Character ID to move.
     pub char_id: u32,
@@ -1043,7 +1043,7 @@ pub struct CharacterMoveRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0xB9)]
+#[pso2packet(id(0x11, 0xB9))]
 pub struct CharacterMovePacket {
     pub status: u32,
     pub ac_price: u32,
@@ -1060,7 +1060,7 @@ pub struct CharacterMovePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0xD7)]
+#[pso2packet(id(0x11, 0xD7))]
 pub struct Unk11D7Packet {
     pub unk1: u32,
     pub unk2: u32,
@@ -1074,16 +1074,16 @@ pub struct Unk11D7Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0xDE)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x60, 0x8F)]
+#[pso2packet(id(0x11, 0xDE))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x60, 0x8F))]
 pub struct PlayerReportedPacket {
     /// Reported player ID.
     pub targed_id: u32,
     /// Report reason.
     pub reason: u8,
     /// Report message.
-    #[Seek(3)]
+    #[pso2packet(seek(3))]
     pub msg: String,
 }
 
@@ -1093,9 +1093,9 @@ pub struct PlayerReportedPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0xEA)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x4544, 0x14)]
+#[pso2packet(id(0x11, 0xEA))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x4544, 0x14))]
 pub struct NicknameErrorPacket {
     pub unk1: u32,
     /// Entered nickname.
@@ -1108,20 +1108,20 @@ pub struct NicknameErrorPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0xED)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xD67D, 0xF5)]
+#[pso2packet(id(0x11, 0xED))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xD67D, 0xF5))]
 pub struct BannerListPacket {
     /// Banner names (semicolon delimited).
     pub banners: AsciiString,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(PacketType::NGS)]
+    #[pso2packet(only_on(PacketType::NGS))]
     pub unk1: AsciiString,
     /// News URLs (semicolon delimited).
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(PacketType::NGS)]
+    #[pso2packet(only_on(PacketType::NGS))]
     pub unk2: AsciiString,
 }
 
@@ -1131,9 +1131,9 @@ pub struct BannerListPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0xEE)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x5C3B, 0x40)]
+#[pso2packet(id(0x11, 0xEE))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x5C3B, 0x40))]
 pub struct EmailCodeRequestPacket {
     pub unk1: u32,
     /// Message displayed in the box.
@@ -1146,9 +1146,9 @@ pub struct EmailCodeRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x11, 0xFF)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x3DD3, 0x3D)]
+#[pso2packet(id(0x11, 0xFF))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x3DD3, 0x3D))]
 pub struct Unk11FFPacket {
     pub unk1: u8,
     pub unk2: u8,
@@ -1187,10 +1187,10 @@ pub struct ShipEntry {
     /// Ship IP (ignored by the client).
     pub ip: Ipv4Addr,
     /// Ship status.
-    #[Seek(4)]
+    #[pso2packet(seek(4))]
     pub status: ShipStatus,
     /// Ship order.
-    #[SeekAfter(4)]
+    #[pso2packet(seek_after(4))]
     pub order: u16,
 }
 
@@ -1211,7 +1211,7 @@ pub enum ShipStatus {
     /// Ship is offline.
     Offline,
 
-    #[Read_default]
+    #[pso2packet(read_default)]
     Undefined = 0xFFFF,
 }
 
@@ -1252,7 +1252,7 @@ pub enum LoginResult {
     /// Generic error occured.
     GenericError,
 
-    #[Read_default]
+    #[pso2packet(read_default)]
     Undefined = 0xFFFF_FFFF,
 }
 
@@ -1267,7 +1267,7 @@ pub enum LoginStatus {
     /// Login failed.
     Failure,
 
-    #[Read_default]
+    #[pso2packet(read_default)]
     Undefined = 0xFFFF_FFFF,
 }
 
@@ -1335,7 +1335,7 @@ pub struct SalonThing2 {
 #[repr(u32)]
 pub enum Language {
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     Japanese,
     English,
 }
@@ -1347,7 +1347,7 @@ pub enum Language {
 pub enum DeletionStatus {
     /// Character has items which prevent deletion.
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     UndeletableItems,
     /// Character has been scheduled for deletion.
     Success,
@@ -1360,7 +1360,7 @@ pub enum DeletionStatus {
 pub enum UndeletionStatus {
     /// Character was already deleted.
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     AlreadyDeleted,
     /// Character deletion canceled.
     Success,
@@ -1379,7 +1379,7 @@ pub enum RenameRequestStatus {
     /// Renaming privileges suspended.
     PrivilegesSuspended,
     /// System error has occurred.
-    #[Read_default]
+    #[pso2packet(read_default)]
     SystemError,
     /// Renaming cooldown hasn't yet expired.
     TooEarly,
@@ -1392,7 +1392,7 @@ pub enum RenameRequestStatus {
 pub enum NewNameStatus {
     /// Renaming was successful.
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     Success,
     /// Renaming failed.
     Failure,
@@ -1405,7 +1405,7 @@ pub enum NewNameStatus {
 pub enum CharacterCreationStatus {
     /// Character has been successfully created.
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     Success,
     /// Displays an empty error message.
     EmptyError,
@@ -1424,7 +1424,7 @@ pub enum CharacterCreationStatus {
 pub enum LinkRequestScreen {
     /// SEGA ID input screen
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     LinkRequest = 1,
     /// Display a message box and disconnect.
     Message,

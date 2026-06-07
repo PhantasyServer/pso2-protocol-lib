@@ -10,9 +10,20 @@ use syn::{
 
 pub fn packet_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<TokenStream> {
     let name = &ast.ident;
-    let (id, subid) = get_packet_id(&ast.attrs)?;
-    let xor_sub = get_magic(&ast.attrs)?;
-    let flags = get_flags(&ast.attrs)?;
+    let mut set = ContainerSettings::default();
+    get_attr_iter(
+        &mut set,
+        &ast.attrs,
+        &mut quote! {},
+        &mut quote! {},
+        get_container_attrs,
+    )?;
+
+    let Some((id, subid)) = set.id else {
+        return Err(syn::Error::new(ast.ident.span(), "No packet id provided"));
+    };
+    let xor_sub = set.magic;
+    let flags = set.flags.unwrap_or_else(|| quote! {Flags::default()});
     if flags.to_string().contains("PACKED") && xor_sub.is_none() {
         return Err(syn::Error::new(ast.ident.span(), "No magic provided"));
     }
@@ -71,8 +82,16 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
     let mut read = quote! {};
     let mut write = quote! {};
     let repr_type = get_repr(&ast.attrs)?;
-    let is_flags = get_flags_struct(&ast.attrs)?;
-    let is_bitflags = get_bitflags_struct(&ast.attrs)?;
+    let mut set = ContainerHelperSettings::default();
+    get_attr_iter(
+        &mut set,
+        &ast.attrs,
+        &mut quote! {},
+        &mut quote! {},
+        get_helper_container_attrs,
+    )?;
+    let is_flags = set.flags_ty;
+    let is_bitflags = set.bitflags_ty;
 
     let crate_location = if is_internal {
         quote! {crate}
@@ -180,7 +199,7 @@ fn parse_enum(
 
     for variant in &data.variants {
         let variant_name = &variant.ident;
-        let mut settings = Settings::default();
+        let mut settings = EnumSettings::default();
 
         if let Some((_, Expr::Lit(x))) = &variant.discriminant {
             let Lit::Int(int) = &x.lit else {
@@ -195,19 +214,7 @@ fn parse_enum(
             }
         }
 
-        for attr in &variant.attrs {
-            let syn::Meta::Path(path) = &attr.meta else {
-                continue;
-            };
-            let attribute_name = path.get_ident().unwrap().to_string();
-            get_attrs(
-                &mut settings,
-                &attribute_name,
-                None,
-                &mut quote! {},
-                &mut quote! {},
-            )?;
-        }
+        get_attr_iter(&mut settings, &variant.attrs, read, write, get_enum_attrs)?;
 
         if settings.is_default {
             default_token = quote! {_ => Self::#variant_name,};
@@ -278,15 +285,13 @@ fn parse_flags_struct(
         let field_name = field.ident.as_ref().unwrap();
         return_token.extend(quote! {#field_name,});
 
-        for attr in &field.attrs {
-            let syn::Meta::Path(path) = &attr.meta else {
-                continue;
-            };
-            let attribute_name = path.get_ident().unwrap().to_string();
-            if attribute_name == "Skip" {
-                discriminant.skip_flag();
-            }
-        }
+        get_attr_iter(
+            &mut discriminant,
+            &field.attrs,
+            read,
+            write,
+            get_flags_struct_attrs,
+        )?;
 
         read.extend(quote! {
             let #field_name = if num & #discriminant != 0 {
@@ -377,19 +382,7 @@ fn parse_struct_field(read: &mut TS2, write: &mut TS2, data: &DataStruct) -> syn
 
         let mut settings = Settings::default();
 
-        for attr in &field.attrs {
-            match &attr.meta {
-                syn::Meta::NameValue(_) => {}
-                syn::Meta::Path(path) => {
-                    let attribute_name = path.get_ident().unwrap().to_string();
-                    get_attrs(&mut settings, &attribute_name, None, read, write)?;
-                }
-                syn::Meta::List(list) => {
-                    let attribute_name = list.path.get_ident().unwrap().to_string();
-                    get_attrs(&mut settings, &attribute_name, Some(list), read, write)?;
-                }
-            }
-        }
+        get_attr_iter(&mut settings, &field.attrs, read, write, get_attrs)?;
 
         let mut tmp_read = quote! {};
         let mut tmp_write = quote! {};
@@ -450,52 +443,126 @@ fn parse_struct_field(read: &mut TS2, write: &mut TS2, data: &DataStruct) -> syn
     Ok(())
 }
 
+fn get_attr_iter<S>(
+    set: &mut S,
+    attrs: &[syn::Attribute],
+    read: &mut TS2,
+    write: &mut TS2,
+    cb: fn(&mut S, &str, Option<&MetaList>, Span, &mut TS2, &mut TS2) -> syn::Result<()>,
+) -> syn::Result<()> {
+    for attr in attrs {
+        match &attr.meta {
+            syn::Meta::NameValue(_) => {}
+            syn::Meta::Path(path) => {
+                let string = path.get_ident().unwrap().to_string();
+                get_attr_stub(set, &string, None, path.span(), read, write, cb)?;
+            }
+            syn::Meta::List(list) => {
+                let string = list.path.get_ident().unwrap().to_string();
+                get_attr_stub(set, &string, Some(list), list.span(), read, write, cb)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn get_attr_stub<S>(
+    set: &mut S,
+    string: &str,
+    list: Option<&MetaList>,
+    span: Span,
+    read: &mut TS2,
+    write: &mut TS2,
+    cb: fn(&mut S, &str, Option<&MetaList>, Span, &mut TS2, &mut TS2) -> syn::Result<()>,
+) -> syn::Result<()> {
+    if string == "pso2packet" {
+        let Some(list) = list else {
+            return Err(syn::Error::new(
+                span,
+                "Invalid syntax \nPerhaps you ment pso2packet(..)?",
+            ));
+        };
+        let meta: syn::Meta = list.parse_args()?;
+        match &meta {
+            syn::Meta::NameValue(_) => {
+                return Err(syn::Error::new(span, "Invalid syntax"));
+            }
+            syn::Meta::Path(path) => {
+                let string = path.get_ident().unwrap().to_string();
+                let span = path.span();
+                cb(set, &string, None, span, read, write)?;
+            }
+            syn::Meta::List(list) => {
+                let string = list.path.get_ident().unwrap().to_string();
+                let span = list.path.span();
+                cb(set, &string, Some(list), span, read, write)?;
+            }
+        }
+    }
+    Ok(())
+}
+
 #[derive(Default)]
 struct Settings {
     seek_after: i64,
-    is_default: bool,
-    to_skip: bool,
     only_on: Option<TS2>,
     not_on: Option<TS2>,
     manual_rw: Option<(TS2, TS2)>,
+}
+
+#[derive(Default)]
+struct ContainerSettings {
+    id: Option<(u8, u16)>,
+    flags: Option<TS2>,
+    magic: Option<(u32, u32)>,
+}
+
+#[derive(Default)]
+struct ContainerHelperSettings {
+    flags_ty: Option<Size>,
+    bitflags_ty: Option<Size>,
+}
+
+#[derive(Default)]
+struct EnumSettings {
+    is_default: bool,
 }
 
 fn get_attrs(
     set: &mut Settings,
     string: &str,
     list: Option<&MetaList>,
+    span: Span,
     read: &mut TS2,
     write: &mut TS2,
 ) -> syn::Result<()> {
     match string {
-        "Read_default" => set.is_default = true,
-        "Skip" => set.to_skip = true,
-        "OnlyOn" => {
+        "only_on" => {
             let Some(attrs) = list.map(|l| l.tokens.clone()) else {
                 return Err(syn::Error::new(
-                    Span::call_site(),
-                    "Invalid syntax \nPerhaps you ment OnlyOn(..)?",
+                    span,
+                    "Invalid syntax \nPerhaps you ment only_on(..)?",
                 ));
             };
             set.only_on = Some(attrs);
         }
-        "NotOn" => {
+        "not_on" => {
             let Some(attrs) = list.map(|l| l.tokens.clone()) else {
                 return Err(syn::Error::new(
-                    Span::call_site(),
-                    "Invalid syntax \nPerhaps you ment NotOn(..)?",
+                    span,
+                    "Invalid syntax \nPerhaps you ment not_on(..)?",
                 ));
             };
             set.not_on = Some(attrs);
         }
-        "ManualRW" => {
+        "manual_rw" => {
             let attrs: FnList = list.unwrap().parse_args()?;
             set.manual_rw = Some((
                 attrs.fields[0].clone().into_token_stream(),
                 attrs.fields[1].clone().into_token_stream(),
             ));
         }
-        "Seek" => {
+        "seek" => {
             let amount: i64 = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
             read.extend(quote! {reader.seek(std::io::SeekFrom::Current(#amount))
                 .map_err(|e| Error::PaddingError{
@@ -512,10 +579,10 @@ fn get_attrs(
                 })?;
             });
         }
-        "SeekAfter" => {
+        "seek_after" => {
             set.seek_after = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
         }
-        "Const_u16" => {
+        "const_u16" => {
             let num: u16 = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
             read.extend(quote! {reader.seek(std::io::SeekFrom::Current(2))
                 .map_err(|e| Error::ConstantError{
@@ -532,7 +599,102 @@ fn get_attrs(
                 })?;
             });
         }
-        _ => {}
+        _ => return Err(syn::Error::new(span, "Unknown attribute")),
+    }
+    Ok(())
+}
+
+fn get_enum_attrs(
+    set: &mut EnumSettings,
+    string: &str,
+    _: Option<&MetaList>,
+    span: Span,
+    _: &mut TS2,
+    _: &mut TS2,
+) -> syn::Result<()> {
+    match string {
+        "read_default" => set.is_default = true,
+        _ => return Err(syn::Error::new(span, "Unknown attribute")),
+    }
+    Ok(())
+}
+
+fn get_container_attrs(
+    set: &mut ContainerSettings,
+    string: &str,
+    list: Option<&MetaList>,
+    span: Span,
+    _: &mut TS2,
+    _: &mut TS2,
+) -> syn::Result<()> {
+    let Some(list) = list else {
+        return Err(syn::Error::new(span, "Invalid syntax"));
+    };
+    match string {
+        "id" => {
+            let attrs: AttributeList = list.parse_args()?;
+
+            if attrs.fields.len() != 2 {
+                return Err(syn::Error::new(span, "Invalid number of arguments"));
+            }
+            let id = attrs.fields[0].base10_parse()?;
+            let subid = attrs.fields[1].base10_parse()?;
+            set.id = Some((id, subid));
+        }
+        "flags" => {
+            let attrs = &list.tokens;
+            set.flags = Some(quote! {#attrs});
+        }
+        "magic" => {
+            let attrs: AttributeList = list.parse_args()?;
+            if attrs.fields.len() != 2 {
+                return Err(syn::Error::new(span, "Invalid number of arguments"));
+            }
+            let xor = attrs.fields[0].base10_parse()?;
+            let sub = attrs.fields[1].base10_parse()?;
+            set.magic = Some((xor, sub));
+        }
+        _ => return Err(syn::Error::new(span, "Unknown attribute")),
+    }
+    Ok(())
+}
+
+fn get_helper_container_attrs(
+    set: &mut ContainerHelperSettings,
+    string: &str,
+    list: Option<&MetaList>,
+    span: Span,
+    _: &mut TS2,
+    _: &mut TS2,
+) -> syn::Result<()> {
+    let Some(list) = list else {
+        return Err(syn::Error::new(span, "Invalid syntax"));
+    };
+    match string {
+        "flags" => {
+            set.flags_ty = Size::from_string(&list.tokens.to_string());
+        }
+        "bitflags" => {
+            set.bitflags_ty = Size::from_string(&list.tokens.to_string());
+        }
+        _ => return Err(syn::Error::new(span, "Unknown attribute")),
+    }
+    Ok(())
+}
+
+fn get_flags_struct_attrs(
+    discr: &mut Discriminant,
+    string: &str,
+    _: Option<&MetaList>,
+    span: Span,
+    _: &mut TS2,
+    _: &mut TS2,
+) -> syn::Result<()> {
+    match string {
+        "skip" => {
+            discr.skip_flag();
+        }
+        _ => return Err(syn::Error::new(span, "Unknown attribute")),
     }
     Ok(())
 }
@@ -614,41 +776,6 @@ fn type_read_write(
     Ok((read, write))
 }
 
-fn get_packet_id(attrs: &[Attribute]) -> syn::Result<(u8, u16)> {
-    let Some(attr) = attrs.iter().find(|a| a.path().is_ident("Id")) else {
-        return Err(syn::Error::new(Span::call_site(), "No Id defined"));
-    };
-    let syn::Meta::List(list) = &attr.meta else {
-        return Err(syn::Error::new(
-            attr.span(),
-            "Invalid syntax \nPerhaps you ment Id(id, subid)?",
-        ));
-    };
-
-    let attrs: AttributeList = list.parse_args()?;
-    if attrs.fields.len() != 2 {
-        return Err(syn::Error::new(attr.span(), "Invalid number of arguments"));
-    }
-    let id = attrs.fields[0].base10_parse()?;
-    let subid = attrs.fields[1].base10_parse()?;
-    Ok((id, subid))
-}
-
-fn get_flags(attrs: &[Attribute]) -> syn::Result<TS2> {
-    let Some(attr) = attrs.iter().find(|a| a.path().is_ident("Flags")) else {
-        return Ok(quote! {Flags::default()});
-    };
-    let syn::Meta::List(list) = &attr.meta else {
-        return Err(syn::Error::new(
-            attr.span(),
-            "Invalid syntax \nPerhaps you ment Flags(..)?",
-        ));
-    };
-
-    let attrs = &list.tokens;
-    Ok(quote! {#attrs})
-}
-
 fn get_repr(attrs: &[Attribute]) -> syn::Result<Size> {
     let Some(attr) = attrs.iter().find(|a| a.path().is_ident("repr")) else {
         return Ok(Size::U8);
@@ -656,76 +783,11 @@ fn get_repr(attrs: &[Attribute]) -> syn::Result<Size> {
     let syn::Meta::List(list) = &attr.meta else {
         return Err(syn::Error::new(
             attr.span(),
-            "Invalid syntax \nPerhaps you ment BitFlags(u*)?",
+            "Invalid syntax \nPerhaps you ment repr(u*)?",
         ));
     };
-    Ok(match list.tokens.to_string().as_str() {
-        "u8" => Size::U8,
-        "u16" => Size::U16,
-        "u32" => Size::U32,
-        "u64" => Size::U64,
-        _ => return Err(syn::Error::new(list.span(), "Unsupported repr")),
-    })
-}
-
-fn get_magic(attrs: &[Attribute]) -> syn::Result<Option<(u32, u32)>> {
-    let Some(attr) = attrs.iter().find(|a| a.path().is_ident("Magic")) else {
-        return Ok(None);
-    };
-    let syn::Meta::List(list) = &attr.meta else {
-        return Err(syn::Error::new(
-            attr.span(),
-            "Invalid syntax \nPerhaps you ment Magic(xor, sub)?",
-        ));
-    };
-
-    let attrs: AttributeList = list.parse_args()?;
-    if attrs.fields.len() != 2 {
-        return Err(syn::Error::new(attr.span(), "Invalid number of arguments"));
-    }
-    let xor = attrs.fields[0].base10_parse()?;
-    let sub = attrs.fields[1].base10_parse()?;
-    Ok(Some((xor, sub)))
-}
-
-fn get_bitflags_struct(attrs: &[Attribute]) -> syn::Result<Option<Size>> {
-    let Some(attr) = attrs.iter().find(|a| a.path().is_ident("BitFlags")) else {
-        return Ok(None);
-    };
-    let syn::Meta::List(list) = &attr.meta else {
-        return Err(syn::Error::new(
-            attr.span(),
-            "Invalid syntax \nPerhaps you ment BitFlags(u*)?",
-        ));
-    };
-    Ok(match list.tokens.to_string().as_str() {
-        "u8" => Some(Size::U8),
-        "u16" => Some(Size::U16),
-        "u32" => Some(Size::U32),
-        "u64" => Some(Size::U64),
-        "u128" => Some(Size::U128),
-        _ => None,
-    })
-}
-
-fn get_flags_struct(attrs: &[Attribute]) -> syn::Result<Option<Size>> {
-    let Some(attr) = attrs.iter().find(|a| a.path().is_ident("Flags")) else {
-        return Ok(None);
-    };
-    let syn::Meta::List(list) = &attr.meta else {
-        return Err(syn::Error::new(
-            attr.span(),
-            "Invalid syntax \nPerhaps you ment Flags(u*)?",
-        ));
-    };
-    Ok(match list.tokens.to_string().as_str() {
-        "u8" => Some(Size::U8),
-        "u16" => Some(Size::U16),
-        "u32" => Some(Size::U32),
-        "u64" => Some(Size::U64),
-        "u128" => Some(Size::U128),
-        _ => None,
-    })
+    Ok(Size::from_string(&list.tokens.to_string())
+        .ok_or_else(|| syn::Error::new(list.span(), "Unsupported repr"))?)
 }
 
 enum Size {
@@ -734,6 +796,19 @@ enum Size {
     U32,
     U64,
     U128,
+}
+
+impl Size {
+    fn from_string(str: &str) -> Option<Self> {
+        match str {
+            "u8" => Some(Self::U8),
+            "u16" => Some(Self::U16),
+            "u32" => Some(Self::U32),
+            "u64" => Some(Self::U64),
+            "u128" => Some(Self::U128),
+            _ => None,
+        }
+    }
 }
 
 struct AttributeList {

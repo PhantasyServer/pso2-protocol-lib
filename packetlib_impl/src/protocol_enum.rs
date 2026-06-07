@@ -36,31 +36,7 @@ pub fn protocol_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Resul
             "ProtocolRW is only defined for enums",
         ));
     };
-    for attr in &ast.attrs {
-        match &attr.meta {
-            syn::Meta::NameValue(_) => {}
-            syn::Meta::Path(path) => {
-                let string = path.get_ident().unwrap().to_string();
-                get_attr_stub(
-                    &mut proto_settings,
-                    &string,
-                    None,
-                    path.span(),
-                    get_proto_attrs,
-                )?;
-            }
-            syn::Meta::List(list) => {
-                let string = list.path.get_ident().unwrap().to_string();
-                get_attr_stub(
-                    &mut proto_settings,
-                    &string,
-                    Some(list),
-                    list.span(),
-                    get_proto_attrs,
-                )?;
-            }
-        }
-    }
+    get_attr_iter(&mut proto_settings, &ast.attrs, get_proto_attrs)?;
     parse_enum_field(&mut out_code, data, &proto_settings)?;
 
     let OutputCode {
@@ -179,19 +155,7 @@ fn parse_enum_field(
         let name = &variant.ident;
         let mut settings = Settings::default();
 
-        for attr in &variant.attrs {
-            match &attr.meta {
-                syn::Meta::NameValue(_) => {}
-                syn::Meta::Path(path) => {
-                    let string = path.get_ident().unwrap().to_string();
-                    get_attr_stub(&mut settings, &string, None, path.span(), get_attrs)?;
-                }
-                syn::Meta::List(list) => {
-                    let string = list.path.get_ident().unwrap().to_string();
-                    get_attr_stub(&mut settings, &string, Some(list), list.span(), get_attrs)?;
-                }
-            }
-        }
+        get_attr_iter(&mut settings, &variant.attrs, get_attrs)?;
         if settings.skip {
             continue;
         }
@@ -398,6 +362,27 @@ fn parse_enum_field(
                 (#id, #subid, PacketType::NGS) => {#push_string},
             }),
             PacketType::Empty => {}
+        }
+    }
+    Ok(())
+}
+
+fn get_attr_iter<S>(
+    set: &mut S,
+    attrs: &[syn::Attribute],
+    cb: fn(&mut S, &str, Option<&MetaList>, Span) -> syn::Result<()>,
+) -> syn::Result<()> {
+    for attr in attrs {
+        match &attr.meta {
+            syn::Meta::NameValue(_) => {}
+            syn::Meta::Path(path) => {
+                let string = path.get_ident().unwrap().to_string();
+                get_attr_stub(set, &string, None, path.span(), cb)?;
+            }
+            syn::Meta::List(list) => {
+                let string = list.path.get_ident().unwrap().to_string();
+                get_attr_stub(set, &string, Some(list), list.span(), cb)?;
+            }
         }
     }
     Ok(())

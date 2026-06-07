@@ -64,7 +64,7 @@ pub enum Race {
     Cast,
     Deuman,
 
-    #[Read_default]
+    #[pso2packet(read_default)]
     Unknown = 0xFFFF,
 }
 
@@ -77,7 +77,7 @@ pub enum Gender {
     Male,
     Female,
 
-    #[Read_default]
+    #[pso2packet(read_default)]
     Unknown = 0xFFFF,
 }
 
@@ -220,7 +220,7 @@ pub struct Look {
 #[repr(u16)]
 pub enum RunAnimation {
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     Walking = 9,
     /// Hover animation (only for CASTs).
     Hovering = 11,
@@ -232,7 +232,7 @@ pub enum RunAnimation {
 #[repr(u8)]
 pub enum SkinColor {
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     RaceDefined,
     Human,
     Deuman,
@@ -261,7 +261,7 @@ pub enum Class {
     Etole,
     Luster,
 
-    #[Read_default]
+    #[pso2packet(read_default)]
     Unknown = 0xFF,
 }
 
@@ -270,7 +270,7 @@ bitflags::bitflags! {
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[cfg_attr(feature = "serde", serde(default))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[BitFlags(u16)]
+    #[pso2packet(bitflags(u16))]
     pub struct ClassFlags: u16 {
         const Hunter = 1 << 0;
         const Ranger = 1 << 1;

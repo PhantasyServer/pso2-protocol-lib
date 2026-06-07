@@ -28,9 +28,9 @@ use std::{
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x06)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xB65A, 0x7D)]
+#[pso2packet(id(0x0B, 0x06))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xB65A, 0x7D))]
 pub struct StartCutscenePacket {
     /// Name of the cutscene.
     pub scene_name: AsciiString,
@@ -55,7 +55,7 @@ pub struct StartCutscenePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x09)]
+#[pso2packet(id(0x0B, 0x09))]
 pub struct MinimapRevealRequestPacket {
     pub unk1: u32,
     /// ID of the chunk that a player has entered.
@@ -72,7 +72,7 @@ pub struct MinimapRevealRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x10)]
+#[pso2packet(id(0x0B, 0x10))]
 pub struct Unk0B10Packet {
     pub world: ObjectHeader,
     pub party: ObjectHeader,
@@ -87,7 +87,7 @@ pub struct Unk0B10Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x13)]
+#[pso2packet(id(0x0B, 0x13))]
 pub struct MinimapRevealPacket {
     /// World object where revealing was done.
     pub world: ObjectHeader,
@@ -105,9 +105,9 @@ pub struct MinimapRevealPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x14)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x06BA, 0x98)]
+#[pso2packet(id(0x0B, 0x14))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x06BA, 0x98))]
 pub struct QuestResultPacket {
     /// Enemy Kills score.
     pub enemy_kills: QuestResultEntry,
@@ -183,7 +183,7 @@ pub struct QuestResultPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x15)]
+#[pso2packet(id(0x0B, 0x15))]
 pub struct AvailableQuestsRequestPacket {
     pub unk1: u32,
 }
@@ -196,7 +196,7 @@ pub struct AvailableQuestsRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x16)]
+#[pso2packet(id(0x0B, 0x16))]
 pub struct AvailableQuestsPacket {
     pub unk1: u16,
     pub extreme_count: u16,
@@ -252,7 +252,7 @@ pub struct AvailableQuestsPacket {
     pub damage_calc_count: u16,
     pub etoile_training_count: u16,
     pub divide_count: u16,
-    #[NotOn(super::PacketType::Vita)]
+    #[pso2packet(not_on(super::PacketType::Vita))]
     pub stars_count: [u16; 6],
     pub unk16: u16,
     pub available_types: AvailableQuestType,
@@ -270,11 +270,11 @@ pub struct AvailableQuestsPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x17)]
+#[pso2packet(id(0x0B, 0x17))]
 pub struct QuestCategoryRequestPacket {
     pub unk1: u32,
     /// Requested category.
-    #[SeekAfter(3)]
+    #[pso2packet(seek_after(3))]
     pub category: QuestType,
 }
 
@@ -289,9 +289,9 @@ pub struct QuestCategoryRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x18)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x1DB0, 0xC5)]
+#[pso2packet(id(0x0B, 0x18))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x1DB0, 0xC5))]
 pub struct QuestCategoryPacket {
     /// List of quests in a requested category.
     pub quests: Vec<Quest>,
@@ -305,9 +305,9 @@ pub struct QuestCategoryPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x19)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xA36E, 0x10)]
+#[pso2packet(id(0x0B, 0x19))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xA36E, 0x10))]
 pub struct QuestDifficultyRequestPacket {
     /// List of object of requested quests.
     pub quests: Vec<ObjectHeader>,
@@ -324,9 +324,9 @@ pub struct QuestDifficultyRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x1A)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x292C, 0x5B)]
+#[pso2packet(id(0x0B, 0x1A))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x292C, 0x5B))]
 pub struct QuestDifficultyPacket {
     /// List of difficulties for requested quests.
     pub quests: Vec<QuestDifficulty>,
@@ -338,7 +338,7 @@ pub struct QuestDifficultyPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x1F)]
+#[pso2packet(id(0x0B, 0x1F))]
 pub struct SetQuestPointsPacket {
     pub unk1: ObjectHeader,
     /// Party receiving the points.
@@ -358,7 +358,7 @@ pub struct SetQuestPointsPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x20)]
+#[pso2packet(id(0x0B, 0x20))]
 pub struct AcceptQuestPacket {
     /// Selected quest object.
     pub quest_obj: ObjectHeader,
@@ -378,7 +378,7 @@ pub struct AcceptQuestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x22)]
+#[pso2packet(id(0x0B, 0x22))]
 pub struct NewUnlockedQuestsPacket {
     /// List of unlocked quests
     pub unlocks: FixedVec<51, UnlockedQuest>,
@@ -390,7 +390,7 @@ pub struct NewUnlockedQuestsPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x25)]
+#[pso2packet(id(0x0B, 0x25))]
 pub struct Unk0B25Packet {
     pub world: ObjectHeader,
     pub unk1: u32,
@@ -402,7 +402,7 @@ pub struct Unk0B25Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x28)]
+#[pso2packet(id(0x0B, 0x28))]
 pub struct QuestPointsAddedPacket {
     /// Gained amount of points (may be zero).
     pub added: u32,
@@ -411,7 +411,7 @@ pub struct QuestPointsAddedPacket {
     /// Y position of the number.
     pub y: f16,
     /// Z position of the number.
-    #[SeekAfter(2)]
+    #[pso2packet(seek_after(2))]
     pub z: f16,
 }
 
@@ -424,7 +424,7 @@ pub struct QuestPointsAddedPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x2F)]
+#[pso2packet(id(0x0B, 0x2F))]
 pub struct AcceptQuestOtherPacket {
     /// Selected quest object.
     pub quest_obj: ObjectHeader,
@@ -440,7 +440,7 @@ pub struct AcceptQuestOtherPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x42)]
+#[pso2packet(id(0x0B, 0x42))]
 pub struct Unk0B42Packet {
     pub world: ObjectHeader,
     pub unk1: u32,
@@ -452,7 +452,7 @@ pub struct Unk0B42Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0x62)]
+#[pso2packet(id(0x0B, 0x62))]
 pub struct EQARKSLevelPacket {
     /// New level.
     pub level: u32,
@@ -464,7 +464,7 @@ pub struct EQARKSLevelPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0xAF)]
+#[pso2packet(id(0x0B, 0xAF))]
 pub struct Unk0BAFPacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -478,7 +478,7 @@ pub struct Unk0BAFPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0xCD)]
+#[pso2packet(id(0x0B, 0xCD))]
 pub struct AcceptStoryQuestPacket {
     pub name_id: u32,
     pub unk: u32,
@@ -490,9 +490,9 @@ pub struct AcceptStoryQuestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0xD0)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x3E03, 0xC2)]
+#[pso2packet(id(0x0B, 0xD0))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x3E03, 0xC2))]
 pub struct Unk0BD0Packet {
     pub unk1: FixedVec<0x23, u32>,
     pub unk2: Vec<u32>,
@@ -504,7 +504,7 @@ pub struct Unk0BD0Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0xD4)]
+#[pso2packet(id(0x0B, 0xD4))]
 pub struct Unk0BD4Packet {
     pub unk: u32,
 }
@@ -515,7 +515,7 @@ pub struct Unk0BD4Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0B, 0xF1)]
+#[pso2packet(id(0x0B, 0xF1))]
 pub struct Unk0BF1Packet {
     pub unk1: u32,
     pub unk2: u32,
@@ -577,7 +577,7 @@ pub struct Quest {
 pub enum PartyType {
     /// Only one player can join.
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     Solo,
     /// Only one party can join (up to 4 players).
     SingleParty,
@@ -649,7 +649,7 @@ bitflags::bitflags! {
     /// Available quest types flags.
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[BitFlags(u128)]
+    #[pso2packet(bitflags(u128))]
     pub struct AvailableQuestType: u128 {
         const EXTREME = 1 << 1;
         // unsure
@@ -751,7 +751,7 @@ bitflags::bitflags! {
 #[repr(u8)]
 pub enum QuestType {
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     Unk0,
     Extreme,
     ARKS = 3,
@@ -825,7 +825,7 @@ bitflags::bitflags! {
     /// Available quest difficulties.
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[BitFlags(u8)]
+    #[pso2packet(bitflags(u8))]
     pub struct QuestDifficultyType: u8 {
         const NORMAL = 1 << 0;
         const HARD = 1 << 1;
@@ -940,7 +940,7 @@ pub enum QuestResultRank {
     A,
     S,
 
-    #[Read_default]
+    #[pso2packet(read_default)]
     Unknown = 0xFFFF_FFFF,
 }
 
@@ -948,7 +948,7 @@ bitflags::bitflags! {
     /// Gained quest item flags.
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[BitFlags(u32)]
+    #[pso2packet(bitflags(u32))]
     pub struct QuestItemFlags: u32 {
         /// No inventory space was available for an item.
         const NO_SPACE_ITEM = 1 << 0;

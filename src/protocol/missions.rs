@@ -15,9 +15,9 @@ use super::{HelperReadWrite, PacketReadWrite};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x4A, 0x01)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xC691, 0x47)]
+#[pso2packet(id(0x4A, 0x01))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xC691, 0x47))]
 pub struct MissionListPacket {
     pub unk1: u32,
     /// List of missions.
@@ -36,9 +36,9 @@ pub struct MissionListPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x4A, 0x03)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xD20D, 0xDD)]
+#[pso2packet(id(0x4A, 0x03))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xD20D, 0xDD))]
 pub struct Unk4A03Packet {
     pub unk1: u32,
     pub unk2: Vec<Mission>,
@@ -53,7 +53,7 @@ pub struct Unk4A03Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x4A, 0x0C)]
+#[pso2packet(id(0x4A, 0x0C))]
 pub struct SetTrackedMissionPacket {
     /// Mission ID or [`u32::MAX`] if no mission is selected.
     pub id: u32,
@@ -101,6 +101,6 @@ pub struct Unk2Struct {
     pub unk: FixedVec<0x40, u32>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(super::PacketType::NGS)]
+    #[pso2packet(only_on(super::PacketType::NGS))]
     pub unk2: FixedVec<0x28, u32>,
 }

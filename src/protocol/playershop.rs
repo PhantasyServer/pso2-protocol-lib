@@ -15,9 +15,9 @@ use super::{items::Item, HelperReadWrite, ObjectHeader, PacketReadWrite};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2D, 0x02)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xD003, 0x3B)]
+#[pso2packet(id(0x2D, 0x02))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xD003, 0x3B))]
 pub struct ProductSearchRequestPacket {
     pub unk1: u16,
     pub unk2: u8,
@@ -38,9 +38,9 @@ pub struct ProductSearchRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2D, 0x03)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x55C1, 0x86)]
+#[pso2packet(id(0x2D, 0x03))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x55C1, 0x86))]
 pub struct ProductSearchResponsePacket {
     /// All listings of the queried item.
     pub items: Vec<SoldItem>,
@@ -54,7 +54,7 @@ pub struct ProductSearchResponsePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2D, 0x0B)]
+#[pso2packet(id(0x2D, 0x0B))]
 pub struct PlayerShopDetailsRequestPacket {
     /// Queried shop's owner.
     pub owner: ObjectHeader,
@@ -68,9 +68,9 @@ pub struct PlayerShopDetailsRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2D, 0x0C)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x096C, 0x2A)]
+#[pso2packet(id(0x2D, 0x0C))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x096C, 0x2A))]
 pub struct PlayerShopDetailsResponsePacket {
     /// Queried shop's owner.
     pub owner: ObjectHeader,
@@ -92,9 +92,9 @@ pub struct PlayerShopDetailsResponsePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2D, 0x0D)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x8F2A, 0x75)]
+#[pso2packet(id(0x2D, 0x0D))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x8F2A, 0x75))]
 pub struct CharacterSearchRequestPacket {
     /// Searched character name.
     pub char_name: String,
@@ -108,9 +108,9 @@ pub struct CharacterSearchRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2D, 0x0E)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x14E7, 0xC0)]
+#[pso2packet(id(0x2D, 0x0E))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x14E7, 0xC0))]
 pub struct CharacterSearchResponsePacket {
     pub unk1: u8,
     pub unk2: u8,
@@ -126,7 +126,7 @@ pub struct CharacterSearchResponsePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2D, 0x12)]
+#[pso2packet(id(0x2D, 0x12))]
 pub struct RecruitingAlliancesRequestPacket {
     pub unk: u64,
 }
@@ -139,9 +139,9 @@ pub struct RecruitingAlliancesRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2D, 0x13)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xB19C, 0x38)]
+#[pso2packet(id(0x2D, 0x13))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xB19C, 0x38))]
 pub struct RecruitingAlliancesResponsePacket {
     pub unk1: u32,
     pub unk2: u16,

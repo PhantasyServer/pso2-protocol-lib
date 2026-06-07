@@ -12,9 +12,9 @@ use super::{HelperReadWrite, PacketReadWrite};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2A, 0x08)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xB976, 0xA5)]
+#[pso2packet(id(0x2A, 0x08))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xB976, 0xA5))]
 pub struct Unk2A08Packet {
     pub unk1: Vec<Unk2A08_1>,
     pub unk2: Vec<u32>,
@@ -40,7 +40,7 @@ pub struct Unk2A08_1 {
     pub unk1: FixedBytes<0x10>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(super::PacketType::NGS)]
+    #[pso2packet(only_on(super::PacketType::NGS))]
     pub unk2: FixedBytes<0x4>,
 }
 

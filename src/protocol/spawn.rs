@@ -15,7 +15,7 @@ use crate::{fixed_types::{FixedAsciiString, FixedBytes, FixedString, VecUSize}, 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x08, 0x04)]
+#[pso2packet(id(0x08, 0x04))]
 pub struct CharacterSpawnPacket {
     // unsure about real structure
     /// Spawned character's player object.
@@ -42,7 +42,7 @@ pub struct CharacterSpawnPacket {
     pub gm_flag: u32,
     /// Player's nickname.
     pub nickname: FixedString<0x10>,
-    #[SeekAfter(0x60)]
+    #[pso2packet(seek_after(0x60))]
     pub unk12: FixedBytes<0x40>,
 }
 
@@ -54,7 +54,7 @@ pub struct CharacterSpawnPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, PartialEq, PacketReadWrite, Default)]
-#[Id(0x08, 0x04)]
+#[pso2packet(id(0x08, 0x04))]
 pub struct CharacterSpawnNGSPacket {
     // unsure about real structure
     /// Spawned character's player object.
@@ -81,7 +81,7 @@ pub struct CharacterSpawnNGSPacket {
     /// Player's nickname.
     pub nickname: FixedString<0x10>,
     pub unk12: FixedBytes<0x40>,
-    #[SeekAfter(0x60)]
+    #[pso2packet(seek_after(0x60))]
     pub unk13: u64,
 }
 
@@ -91,7 +91,7 @@ pub struct CharacterSpawnNGSPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x08, 0x05)]
+#[pso2packet(id(0x08, 0x05))]
 pub struct TransporterSpawnPacket {
     /// Spawned object header.
     pub object: ObjectHeader,
@@ -115,7 +115,7 @@ pub struct TransporterSpawnPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x08, 0x09)]
+#[pso2packet(id(0x08, 0x09))]
 pub struct EventSpawnPacket {
     /// Spawned event header.
     pub object: ObjectHeader,
@@ -147,7 +147,7 @@ pub struct EventSpawnPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x08, 0x0B)]
+#[pso2packet(id(0x08, 0x0B))]
 pub struct ObjectSpawnPacket {
     /// Spawned object header.
     pub object: ObjectHeader,
@@ -169,9 +169,9 @@ pub struct ObjectSpawnPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x08, 0x0C)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x9FCD, 0xE7)]
+#[pso2packet(id(0x08, 0x0C))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x9FCD, 0xE7))]
 pub struct NPCSpawnPacket {
     /// Spawned NPC object.
     pub object: ObjectHeader,
@@ -200,9 +200,9 @@ pub struct NPCSpawnPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x08, 0x0D)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x258B, 0x32)]
+#[pso2packet(id(0x08, 0x0D))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x258B, 0x32))]
 pub struct EnemySpawnPacket {
     /// Spawned enemy object.
     pub object: ObjectHeader,
@@ -244,7 +244,7 @@ pub enum CharacterSpawnType {
     #[default]
     Myself = 0x2F,
 
-    #[Read_default]
+    #[pso2packet(read_default)]
     Undefined = 0xFF,
 }
 

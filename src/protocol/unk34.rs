@@ -13,9 +13,9 @@ use super::{items::Item, HelperReadWrite, PacketReadWrite};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x34, 0x35)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xA475, 0x100)]
+#[pso2packet(id(0x34, 0x35))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xA475, 0x100))]
 pub struct Unk3435Packet {
     pub unk1: u32,
     pub unk2: Vec<Unk3435_1>,
@@ -27,7 +27,7 @@ pub struct Unk3435Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x34, 0x5C)]
+#[pso2packet(id(0x34, 0x5C))]
 pub struct Unk345CPacket {
     pub unk: u32,
 }
@@ -40,9 +40,9 @@ pub struct Unk345CPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x34, 0x71)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xFCE8, 0x9B)]
+#[pso2packet(id(0x34, 0x71))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xFCE8, 0x9B))]
 pub struct PlayerShopListResponsePacket {
     pub unk1: u32,
     pub items: Vec<TopItem>,

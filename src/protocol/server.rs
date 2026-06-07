@@ -14,7 +14,7 @@ use crate::{fixed_types::FixedBytes, AsciiString};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x00)]
+#[pso2packet(id(0x03, 0x00))]
 pub struct MapTransferPacket {
     /// Target zone object.
     pub map: ObjectHeader,
@@ -32,7 +32,7 @@ pub struct MapTransferPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x05)]
+#[pso2packet(id(0x03, 0x05))]
 pub struct MoveZonePacket {
     /// Current world object.
     pub world: ObjectHeader,
@@ -48,7 +48,7 @@ pub struct MoveZonePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x06)]
+#[pso2packet(id(0x03, 0x06))]
 pub struct Unk0306Packet {
     pub unk: [u8; 0xC],
 }
@@ -61,11 +61,11 @@ pub struct Unk0306Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x08)]
+#[pso2packet(id(0x03, 0x08))]
 pub struct ServerHelloPacket {
     /// Unknown. Seems to be always 0x03.
     pub unk1: u16,
-    #[SeekAfter(4)]
+    #[pso2packet(seek_after(4))]
     /// Block Id.
     pub blockid: u16,
     pub unk2: u32,
@@ -87,7 +87,7 @@ pub struct ServerHelloPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x10)]
+#[pso2packet(id(0x03, 0x10))]
 pub struct MapLoadedPacket {
     /// Loaded zone object.
     pub map_object: ObjectHeader,
@@ -102,7 +102,7 @@ pub struct MapLoadedPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x11)]
+#[pso2packet(id(0x03, 0x11))]
 pub struct CampshipDownAreaPacket {
     pub world: ObjectHeader,
     pub unk4: u32,
@@ -117,7 +117,7 @@ pub struct CampshipDownAreaPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x12)]
+#[pso2packet(id(0x03, 0x12))]
 pub struct ToCampshipPacket {
     pub world: ObjectHeader,
     pub unk4: u32,
@@ -131,7 +131,7 @@ pub struct ToCampshipPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x16)]
+#[pso2packet(id(0x03, 0x16))]
 pub struct CampshipDownPacket {
     pub world: ObjectHeader,
     pub unk4: u32,
@@ -146,7 +146,7 @@ pub struct CampshipDownPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x17)]
+#[pso2packet(id(0x03, 0x17))]
 pub struct ReturnToCampshipPacket {
     pub world: ObjectHeader,
 }
@@ -159,7 +159,7 @@ pub struct ReturnToCampshipPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x19)]
+#[pso2packet(id(0x03, 0x19))]
 pub struct ReturnToCampshipFinalPacket {
     pub world: ObjectHeader,
 }
@@ -172,7 +172,7 @@ pub struct ReturnToCampshipFinalPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x1A)]
+#[pso2packet(id(0x03, 0x1A))]
 pub struct DeathToCampshipPacket {
     pub world: ObjectHeader,
 }
@@ -185,7 +185,7 @@ pub struct DeathToCampshipPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x1C)]
+#[pso2packet(id(0x03, 0x1C))]
 pub struct CampshipToLobbyPacket {
     pub world: ObjectHeader,
 }
@@ -200,9 +200,9 @@ pub struct CampshipToLobbyPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x24)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x7542, 0x5E)]
+#[pso2packet(id(0x03, 0x24))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x7542, 0x5E))]
 pub struct LoadLevelPacket {
     /// Initial zone object.
     pub map_object: ObjectHeader,
@@ -272,7 +272,7 @@ pub struct LoadLevelPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x34)]
+#[pso2packet(id(0x03, 0x34))]
 pub struct CasinoToLobbyPacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -288,7 +288,7 @@ pub struct CasinoToLobbyPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x35)]
+#[pso2packet(id(0x03, 0x35))]
 pub struct CasinoTransportPacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -303,7 +303,7 @@ pub struct CasinoTransportPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x38)]
+#[pso2packet(id(0x03, 0x38))]
 pub struct BridgeToLobbyPacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -320,7 +320,7 @@ pub struct BridgeToLobbyPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x39)]
+#[pso2packet(id(0x03, 0x39))]
 pub struct BridgeTransportPacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -335,7 +335,7 @@ pub struct BridgeTransportPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x3B)]
+#[pso2packet(id(0x03, 0x3B))]
 pub struct CafeToLobbyPacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -352,7 +352,7 @@ pub struct CafeToLobbyPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x3C)]
+#[pso2packet(id(0x03, 0x3C))]
 pub struct CafeTransportPacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -368,7 +368,7 @@ pub struct CafeTransportPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x03, 0x41)]
+#[pso2packet(id(0x03, 0x41))]
 pub struct StoryToLobbyPacket {
     pub unk1: u32,
     pub unk2: u32,

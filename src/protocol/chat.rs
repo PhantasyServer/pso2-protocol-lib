@@ -14,9 +14,9 @@ use super::{HelperReadWrite, ObjectHeader, PacketReadWrite};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x07, 0x00)]
-#[Flags(Flags::PACKED | Flags::OBJECT_RELATED)]
-#[Magic(0x9D3F, 0x44)]
+#[pso2packet(id(0x07, 0x00))]
+#[pso2packet(flags(Flags::PACKED | Flags::OBJECT_RELATED))]
+#[pso2packet(magic(0x9D3F, 0x44))]
 pub struct ChatMessage {
     /// Sender of the message.
     pub object: ObjectHeader,
@@ -26,11 +26,11 @@ pub struct ChatMessage {
     pub unk4: u16,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(super::PacketType::NGS)]
+    #[pso2packet(only_on(super::PacketType::NGS))]
     pub unk5: u16,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(super::PacketType::NGS)]
+    #[pso2packet(only_on(super::PacketType::NGS))]
     pub unk6: u16,
     pub unk7: String,
     /// Message.
@@ -59,6 +59,6 @@ pub enum MessageChannel {
     /// Group channel. (?)
     Group,
 
-    #[Read_default]
+    #[pso2packet(read_default)]
     Undefined = 0xFF,
 }

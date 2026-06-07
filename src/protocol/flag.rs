@@ -12,7 +12,7 @@ use crate::fixed_types::{FixedAsciiString, FixedBytes, FixedVec};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x23, 0x02)]
+#[pso2packet(id(0x23, 0x02))]
 pub struct SetFlagPacket {
     /// Flag type.
     pub flag_type: FlagType,
@@ -28,7 +28,7 @@ pub struct SetFlagPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x23, 0x04)]
+#[pso2packet(id(0x23, 0x04))]
 pub struct ServerSetFlagPacket {
     /// Flag type.
     pub flag_type: FlagType,
@@ -45,7 +45,7 @@ pub struct ServerSetFlagPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x23, 0x05)]
+#[pso2packet(id(0x23, 0x05))]
 pub struct ServerSetParamPacket {
     /// Parameter type.
     pub param_type: FlagType,
@@ -63,7 +63,7 @@ pub struct ServerSetParamPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x23, 0x06)]
+#[pso2packet(id(0x23, 0x06))]
 pub struct AccountFlagsPacket {
     /// Account flags.
     pub flags: FixedBytes<0x400>,
@@ -71,7 +71,7 @@ pub struct AccountFlagsPacket {
     pub params: FixedVec<0x100, u32>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(super::PacketType::NGS)]
+    #[pso2packet(only_on(super::PacketType::NGS))]
     pub unk: FixedBytes<0x400>,
 }
 
@@ -83,7 +83,7 @@ pub struct AccountFlagsPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x23, 0x07)]
+#[pso2packet(id(0x23, 0x07))]
 pub struct CharacterFlagsPacket {
     /// Character flags.
     pub flags: FixedBytes<0xC00>,
@@ -91,7 +91,7 @@ pub struct CharacterFlagsPacket {
     pub params: FixedVec<0x100, u32>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(super::PacketType::NGS)]
+    #[pso2packet(only_on(super::PacketType::NGS))]
     pub unk: FixedBytes<0xF40>,
 }
 
@@ -101,7 +101,7 @@ pub struct CharacterFlagsPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x23, 0x0A)]
+#[pso2packet(id(0x23, 0x0A))]
 pub struct CutsceneEndPacket {
     /// Cuscene ID.
     pub skit_name: FixedAsciiString<0x20>,
@@ -120,7 +120,7 @@ pub struct CutsceneEndPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x23, 0x0B)]
+#[pso2packet(id(0x23, 0x0B))]
 pub struct SkitItemAddRequestPacket {
     /// Skit ID.
     pub skit_name: FixedAsciiString<0x20>,
@@ -135,7 +135,7 @@ pub struct SkitItemAddRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x23, 0x0C)]
+#[pso2packet(id(0x23, 0x0C))]
 pub struct SkitItemAddResponsePacket {
     /// Skit ID.
     pub skit_name: FixedAsciiString<0x20>,
@@ -148,7 +148,7 @@ pub struct SkitItemAddResponsePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x23, 0x0D)]
+#[pso2packet(id(0x23, 0x0D))]
 pub struct Unk230DPacket {
     pub unk: u32,
 }
@@ -159,9 +159,9 @@ pub struct Unk230DPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x23, 0x0E)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xAC40, 0x99)]
+#[pso2packet(id(0x23, 0x0E))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xAC40, 0x99))]
 pub struct Unk230EPacket {
     pub unk: Vec<Unk230EThing>,
 }
@@ -174,12 +174,12 @@ pub struct Unk230EPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x23, 0x15)]
+#[pso2packet(id(0x23, 0x15))]
 pub struct Unk2315Packet {
     pub unk: FixedBytes<0x1800>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(super::PacketType::NGS)]
+    #[pso2packet(only_on(super::PacketType::NGS))]
     pub unk2: FixedBytes<0x1E80>,
 }
 
@@ -203,7 +203,7 @@ pub struct Unk230EThing {
 pub enum FlagType {
     /// Flag is account related.
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     Account,
     /// Flag is character related.
     Character,

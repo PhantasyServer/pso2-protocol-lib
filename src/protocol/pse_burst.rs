@@ -12,7 +12,7 @@ use super::{HelperReadWrite, PacketReadWrite};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x1B, 0x00)]
+#[pso2packet(id(0x1B, 0x00))]
 pub struct PseStartPacket {
     /// ID of the PSE.
     pub pse_id: u32,
@@ -28,7 +28,7 @@ pub struct PseStartPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x1B, 0x01)]
+#[pso2packet(id(0x1B, 0x01))]
 pub struct PseEndPacket {
     pub pse_id: u32,
 }
@@ -39,7 +39,7 @@ pub struct PseEndPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x1B, 0x04)]
+#[pso2packet(id(0x1B, 0x04))]
 pub struct SetPseLevelPacket {
     /// ID of the PSE.
     pub pse_id: u32,
@@ -55,7 +55,7 @@ pub struct SetPseLevelPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x1B, 0x05)]
+#[pso2packet(id(0x1B, 0x05))]
 pub struct PseBurstActionPacket {
     /// PSE burst action ID.
     pub action: PSEBurstAction,
@@ -80,6 +80,6 @@ pub enum PSEBurstAction {
     OneMore,
 
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     Unknown = 0xFFFF_FFFF,
 }

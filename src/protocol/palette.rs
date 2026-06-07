@@ -17,7 +17,7 @@ use super::{HelperReadWrite, PacketReadWrite};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x21, 0x01)]
+#[pso2packet(id(0x21, 0x01))]
 pub struct LoadPalettePacket {
     /// Current palette index.
     pub cur_palette: u32,
@@ -28,7 +28,7 @@ pub struct LoadPalettePacket {
     /// Palettes in the first book.
     pub palettes: [WeaponPalette; 6],
     /// Subpalettes in the first book.
-    #[SeekAfter(0x240)] // maybe other books
+    #[pso2packet(seek_after(0x240))] // maybe other books
     pub subpalettes: [SubPalette; 6],
 }
 
@@ -41,7 +41,7 @@ pub struct LoadPalettePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x21, 0x03)]
+#[pso2packet(id(0x21, 0x03))]
 pub struct FullPaletteInfoPacket {
     // from packet 0x21, 0x01
     /// Current palette index.
@@ -54,10 +54,10 @@ pub struct FullPaletteInfoPacket {
     pub palettes: [WeaponPalette; 6],
     /// Subpalettes in the first book.
     pub subpalettes: [SubPalette; 6],
-    #[Seek(0x240)] // maybe other books
+    #[pso2packet(seek(0x240))] // maybe other books
     // from packet 0x21, 0x0F
     /// Default photon arts (?).
-    #[SeekAfter(0x240)] // padding??
+    #[pso2packet(seek_after(0x240))] // padding??
     pub default_pa: FixedVec<0x1A0, u32>,
 }
 
@@ -71,7 +71,7 @@ pub struct FullPaletteInfoPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x21, 0x04)]
+#[pso2packet(id(0x21, 0x04))]
 pub struct SetPalettePacket {
     /// Selected palette index.
     pub palette: u32,
@@ -87,7 +87,7 @@ pub struct SetPalettePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x21, 0x05)]
+#[pso2packet(id(0x21, 0x05))]
 pub struct UpdateSubPalettePacket {
     /// New subpalettes.
     pub subpalettes: [SubPalette; 6],
@@ -107,7 +107,7 @@ pub struct UpdateSubPalettePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x21, 0x06)]
+#[pso2packet(id(0x21, 0x06))]
 pub struct UpdatePalettePacket {
     /// Current palette index.
     pub cur_palette: u32,
@@ -121,7 +121,7 @@ pub struct UpdatePalettePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x21, 0x08)]
+#[pso2packet(id(0x21, 0x08))]
 pub struct SetSubPalettePacket {
     /// New subpalette index.
     pub subpalette: u32,
@@ -135,7 +135,7 @@ pub struct SetSubPalettePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x21, 0x0A)]
+#[pso2packet(id(0x21, 0x0A))]
 pub struct SetDefaultPAsPacket {
     pub default: FixedVec<0x1A0, u32>,
 }
@@ -148,9 +148,9 @@ pub struct SetDefaultPAsPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x21, 0x0F)]
+#[pso2packet(id(0x21, 0x0F))]
 pub struct NewDefaultPAsPacket {
-    #[SeekAfter(0x240)] // padding??
+    #[pso2packet(seek_after(0x240))] // padding??
     pub default: FixedVec<0x1A0, u32>,
 }
 

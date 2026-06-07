@@ -15,7 +15,7 @@ use super::{items::Item, ObjectHeader, PacketReadWrite};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x26, 0x00)]
+#[pso2packet(id(0x26, 0x00))]
 pub struct FriendAvatarDataRequestPacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -29,9 +29,9 @@ pub struct FriendAvatarDataRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x26, 0x08)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xC2CD, 0x2F)]
+#[pso2packet(id(0x26, 0x08))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xC2CD, 0x2F))]
 pub struct FriendAvatarDataResponsePacket {
     pub unk1: u32,
     pub unk2: u32,

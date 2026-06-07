@@ -14,7 +14,7 @@ use super::{items::Item, HelperReadWrite, PacketReadWrite};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x4D, 0x01)]
+#[pso2packet(id(0x4D, 0x01))]
 pub struct MissionPassInfoPacket {
     pub unk: FixedVec<0x2F, u32>,
 }
@@ -27,9 +27,9 @@ pub struct MissionPassInfoPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x4D, 0x03)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xB0C, 0x35)]
+#[pso2packet(id(0x4D, 0x03))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xB0C, 0x35))]
 pub struct MissionPassPacket {
     pub unk1: u32,
     /// Ongoing season ID.

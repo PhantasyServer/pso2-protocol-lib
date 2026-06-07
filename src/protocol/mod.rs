@@ -1719,7 +1719,7 @@ bitflags::bitflags! {
     /// Packet flags.
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[BitFlags(u8)]
+    #[pso2packet(bitflags(u8))]
     pub struct Flags: u8 {
         /// Set when the packet contains variable length data.
         const PACKED = 1 << 2;
@@ -1754,7 +1754,7 @@ pub enum ObjectType {
     World = 16,
     /// Non-playable partners.
     APC = 22,
-    #[Read_default]
+    #[pso2packet(read_default)]
     Undefined = 0xFFFF,
 }
 

@@ -447,7 +447,7 @@ bitflags::bitflags! {
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[cfg_attr(feature = "serde", serde(default))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[BitFlags(u8)]
+    #[pso2packet(bitflags(u8))]
     pub struct GenderFlags: u8 {
         /// Males can equip.
         const MALE = 1 << 0;
@@ -461,7 +461,7 @@ bitflags::bitflags! {
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[cfg_attr(feature = "serde", serde(default))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[BitFlags(u8)]
+    #[pso2packet(bitflags(u8))]
     pub struct RaceFlags: u8 {
         /// Humans can equip.
         const HUMAN = 1 << 0;
@@ -481,7 +481,7 @@ bitflags::bitflags! {
 pub enum StatType {
     /// MEL power.
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     MELPwr,
     /// RNG power.
     RNGPwr,

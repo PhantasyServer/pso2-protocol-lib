@@ -19,20 +19,20 @@ use super::questlist::{Quest, QuestDifficulty, QuestType};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x00)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xCCE7, 0x13)]
+#[pso2packet(id(0x0E, 0x00))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xCCE7, 0x13))]
 pub struct AddMemberPacket {
     /// New player object.
     pub new_member: ObjectHeader,
     /// Party color of the player.
     pub color: Color,
-    #[Seek(3)]
+    #[pso2packet(seek(3))]
     /// Level of the main class.
     pub level: u32,
     /// Level of the subclass.
     pub sublevel: u32,
-    #[SeekAfter(3)]
+    #[pso2packet(seek_after(3))]
     /// Class of the player.
     pub class: Class,
     /// Subclass of the player.
@@ -58,7 +58,7 @@ pub struct AddMemberPacket {
     pub unk16: AsciiString,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(PacketType::NGS)]
+    #[pso2packet(only_on(PacketType::NGS))]
     pub unk17: AsciiString,
 }
 
@@ -72,7 +72,7 @@ pub struct AddMemberPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x01)]
+#[pso2packet(id(0x0E, 0x01))]
 pub struct RemoveMemberPacket {
     /// Removed player object.
     pub removed_member: ObjectHeader,
@@ -91,9 +91,9 @@ pub struct RemoveMemberPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x02)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xD863, 0xA9)]
+#[pso2packet(id(0x0E, 0x02))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xD863, 0xA9))]
 pub struct PartyInitPacket {
     /// Party object.
     pub party_object: ObjectHeader,
@@ -114,7 +114,7 @@ pub struct PartyInitPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x04)]
+#[pso2packet(id(0x0E, 0x04))]
 pub struct PartyInviteResultPacket {
     pub unk1: u32,
     pub status: u32,
@@ -128,7 +128,7 @@ pub struct PartyInviteResultPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x05)]
+#[pso2packet(id(0x0E, 0x05))]
 pub struct PartyInviteRequestPacket {
     /// Object of the player being invited.
     pub invitee: ObjectHeader,
@@ -140,9 +140,9 @@ pub struct PartyInviteRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x06)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xEF59, 0xD5)]
+#[pso2packet(id(0x0E, 0x06))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xEF59, 0xD5))]
 pub struct NewInvitePacket {
     /// Invited party object.
     pub party_object: ObjectHeader,
@@ -164,7 +164,7 @@ pub struct NewInvitePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x07)]
+#[pso2packet(id(0x0E, 0x07))]
 pub struct AcceptInvitePacket {
     /// Invited party object.
     pub party_object: ObjectHeader,
@@ -180,9 +180,9 @@ pub struct AcceptInvitePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x0C)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x11CB, 0x98)]
+#[pso2packet(id(0x0E, 0x0C))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x11CB, 0x98))]
 pub struct NewPartySettingsPacket {
     /// Name of the party.
     pub name: String,
@@ -213,9 +213,9 @@ pub struct NewPartySettingsPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x0D)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x9789, 0xE3)]
+#[pso2packet(id(0x0E, 0x0D))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x9789, 0xE3))]
 pub struct PartySettingsPacket {
     /// Name of the party.
     pub name: String,
@@ -242,7 +242,7 @@ pub struct PartySettingsPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x0E)]
+#[pso2packet(id(0x0E, 0x0E))]
 pub struct TransferLeaderPacket {
     /// Object of the new leader.
     pub target: ObjectHeader,
@@ -258,7 +258,7 @@ pub struct TransferLeaderPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x0F)]
+#[pso2packet(id(0x0E, 0x0F))]
 pub struct NewLeaderPacket {
     /// Object of the new leader.
     pub leader: ObjectHeader,
@@ -272,7 +272,7 @@ pub struct NewLeaderPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x10)]
+#[pso2packet(id(0x0E, 0x10))]
 pub struct KickMemberPacket {
     /// Member to be kicked.
     pub member: ObjectHeader,
@@ -288,7 +288,7 @@ pub struct KickMemberPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x11)]
+#[pso2packet(id(0x0E, 0x11))]
 pub struct KickedMemberPacket {
     /// Member who was kicked.
     pub member: ObjectHeader,
@@ -302,7 +302,7 @@ pub struct KickedMemberPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x17)]
+#[pso2packet(id(0x0E, 0x17))]
 pub struct DisbandPartyPacket {
     /// Disbanded party object.
     pub party: ObjectHeader,
@@ -318,8 +318,8 @@ pub struct DisbandPartyPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x19)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x0E, 0x19))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct ChatStatusPacket {
     /// Object of the player (not set for C -> S).
     pub object: ObjectHeader,
@@ -333,7 +333,7 @@ pub struct ChatStatusPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x1A)]
+#[pso2packet(id(0x0E, 0x1A))]
 pub struct Unk0E1APacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -351,9 +351,9 @@ pub struct Unk0E1APacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x1B)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xE7E8, 0xFF)]
+#[pso2packet(id(0x0E, 0x1B))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xE7E8, 0xFF))]
 pub struct PartyInfoPacket {
     /// Number of populated party infos.
     pub num_of_infos: u32,
@@ -369,7 +369,7 @@ pub struct PartyInfoPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x1C)]
+#[pso2packet(id(0x0E, 0x1C))]
 pub struct PartyInfoStopperPacker {
     pub unk: u32,
 }
@@ -382,9 +382,9 @@ pub struct PartyInfoStopperPacker {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x1D)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xF364, 0x95)]
+#[pso2packet(id(0x0E, 0x1D))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xF364, 0x95))]
 pub struct GetPartyDetailsPacket {
     /// Requested party objects.
     pub parties: Vec<ObjectHeader>,
@@ -401,9 +401,9 @@ pub struct GetPartyDetailsPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x1E)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x7921, 0xE0)]
+#[pso2packet(id(0x0E, 0x1E))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x7921, 0xE0))]
 pub struct PartyDetailsPacket {
     /// Number of populated party details.
     pub num_of_details: u32,
@@ -417,9 +417,9 @@ pub struct PartyDetailsPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x21)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x0A5A, 0xC1)]
+#[pso2packet(id(0x0E, 0x21))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x0A5A, 0xC1))]
 pub struct Unk0E21Packet {
     pub people_amount: u32,
     pub entries: [PartyEntry; 4],
@@ -435,7 +435,7 @@ pub struct Unk0E21Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x25)]
+#[pso2packet(id(0x0E, 0x25))]
 pub struct SetQuestInfoPacket {
     /// Name ID of the quest.
     pub name: u32,
@@ -461,7 +461,7 @@ pub struct SetQuestInfoPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x2A)]
+#[pso2packet(id(0x0E, 0x2A))]
 pub struct Unk0E2APacket {
     pub unk1: ObjectHeader,
     pub unk2: u16,
@@ -480,7 +480,7 @@ pub struct Unk0E2APacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x2B)]
+#[pso2packet(id(0x0E, 0x2B))]
 pub struct NewBusyStatePacket {
     /// Object of the player.
     pub object: ObjectHeader,
@@ -494,7 +494,7 @@ pub struct NewBusyStatePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x2C)]
+#[pso2packet(id(0x0E, 0x2C))]
 pub struct InviteDeclinePacket {
     /// New decline status.
     pub decline_status: RejectStatus,
@@ -508,9 +508,9 @@ pub struct InviteDeclinePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x2E)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xD4FC, 0x92)]
+#[pso2packet(id(0x0E, 0x2E))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xD4FC, 0x92))]
 pub struct GetPartyInfoPacket {
     /// Requested party objects.
     pub parties: Vec<ObjectHeader>,
@@ -524,11 +524,11 @@ pub struct GetPartyInfoPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x31)]
+#[pso2packet(id(0x0E, 0x31))]
 pub struct SetPartyQuestPacket {
     pub name: u32,
     pub difficulty: u32,
-    #[SeekAfter(3)]
+    #[pso2packet(seek_after(3))]
     pub quest_type: QuestType,
     pub quest_def: Quest,
     pub quest_diffs: QuestDifficulty,
@@ -543,7 +543,7 @@ pub struct SetPartyQuestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x4F)]
+#[pso2packet(id(0x0E, 0x4F))]
 pub struct SetPartyColorPacket {
     /// Target player object.
     pub target: ObjectHeader,
@@ -558,7 +558,7 @@ pub struct SetPartyColorPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x52)]
+#[pso2packet(id(0x0E, 0x52))]
 pub struct Unk0E52Packet {
     pub unk1: u32,
     pub unk2: u32,
@@ -570,7 +570,7 @@ pub struct Unk0E52Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0E, 0x67)]
+#[pso2packet(id(0x0E, 0x67))]
 pub struct PartySetupFinishPacket {
     pub unk: u32,
 }
@@ -610,7 +610,7 @@ pub struct PartyEntry {
     pub unk4: [u8; 0xC],
     pub unk5: [u32; 3],
     pub unk6: String,
-    #[OnlyOn(PacketType::Vita)]
+    #[pso2packet(only_on(PacketType::Vita))]
     pub unk10: String,
     pub unk7: AsciiString,
     /// Player's text language.
@@ -618,7 +618,7 @@ pub struct PartyEntry {
     pub unk9: [u8; 3],
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(PacketType::NGS)]
+    #[pso2packet(only_on(PacketType::NGS))]
     pub unk11: String,
 }
 
@@ -628,7 +628,7 @@ pub struct PartyEntry {
 #[repr(u8)]
 pub enum Color {
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     Red,
     Green,
     Yellow,
@@ -644,7 +644,7 @@ pub enum ShortLanguage {
     Japanese,
     English,
 
-    #[Read_default]
+    #[pso2packet(read_default)]
     Unknown,
 }
 
@@ -653,7 +653,7 @@ bitflags::bitflags! {
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[cfg_attr(feature = "serde", serde(default))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[BitFlags(u8)]
+    #[pso2packet(bitflags(u8))]
     pub struct PartyFlags: u8 {
         /// Is the party only for friends.
         const FRIENDS_ONLY = 1 << 0;
@@ -697,7 +697,7 @@ pub struct PartyInfo {
 #[repr(u32)]
 pub enum RejectStatus {
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     Allow,
     Reject,
 }
@@ -751,7 +751,7 @@ pub struct PartyMember {
 #[repr(u32)]
 pub enum BusyState {
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     NotBusy,
     Busy,
 }

@@ -16,7 +16,7 @@ use std::time::Duration;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x1A, 0x00)]
+#[pso2packet(id(0x1A, 0x00))]
 pub struct MailListRequestPacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -31,9 +31,9 @@ pub struct MailListRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x1A, 0x01)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x36A1, 0xBF)]
+#[pso2packet(id(0x1A, 0x01))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x36A1, 0xBF))]
 pub struct MailListPacket {
     pub unk1: u16,
     pub unk2: u16,
@@ -57,9 +57,9 @@ pub struct MailListPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x1A, 0x02)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xBC5F, 0x0B)]
+#[pso2packet(id(0x1A, 0x02))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xBC5F, 0x0B))]
 pub struct DeleteMailRequestPacket {
     /// IDs of messages to delete.
     pub ids: Vec<MailId>,
@@ -73,9 +73,9 @@ pub struct DeleteMailRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x1A, 0x03)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x421C, 0x56)]
+#[pso2packet(id(0x1A, 0x03))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x421C, 0x56))]
 pub struct DeletedMailPacket {
     /// Deleted messages IDs.
     pub ids: Vec<MailId>,
@@ -90,7 +90,7 @@ pub struct DeletedMailPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x1A, 0x06)]
+#[pso2packet(id(0x1A, 0x06))]
 pub struct MailBodyRequestPacket {
     /// Message ID.
     pub id: MailId,
@@ -104,9 +104,9 @@ pub struct MailBodyRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x1A, 0x07)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x5913, 0x82)]
+#[pso2packet(id(0x1A, 0x07))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x5913, 0x82))]
 pub struct MailBodyPacket {
     /// Message ID.
     pub id: MailId,

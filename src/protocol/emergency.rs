@@ -15,9 +15,9 @@ use crate::{
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x15, 0x02)]
-#[Magic(0x080B, 0x77)]
-#[Flags(Flags::PACKED)]
+#[pso2packet(id(0x15, 0x02))]
+#[pso2packet(magic(0x080B, 0x77))]
+#[pso2packet(flags(Flags::PACKED))]
 pub struct SpawnEmergencyPacket {
     /// Emergency object.
     pub object: ObjectHeader,
@@ -54,9 +54,9 @@ pub struct SpawnEmergencyPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x15, 0x03)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x8DC9, 0xC2)]
+#[pso2packet(id(0x15, 0x03))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x8DC9, 0xC2))]
 pub struct EmergencyEndPacket {
     /// Emergency object.
     pub object: ObjectHeader,
@@ -82,7 +82,7 @@ pub struct EmergencyEndPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x15, 0x05)]
+#[pso2packet(id(0x15, 0x05))]
 pub struct EmergencyProgressPacket {
     /// Emergency object.
     pub emergency: ObjectHeader,
@@ -98,7 +98,7 @@ pub struct EmergencyProgressPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x15, 0x08)]
+#[pso2packet(id(0x15, 0x08))]
 pub struct Unk1508Packet {
     /// Emergency object.
     pub emergency: ObjectHeader,
@@ -112,9 +112,9 @@ pub struct Unk1508Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x15, 0x11)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xDE28, 0xDE)]
+#[pso2packet(id(0x15, 0x11))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xDE28, 0xDE))]
 pub struct AvailableEmergenciesPacket {
     /// Emergency definitions.
     pub definitions: FixedVec<0x40, EmergencyDefinition>,
@@ -128,7 +128,7 @@ pub struct AvailableEmergenciesPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x15, 0x14)]
+#[pso2packet(id(0x15, 0x14))]
 pub struct Unk1514Packet {
     pub zone_id: u32,
     pub unk2: u32,

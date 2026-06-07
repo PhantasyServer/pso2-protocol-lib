@@ -55,25 +55,26 @@ pub use pso2packetlib_impl::ProtocolRW;
 ///
 /// # Note
 /// This macro makes few assumtions about the packet struct:
-/// - The only container type currently allowed is [`Vec<T>`].
-/// - Any type that is not hardcoded (i.e integers, floats, [`half::f16`], [`std::net::Ipv4Addr`],
-///   [`std::time::Duration`], [`String`], [`AsciiString`]) must implement
-///   [`protocol::HelperReadWrite`] or have the `read`, `write` functions with the same prototype.
+/// - All types used must implement [`protocol::HelperReadWrite`] or use
+///   `#[pso2packet(manual_rw(..))]` attribute.
 ///
 /// # Attribute explanation
 /// ## Container attributes
-/// - `#[Id(_id_, _subid_)]` sets the ID and subID of the packet.
-/// - `#[Flags(_`[`protocol::Flags`]`_)]` sets the flags of the packet.
-/// - `#[Magic(_xor_, _sub_)]`. If the `packed` flag is set, then this attribute sets the
-///   deciphering xor and sub for variable length types.
+/// - `#[pso2packet(id(_id_, _subid_))]` sets the ID and subID of the packet.
+/// - `#[pso2packet(flags(_`[`protocol::Flags`]`_))]` sets the flags of the packet.
+/// - `#[pso2packet(magic(_xor_, _sub_))]`. If the `packed` flag is set, then this attribute sets
+///   the deciphering xor and sub for variable length types.
 /// ## Field attributes
-/// - `#[Seek(_seek-amount_)]` sets the padding before the field data.
-/// - `#[SeekAfter(_seek-amount_)]` sets the padding after the field data.
-/// - `#[Const_u16(_const-int_)]` sets the constant u16 before the field data.
-/// - `#[OnlyOn(_`[`protocol::PacketType`]`_)]`. If set then the field will only be read/written if
-///   the reader packet type matches the specified packet type.
-/// - `#[NotOn(_`[`protocol::PacketType`]`_)]`. If set then the field will only be read/written if
-///   the reader packet type differs from the specified packet type.
+/// - `#[pso2packet(only_on(_`[`protocol::PacketType`]`_))]`. If set then the field will only be
+///   read/written if the reader packet type matches the specified packet type.
+/// - `#[pso2packet(not_on(_`[`protocol::PacketType`]`_))]`. If set then the field will only be
+///   read/written if the reader packet type differs from the specified packet type.
+/// - `#[pso2packet(manual_rw(_readfn_, _writefn_))]` sets the read/write functions for the field.
+///   Specified functions must have the same prototype as the [`protocol::HelperReadWrite`]
+///   functions.
+/// - `#[pso2packet(seek(_seek-amount_))]` sets the padding before the field data.
+/// - `#[pso2packet(seek_after(_seek-amount_))]` sets the padding after the field data.
+/// - `#[pso2packet(const_u16(_const-int_))]` sets the constant u16 before the field data.
 #[cfg(feature = "derive")]
 #[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub use pso2packetlib_impl::PacketRW;
@@ -83,7 +84,9 @@ pub use pso2packetlib_impl::PacketRW;
 /// # Note
 /// This macro makes few assumtions about
 /// 1) the packet struct:
-/// - Any type must implement [`protocol::HelperReadWrite`].
+/// - All types used must implement [`protocol::HelperReadWrite`] or use
+///   `#[pso2packet(manual_rw(..))]` attribute.
+/// attribute.
 /// 2) the flags struct:
 /// - All fields must be of type [`bool`]
 /// 3) the variant enum:
@@ -93,21 +96,23 @@ pub use pso2packetlib_impl::PacketRW;
 ///
 /// # Attribute explanation
 /// ## Container attributes
-/// - `#[Flags(u*)]` makes the struct into a flags struct with the specified length.
-/// - `#[BitFlags(u*)]` adds read/write support for [`bitflags`] flags containers.
-/// ## Field attributes
-/// - `#[Seek(_seek-amount_)]` sets the padding before the field data.
-/// - `#[SeekAfter(_seek-amount_)]` sets the padding after the field data.
-/// - `#[Const_u16(_const-int_)]` sets the constant u16 before the field data.
-/// - `#[Read_default]` sets the default enum variant for reading.
-/// - `#[Skip]`. If applied to a field struct field, then this attribute will skip one bit of the
-///   flags.
-/// - `#[ManualRW(_readfn_, _writefn_)]` sets the read/write functions for the variant. Specified
-///   functions must have the same prototype as the [`protocol::HelperReadWrite`] functions.
-/// - `#[OnlyOn(_`[`protocol::PacketType`]`_)]`. If set then the field will only be read/written if
-///   the reader packet type matches the specified packet type.
-/// - `#[NotOn(_`[`protocol::PacketType`]`_)]`. If set then the field will only be read/written if
-///   the reader packet type differs from the specified packet type.
+/// - `#[pso2packet(flags(u*))]` makes the struct into a flags struct with the specified length.
+/// - `#[pso2packet(bitflags(u*))]` adds read/write support for [`bitflags`] flags containers.
+/// ## Struct field attributes
+/// - `#[pso2packet(only_on(_`[`protocol::PacketType`]`_))]`. If set then the field will only be
+///   read/written if the reader packet type matches the specified packet type.
+/// - `#[pso2packet(not_on(_`[`protocol::PacketType`]`_))]`. If set then the field will only be
+///   read/written if the reader packet type differs from the specified packet type.
+/// - `#[pso2packet(manual_rw(_readfn_, _writefn_))]` sets the read/write functions for the field.
+///   Specified functions must have the same prototype as the [`protocol::HelperReadWrite`]
+///   functions.
+/// - `#[pso2packet(seek(_seek-amount_))]` sets the padding before the field data.
+/// - `#[pso2packet(seek_after(_seek-amount_))]` sets the padding after the field data.
+/// - `#[pso2packet(const_u16(_const-int_))]` sets the constant u16 before the field data.
+/// ## Enum field attributes
+/// - `#[pso2packet(read_default)]` sets the default enum variant for reading.
+/// ## Flag struct field attributes
+/// - `#[pso2packet(skip)]` skips one bit of the flags struct.
 #[cfg(feature = "derive")]
 #[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub use pso2packetlib_impl::HelperRW;

@@ -12,9 +12,9 @@ use crate::AsciiString;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2B, 0x01)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xCEF1, 0xB5)]
+#[pso2packet(id(0x2B, 0x01))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xCEF1, 0xB5))]
 pub struct SaveSettingsPacket {
     /// Player settings.
     pub settings: AsciiString,
@@ -28,9 +28,9 @@ pub struct SaveSettingsPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2B, 0x02)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x54AF, 0x100)]
+#[pso2packet(id(0x2B, 0x02))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x54AF, 0x100))]
 pub struct LoadSettingsPacket {
     /// Player settings.
     pub settings: AsciiString,

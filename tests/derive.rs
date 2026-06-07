@@ -23,7 +23,7 @@ enum Packet {
 }
 
 #[derive(Debug, PartialEq, pso2packetlib_impl::PacketRW)]
-#[Id(1, 1)]
+#[pso2packet(id(1, 1))]
 struct Numbers {
     uint8: u8,
     int8: i8,
@@ -41,9 +41,9 @@ struct Numbers {
 }
 
 #[derive(Debug, PartialEq, pso2packetlib_impl::PacketRW)]
-#[Id(1, 2)]
-#[Flags(pso2packetlib::protocol::Flags::PACKED)]
-#[Magic(0x10, 0x10)]
+#[pso2packet(id(1, 2))]
+#[pso2packet(flags(pso2packetlib::protocol::Flags::PACKED))]
+#[pso2packet(magic(0x10, 0x10))]
 struct Variables {
     vec: pso2packetlib::fixed_types::Bytes,
     fixed_vec: pso2packetlib::fixed_types::FixedBytes<10>,
@@ -57,7 +57,7 @@ struct Variables {
 }
 
 #[derive(Debug, PartialEq, pso2packetlib_impl::PacketRW)]
-#[Id(1, 3)]
+#[pso2packet(id(1, 3))]
 struct Misc {
     ip: std::net::Ipv4Addr,
     time: std::time::Duration,
@@ -65,21 +65,21 @@ struct Misc {
 }
 
 #[derive(Debug, PartialEq, pso2packetlib_impl::PacketRW)]
-#[Id(1, 4)]
+#[pso2packet(id(1, 4))]
 struct Attributes {
-    #[Seek(2)]
-    #[SeekAfter(2)]
+    #[pso2packet(seek(2))]
+    #[pso2packet(seek_after(2))]
     a: u8,
-    #[Const_u16(5)]
+    #[pso2packet(const_u16(5))]
     b: u8,
-    #[OnlyOn(pso2packetlib::protocol::PacketType::JP)]
+    #[pso2packet(only_on(pso2packetlib::protocol::PacketType::JP))]
     c: u8,
-    #[NotOn(pso2packetlib::protocol::PacketType::JP)]
+    #[pso2packet(not_on(pso2packetlib::protocol::PacketType::JP))]
     d: u8,
 }
 
 #[derive(Debug, PartialEq, pso2packetlib_impl::PacketRW)]
-#[Id(1, 5)]
+#[pso2packet(id(1, 5))]
 struct Helpers {
     flags: HelperFlags,
     bitflags: HelperBitFlags,
@@ -87,9 +87,9 @@ struct Helpers {
 }
 
 #[derive(Debug, PartialEq, pso2packetlib_impl::HelperRW)]
-#[Flags(u8)]
+#[pso2packet(flags(u8))]
 struct HelperFlags {
-    #[Skip]
+    #[pso2packet(skip)]
     a: bool,
     b: bool,
 }
@@ -97,14 +97,14 @@ struct HelperFlags {
 #[derive(Debug, PartialEq, Clone, Copy, pso2packetlib_impl::HelperRW)]
 #[repr(u8)]
 enum Enum {
-    #[Read_default]
+    #[pso2packet(read_default)]
     A,
     B,
 }
 
 bitflags::bitflags! {
     #[derive(pso2packetlib_impl::HelperRW, PartialEq, Debug)]
-    #[BitFlags(u16)]
+    #[pso2packet(bitflags(u16))]
     struct HelperBitFlags: u16 {
         const A = 1 << 0;
         const B = 1 << 1;

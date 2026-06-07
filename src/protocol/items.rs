@@ -22,9 +22,9 @@ use std::{io::SeekFrom, time::Duration};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x00)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x8A92, 0x30)]
+#[pso2packet(id(0x0F, 0x00))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x8A92, 0x30))]
 pub struct ItemAttributesPacket {
     /// Attribute ID (?) (seen only 0 or 1).
     pub id: u16,
@@ -48,7 +48,7 @@ pub struct ItemAttributesPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x01)]
+#[pso2packet(id(0x0F, 0x01))]
 pub struct ItemPickupRequestPacket {
     /// Item drop ID.
     pub drop_id: u32,
@@ -64,7 +64,7 @@ pub struct ItemPickupRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x02)]
+#[pso2packet(id(0x0F, 0x02))]
 pub struct ItemPickupResponsePacket {
     /// Packet receiver object (? or player, who picked up the item, unsure)
     pub target: ObjectHeader,
@@ -83,7 +83,7 @@ pub struct ItemPickupResponsePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x04)]
+#[pso2packet(id(0x0F, 0x04))]
 pub struct NewItemDropPacket {
     /// Item drop object.
     pub item_obj: ObjectHeader,
@@ -109,7 +109,7 @@ pub struct NewItemDropPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x05)]
+#[pso2packet(id(0x0F, 0x05))]
 pub struct AddedItemPacket {
     /// Added item data.
     pub item: Item,
@@ -123,9 +123,9 @@ pub struct AddedItemPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x06)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xAD04, 0xF3)]
+#[pso2packet(id(0x0F, 0x06))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xAD04, 0xF3))]
 pub struct UpdateInventoryPacket {
     /// Items being updated.
     pub updated: Vec<UpdatedInventoryItem>,
@@ -139,7 +139,7 @@ pub struct UpdateInventoryPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x08)]
+#[pso2packet(id(0x0F, 0x08))]
 pub struct EquipItemRequestPacket {
     /// Equiped item UUID.
     pub uuid: u64,
@@ -154,9 +154,9 @@ pub struct EquipItemRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x09)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x3E3D, 0xD4)]
+#[pso2packet(id(0x0F, 0x09))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x3E3D, 0xD4))]
 pub struct EquipItemPacket {
     /// Player who equiped an item (?).
     pub player_equiped: ObjectHeader,
@@ -168,11 +168,11 @@ pub struct EquipItemPacket {
     pub unk2: u64,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(PacketType::NGS)]
+    #[pso2packet(only_on(PacketType::NGS))]
     pub unk3: FixedVec<0x58, u8>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(PacketType::NGS)]
+    #[pso2packet(only_on(PacketType::NGS))]
     pub unk4: u32,
 }
 
@@ -182,7 +182,7 @@ pub struct EquipItemPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x0A)]
+#[pso2packet(id(0x0F, 0x0A))]
 pub struct UnequipItemRequestPacket {
     /// Unequiped item UUID.
     pub uuid: u64,
@@ -197,7 +197,7 @@ pub struct UnequipItemRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x0B)]
+#[pso2packet(id(0x0F, 0x0B))]
 pub struct UnequipItemPacket {
     /// Player who unequiped an item (?).
     pub player_unequiped: ObjectHeader,
@@ -208,11 +208,11 @@ pub struct UnequipItemPacket {
     pub unk1: u64,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(PacketType::NGS)]
+    #[pso2packet(only_on(PacketType::NGS))]
     pub unk2: FixedVec<0x58, u8>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(PacketType::NGS)]
+    #[pso2packet(only_on(PacketType::NGS))]
     pub unk3: u32,
 }
 
@@ -223,9 +223,9 @@ pub struct UnequipItemPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x0C)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xCF76, 0xB5)]
+#[pso2packet(id(0x0F, 0x0C))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xCF76, 0xB5))]
 pub struct LoadEquipedPacket {
     /// Player whose equipment is loaded.
     pub player: ObjectHeader,
@@ -235,11 +235,11 @@ pub struct LoadEquipedPacket {
     pub unk2: FixedVec<0x28, u8>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(PacketType::NGS)]
+    #[pso2packet(only_on(PacketType::NGS))]
     pub unk3: FixedVec<0x58, u8>,
     #[cfg(feature = "ngs_packets")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ngs_packets")))]
-    #[OnlyOn(PacketType::NGS)]
+    #[pso2packet(only_on(PacketType::NGS))]
     pub unk4: u32,
 }
 
@@ -251,9 +251,9 @@ pub struct LoadEquipedPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x0D)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x5533, 0x1)]
+#[pso2packet(id(0x0F, 0x0D))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x5533, 0x1))]
 pub struct LoadPlayerInventoryPacket {
     /// Player object.
     pub object: ObjectHeader,
@@ -275,9 +275,9 @@ pub struct LoadPlayerInventoryPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x0F)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x60AF, 0x97)]
+#[pso2packet(id(0x0F, 0x0F))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x60AF, 0x97))]
 pub struct MoveToStorageRequestPacket {
     /// Information about items being moved.
     pub uuids: Vec<MoveStorageItemRequest>,
@@ -291,9 +291,9 @@ pub struct MoveToStorageRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x10)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xE66C, 0xE2)]
+#[pso2packet(id(0x0F, 0x10))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xE66C, 0xE2))]
 pub struct MoveToStoragePacket {
     /// New item status in the players inventory.
     pub updated_inventory: Vec<UpdatedInventoryItem>,
@@ -311,9 +311,9 @@ pub struct MoveToStoragePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x11)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x6C2A, 0x2D)]
+#[pso2packet(id(0x0F, 0x11))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x6C2A, 0x2D))]
 pub struct MoveToInventoryRequestPacket {
     /// Information about items being moved.
     pub uuids: Vec<MoveStorageItemRequest>,
@@ -327,9 +327,9 @@ pub struct MoveToInventoryRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x12)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xF1E8, 0x78)]
+#[pso2packet(id(0x0F, 0x12))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xF1E8, 0x78))]
 pub struct MoveToInventoryPacket {
     /// New item status in the players storage.
     pub updated: Vec<UpdatedStorageItem>,
@@ -345,9 +345,9 @@ pub struct MoveToInventoryPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x13)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x77A5, 0xC3)]
+#[pso2packet(id(0x0F, 0x13))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x77A5, 0xC3))]
 pub struct LoadStoragesPacket {
     /// Currently stored meseta.
     pub stored_meseta: u64,
@@ -364,7 +364,7 @@ pub struct LoadStoragesPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x14)]
+#[pso2packet(id(0x0F, 0x14))]
 pub struct InventoryMesetaPacket {
     /// New meseta amount.
     pub meseta: u64,
@@ -380,7 +380,7 @@ pub struct InventoryMesetaPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x15)]
+#[pso2packet(id(0x0F, 0x15))]
 pub struct MoveMesetaPacket {
     /// Amount to move.
     pub meseta: u64,
@@ -394,7 +394,7 @@ pub struct MoveMesetaPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x16)]
+#[pso2packet(id(0x0F, 0x16))]
 pub struct StorageMesetaPacket {
     /// New meseta amount.
     pub meseta: u64,
@@ -408,9 +408,9 @@ pub struct StorageMesetaPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x17)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x8E9C, 0xF0)]
+#[pso2packet(id(0x0F, 0x17))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x8E9C, 0xF0))]
 pub struct DiscardItemRequestPacket {
     /// UUIDs and amount of items being discarded.
     pub items: Vec<UUIDAmount>,
@@ -424,9 +424,9 @@ pub struct DiscardItemRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x18)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x145A, 0x3B)]
+#[pso2packet(id(0x0F, 0x18))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x145A, 0x3B))]
 pub struct MoveStoragesRequestPacket {
     /// Old storage ID.
     pub old_id: u16,
@@ -444,9 +444,9 @@ pub struct MoveStoragesRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x19)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x9A17, 0x86)]
+#[pso2packet(id(0x0F, 0x19))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x9A17, 0x86))]
 pub struct MoveStoragesPacket {
     /// New items in the receiving storage.
     pub new_items: Vec<NewStorageItem>,
@@ -464,7 +464,7 @@ pub struct MoveStoragesPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x1C)]
+#[pso2packet(id(0x0F, 0x1C))]
 pub struct GetItemDescriptionPacket {
     /// Item ID which description is requested.
     pub item: ItemId,
@@ -478,9 +478,9 @@ pub struct GetItemDescriptionPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x1D)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xB10E, 0xB2)]
+#[pso2packet(id(0x0F, 0x1D))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xB10E, 0xB2))]
 pub struct LoadItemDescriptionPacket {
     pub unk1: u32,
     /// Item ID which description is requested.
@@ -499,7 +499,7 @@ pub struct LoadItemDescriptionPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x21)]
+#[pso2packet(id(0x0F, 0x21))]
 pub struct EquipedWeaponPacket {
     /// Player changing the weapon.
     pub player: ObjectHeader,
@@ -514,9 +514,9 @@ pub struct EquipedWeaponPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x22)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x4DC2, 0x2A)]
+#[pso2packet(id(0x0F, 0x22))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x4DC2, 0x2A))]
 pub struct UpdateStoragePacket {
     pub unk: Vec<UpdatedStorageItem>,
     /// Already existing items being updated.
@@ -535,9 +535,9 @@ pub struct UpdateStoragePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x25)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xDEFB, 0x0B)]
+#[pso2packet(id(0x0F, 0x25))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xDEFB, 0x0B))]
 pub struct DiscardStorageItemRequestPacket {
     /// Items being discarded.
     pub items: Vec<MoveStorageItemRequest>,
@@ -549,9 +549,9 @@ pub struct DiscardStorageItemRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x2B)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x016D, 0xCE)]
+#[pso2packet(id(0x0F, 0x2B))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x016D, 0xCE))]
 pub struct Unk0F2BPacket {
     pub items: Vec<Item>,
 }
@@ -576,7 +576,7 @@ pub struct LoadItemPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x33)]
+#[pso2packet(id(0x0F, 0x33))]
 pub struct LearnedPAPacket {
     /// Player learning a PA.
     pub player: ObjectHeader,
@@ -594,9 +594,9 @@ pub struct LearnedPAPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x65)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x4E66, 0xD3)]
+#[pso2packet(id(0x0F, 0x65))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x4E66, 0xD3))]
 pub struct PotentialListPacket {
     pub unk1: u16,
     pub unk2: u16,
@@ -617,9 +617,9 @@ pub struct PotentialListPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x70)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x0D8C, 0x0D)]
+#[pso2packet(id(0x0F, 0x70))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x0D8C, 0x0D))]
 pub struct AccountCampaignsPacket {
     pub unk1: u32,
     /// Available campaigns.
@@ -636,9 +636,9 @@ pub struct AccountCampaignsPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x71)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x934A, 0x58)]
+#[pso2packet(id(0x0F, 0x71))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x934A, 0x58))]
 pub struct CampaignItemsRequestPacket {
     /// Campaign IDs.
     pub ids: Vec<u32>,
@@ -652,9 +652,9 @@ pub struct CampaignItemsRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x72)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x1908, 0xA3)]
+#[pso2packet(id(0x0F, 0x72))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x1908, 0xA3))]
 pub struct CampaignItemListPacket {
     pub unk1: u32,
     /// Campaign items.
@@ -669,7 +669,7 @@ pub struct CampaignItemListPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x73)]
+#[pso2packet(id(0x0F, 0x73))]
 pub struct ReceiveCampaignRequestPacket {
     /// Campaign ID.
     pub id: u32,
@@ -681,9 +681,9 @@ pub struct ReceiveCampaignRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x9C)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xA25, 0xF6)]
+#[pso2packet(id(0x0F, 0x9C))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xA25, 0xF6))]
 pub struct Unk0F9CPacket {
     pub ids: Vec<Unk0f9c>,
 }
@@ -696,13 +696,13 @@ pub struct Unk0F9CPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0xBC)]
+#[pso2packet(id(0x0F, 0xBC))]
 pub struct ChangeWeaponPalettePacket {
     /// Player switching the palette.
     pub player: ObjectHeader,
     pub unk: FixedVec<0x12, u16>,
     /// New palette ID.
-    #[SeekAfter(0x4)]
+    #[pso2packet(seek_after(0x4))]
     pub cur_palette: u32,
 }
 
@@ -714,9 +714,9 @@ pub struct ChangeWeaponPalettePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0xDF)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xAC9, 0x9F)]
+#[pso2packet(id(0x0F, 0xDF))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xAC9, 0x9F))]
 pub struct LoadMaterialStoragePacket {
     pub player_id: u32,
     /// Items in the material storage.
@@ -733,9 +733,9 @@ pub struct LoadMaterialStoragePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0xE0)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x9087, 0xEA)]
+#[pso2packet(id(0x0F, 0xE0))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x9087, 0xEA))]
 pub struct MoveToMatStorageRequestPacket {
     /// Information about items being moved.
     pub items: Vec<MaterialStorageItem>,
@@ -749,9 +749,9 @@ pub struct MoveToMatStorageRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0xE1)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x1644, 0x35)]
+#[pso2packet(id(0x0F, 0xE1))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x1644, 0x35))]
 pub struct MoveToMatStoragePacket {
     /// Items updated in the inventory.
     pub updated_inventory: Vec<UpdatedInventoryItem>,
@@ -767,9 +767,9 @@ pub struct MoveToMatStoragePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0xE2)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x9C02, 0x80)]
+#[pso2packet(id(0x0F, 0xE2))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x9C02, 0x80))]
 pub struct MoveFromMatStorageRequestPacket {
     /// Information about items being moved.
     pub items: Vec<MaterialStorageItem>,
@@ -783,9 +783,9 @@ pub struct MoveFromMatStorageRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0xE3)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x21C0, 0xCB)]
+#[pso2packet(id(0x0F, 0xE3))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x21C0, 0xCB))]
 pub struct MoveFromMatStoragePacket {
     /// Items updated in the material storage.
     pub mat_items: Vec<MaterialStorageItem>,
@@ -801,9 +801,9 @@ pub struct MoveFromMatStoragePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0xE8)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xBE74, 0x43)]
+#[pso2packet(id(0x0F, 0xE8))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xBE74, 0x43))]
 pub struct MoveMSToStorageRequestPacket {
     /// New storage ID.
     pub storage_id: u32,
@@ -819,9 +819,9 @@ pub struct MoveMSToStorageRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0xE9)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x4432, 0x8E)]
+#[pso2packet(id(0x0F, 0xE9))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x4432, 0x8E))]
 pub struct MoveMSToStoragePacket {
     /// Items updated in the material storage.
     pub mat_items: Vec<MaterialStorageItem>,
@@ -837,9 +837,9 @@ pub struct MoveMSToStoragePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0xEF)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x66A4, 0x51)]
+#[pso2packet(id(0x0F, 0xEF))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x66A4, 0x51))]
 pub struct Unk0FEFPacket {
     pub ids: Vec<ItemId>,
 }
@@ -850,9 +850,9 @@ pub struct Unk0FEFPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0xFC)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x3145, 0x21)]
+#[pso2packet(id(0x0F, 0xFC))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x3145, 0x21))]
 pub struct Unk0FFCPacket {
     pub ids: Vec<Unk0ffc>,
     pub unk: u32,
@@ -866,9 +866,9 @@ pub struct Unk0FFCPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x0F, 0x30)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x9E22, 0x46)]
+#[pso2packet(id(0x0F, 0x30))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x9E22, 0x46))]
 struct LoadItemInternal {
     ids: Vec<ItemId>,
     names: String,
@@ -1128,13 +1128,13 @@ pub struct UnitItem {
     pub enh_percent: u8,
     pub unk1: u8,
     /// Item affix IDs (ranging from 0 to 4095).
-    #[ManualRW(read_packed_affixes, write_packed_affixes)]
+    #[pso2packet(manual_rw(read_packed_affixes, write_packed_affixes))]
     pub affixes: [u16; 8],
     /// Item potential.
-    #[SeekAfter(0x7)]
+    #[pso2packet(seek_after(0x7))]
     pub potential: u32,
     pub unk2: [u8; 4],
-    #[Seek(1)]
+    #[pso2packet(seek(1))]
     pub unk3: u32,
     pub unk4: u16,
     pub unk5: u16,
@@ -1157,7 +1157,7 @@ pub struct UnitItemNGS {
     /// Item affix IDs.
     pub affixes: [u32; 8],
     /// Item potential.
-    #[SeekAfter(0x6)]
+    #[pso2packet(seek_after(0x6))]
     pub potential: u32,
     pub unk: [u8; 0xA],
 }
@@ -1170,9 +1170,9 @@ pub struct ClothingItem {
     /// Item flags.
     pub flags: u16,
     /// Clothing color (if applicable).
-    #[SeekAfter(0x14)]
+    #[pso2packet(seek_after(0x14))]
     pub color: HSVColor,
-    #[SeekAfter(0xA)]
+    #[pso2packet(seek_after(0xA))]
     pub unk1: u16,
 }
 
@@ -1194,9 +1194,9 @@ pub struct ClothingNGSItem {
     /// Clothing blue color (if applicable).
     pub b_color: u8,
     pub unk1: [u8; 4],
-    #[Seek(0x5)]
+    #[pso2packet(seek(0x5))]
     pub unk2: [u8; 3],
-    #[SeekAfter(0x20)]
+    #[pso2packet(seek_after(0x20))]
     pub unk3: u8,
 }
 
@@ -1208,7 +1208,7 @@ pub struct ConsumableItem {
     /// Item flags.
     pub flags: u16,
     /// Item amount.
-    #[SeekAfter(0x24)]
+    #[pso2packet(seek_after(0x24))]
     pub amount: u16,
 }
 
@@ -1222,7 +1222,7 @@ pub struct ConsumableNGSItem {
     /// Item flags.
     pub flags: u16,
     /// Item amount.
-    #[SeekAfter(0x34)]
+    #[pso2packet(seek_after(0x34))]
     pub amount: u16,
 }
 
@@ -1234,7 +1234,7 @@ pub struct CamoItem {
     pub unk1: u8,
     pub unk2: u8,
     pub unk3: u8,
-    #[SeekAfter(0x24)]
+    #[pso2packet(seek_after(0x24))]
     pub unk4: u8,
 }
 
@@ -1248,7 +1248,7 @@ pub struct CamoNGSItem {
     pub unk1: u8,
     pub unk2: u8,
     pub unk3: u8,
-    #[SeekAfter(0x34)]
+    #[pso2packet(seek_after(0x34))]
     pub unk4: u8,
 }
 
@@ -1383,7 +1383,7 @@ pub struct Unk0ffc {
 pub enum MesetaDirection {
     /// Meseta is moved Inventory -> Storage.
     #[default]
-    #[Read_default]
+    #[pso2packet(read_default)]
     ToStorage = 1,
     /// Meseta is moved Storage -> Inventory.
     ToInventory,

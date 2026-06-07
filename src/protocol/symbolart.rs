@@ -15,7 +15,7 @@ use super::{HelperReadWrite, MessageChannel, ObjectHeader, PacketReadWrite};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2F, 0x00)]
+#[pso2packet(id(0x2F, 0x00))]
 pub struct SymbolArtClientDataRequestPacket {
     /// Symbol Art UUID.
     pub uuid: u128,
@@ -29,7 +29,7 @@ pub struct SymbolArtClientDataRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2F, 0x01)]
+#[pso2packet(id(0x2F, 0x01))]
 pub struct SymbolArtDataRequestPacket {
     /// Symbol Art UUID.
     pub uuid: u128,
@@ -43,9 +43,9 @@ pub struct SymbolArtDataRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2F, 0x02)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x4B58, 0x76)]
+#[pso2packet(id(0x2F, 0x02))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x4B58, 0x76))]
 pub struct SymbolArtDataPacket {
     /// Symbol Art UUID.
     pub uuid: u128,
@@ -63,9 +63,9 @@ pub struct SymbolArtDataPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2F, 0x03)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xD116, 0xC1)]
+#[pso2packet(id(0x2F, 0x03))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xD116, 0xC1))]
 pub struct SymbolArtClientDataPacket {
     /// Symbol Art UUID.
     pub uuid: u128,
@@ -81,9 +81,9 @@ pub struct SymbolArtClientDataPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2F, 0x04)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x56D3, 0x0C)]
+#[pso2packet(id(0x2F, 0x04))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x56D3, 0x0C))]
 pub struct ChangeSymbolArtPacket {
     /// Symbol Art UUIDs and slot indexes.
     pub uuids: Vec<SlottedSymbolArt>,
@@ -97,9 +97,9 @@ pub struct ChangeSymbolArtPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2F, 0x05)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xDC91, 0x57)]
+#[pso2packet(id(0x2F, 0x05))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xDC91, 0x57))]
 pub struct SymbolArtResultPacket {
     pub unk1: u32,
     pub uuids: Vec<u128>,
@@ -113,9 +113,9 @@ pub struct SymbolArtResultPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2F, 0x07)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xE80C, 0xED)]
+#[pso2packet(id(0x2F, 0x07))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xE80C, 0xED))]
 pub struct SymbolArtListPacket {
     /// Player object.
     pub object: ObjectHeader,
@@ -133,8 +133,8 @@ pub struct SymbolArtListPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2F, 0x08)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x2F, 0x08))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct SendSymbolArtPacket {
     /// Sender object (unset).
     pub object: ObjectHeader,
@@ -153,7 +153,7 @@ pub struct SendSymbolArtPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x2F, 0x09)]
+#[pso2packet(id(0x2F, 0x09))]
 pub struct ReceiveSymbolArtPacket {
     /// Sender object.
     pub object: ObjectHeader,

@@ -17,9 +17,9 @@ use crate::fixed_types::{FixedString, FixedVec};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x42, 0x01)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xD93F, 0x5B)]
+#[pso2packet(id(0x42, 0x01))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xD93F, 0x5B))]
 pub struct CollectionNameListPacket {
     pub folders: Vec<CollectionFolderName>,
     pub unk: u32,
@@ -33,7 +33,7 @@ pub struct CollectionNameListPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x42, 0x02)]
+#[pso2packet(id(0x42, 0x02))]
 pub struct GetFolderItemListPacket {
     /// Requested folder ID.
     pub folder_id: u32,
@@ -47,9 +47,9 @@ pub struct GetFolderItemListPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x42, 0x03)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xE4BA, 0xF1)]
+#[pso2packet(id(0x42, 0x03))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xE4BA, 0xF1))]
 pub struct FolderItemListPacket {
     pub items: Vec<CollectionFolderItem>,
     pub unk: u32,
@@ -63,9 +63,9 @@ pub struct FolderItemListPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x42, 0x05)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xF035, 0x87)]
+#[pso2packet(id(0x42, 0x05))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xF035, 0x87))]
 pub struct ActiveSheetsPacket {
     pub items: Vec<CollectionFolderItem>,
     pub progress: Vec<CollectionFolderProgress>,
@@ -82,7 +82,7 @@ pub struct ActiveSheetsPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x42, 0x06)]
+#[pso2packet(id(0x42, 0x06))]
 pub struct ClaimSheetRequestPacket {
     /// Requested folder ID.
     pub folder_id: u32,
@@ -98,7 +98,7 @@ pub struct ClaimSheetRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x42, 0x07)]
+#[pso2packet(id(0x42, 0x07))]
 pub struct ClaimSheetResultPacket {
     pub unk: u32,
 }
@@ -111,9 +111,9 @@ pub struct ClaimSheetResultPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x42, 0x0F)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x299E, 0x76)]
+#[pso2packet(id(0x42, 0x0F))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x299E, 0x76))]
 pub struct ClaimSheetActionPacket {
     pub action: String,
     pub folder_name: String,

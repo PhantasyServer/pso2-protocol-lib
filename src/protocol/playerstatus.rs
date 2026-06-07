@@ -14,7 +14,7 @@ use half::f16;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x06, 0x00)]
+#[pso2packet(id(0x06, 0x00))]
 pub struct SetPlayerIDPacket {
     pub player_id: u32,
     pub unk1: u32,
@@ -29,7 +29,7 @@ pub struct SetPlayerIDPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x06, 0x01)]
+#[pso2packet(id(0x06, 0x01))]
 pub struct DealDamagePacket {
     /// Object that inflicted the damage.
     pub inflicter: ObjectHeader,
@@ -57,9 +57,9 @@ pub struct DealDamagePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x06, 0x05)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x7C49, 0x9E)]
+#[pso2packet(id(0x06, 0x05))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x7C49, 0x9E))]
 pub struct GainedEXPPacket {
     /// Packet receiver.
     pub sender: ObjectHeader,

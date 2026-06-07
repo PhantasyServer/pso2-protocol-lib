@@ -14,7 +14,7 @@ use crate::{fixed_types::FixedVec, AsciiString};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x1F, 0x01)]
+#[pso2packet(id(0x1F, 0x01))]
 pub struct TakenOrdersRequestPacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -30,9 +30,9 @@ pub struct TakenOrdersRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x1F, 0x02)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x70B2, 0x9E)]
+#[pso2packet(id(0x1F, 0x02))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x70B2, 0x9E))]
 pub struct OrderListRequestPacket {
     pub unk1: u32,
     /// Daily order list source ID.
@@ -51,7 +51,7 @@ pub struct OrderListRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x1F, 0x03)]
+#[pso2packet(id(0x1F, 0x03))]
 pub struct OrderListPacket {
     /// Player object.
     pub user: ObjectHeader,
@@ -69,7 +69,7 @@ pub struct OrderListPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x1F, 0x08)]
+#[pso2packet(id(0x1F, 0x08))]
 pub struct TakenOrdersPacket {
     /// Player object.
     pub user: ObjectHeader,
@@ -88,7 +88,7 @@ pub struct TakenOrdersPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
-#[Id(0x1F, 0x0F)]
+#[pso2packet(id(0x1F, 0x0F))]
 pub struct Unk1F0FPacket {
     pub unk1: u32,
     pub unk2: u32,

@@ -26,8 +26,8 @@ use std::{
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x02)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x02))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct TeleportTransferPacket {
     pub unk1: [u8; 0xC],
     /// Object that started the teleportation.
@@ -45,8 +45,8 @@ pub struct TeleportTransferPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x06)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x06))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct DespawnObjectPacket {
     /// Player that received this packet.
     pub player: ObjectHeader,
@@ -104,9 +104,9 @@ pub struct MovementPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x08)]
-#[Flags(Flags::PACKED | Flags::OBJECT_RELATED)]
-#[Magic(0x922D, 0x45)]
+#[pso2packet(id(0x04, 0x08))]
+#[pso2packet(flags(Flags::PACKED | Flags::OBJECT_RELATED))]
+#[pso2packet(magic(0x922D, 0x45))]
 pub struct MovementActionPacket {
     pub unk1: ObjectHeader,
     /// Object that performed an action.
@@ -132,8 +132,8 @@ pub struct MovementActionPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x0F)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x0F))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct EnemyKilledPacket {
     /// Player that receives this packet.
     pub receiver: ObjectHeader,
@@ -170,8 +170,8 @@ pub struct EnemyKilledPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x13)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x13))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct Unk0413Packet {
     pub unk1: [u8; 0xC],
     pub unk2: ObjectHeader,
@@ -187,9 +187,9 @@ pub struct Unk0413Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x14)]
-#[Flags(Flags::PACKED | Flags::OBJECT_RELATED)]
-#[Magic(0xD711, 0xCA)]
+#[pso2packet(id(0x04, 0x14))]
+#[pso2packet(flags(Flags::PACKED | Flags::OBJECT_RELATED))]
+#[pso2packet(magic(0xD711, 0xCA))]
 pub struct InteractPacket {
     pub unk1: [u8; 0xC],
     /// Target. (?)
@@ -209,9 +209,9 @@ pub struct InteractPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x15)]
-#[Flags(Flags::PACKED | Flags::OBJECT_RELATED)]
-#[Magic(0x5CCF, 0x15)]
+#[pso2packet(id(0x04, 0x15))]
+#[pso2packet(flags(Flags::PACKED | Flags::OBJECT_RELATED))]
+#[pso2packet(magic(0x5CCF, 0x15))]
 pub struct SetTagPacket {
     /// Player that receives this packet.
     pub receiver: ObjectHeader,
@@ -236,8 +236,8 @@ pub struct SetTagPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x20)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x20))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct ChangeClassRequestPacket {
     /// Unused object header.
     pub unused: ObjectHeader,
@@ -260,8 +260,8 @@ pub struct ChangeClassRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x21)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x21))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct ChangeClassPacket {
     /// Receiving player object header.
     pub receiver: ObjectHeader,
@@ -278,8 +278,8 @@ pub struct ChangeClassPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x22)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x22))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct EnemyActionPacket {
     pub receiver: ObjectHeader,
     pub actor: ObjectHeader,
@@ -294,8 +294,8 @@ pub struct EnemyActionPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x23)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x23))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct Unk0423Packet {
     pub unk1: [u8; 0xC],
     pub unk2: ObjectHeader,
@@ -309,8 +309,8 @@ pub struct Unk0423Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x24)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x24))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct Unk0424Packet {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -327,8 +327,8 @@ pub struct Unk0424Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x25)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x25))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct Unk0425Packet {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -343,8 +343,8 @@ pub struct Unk0425Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x2B)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x2B))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct Unk042BPacket {
     pub unk1: [u8; 0xC],
     pub unk2: ObjectHeader,
@@ -358,8 +358,8 @@ pub struct Unk042BPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x2C)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x2C))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct Unk042CPacket {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -375,8 +375,8 @@ pub struct Unk042CPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x2E)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x2E))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct LoadPAsPacket {
     /// Player that receives this packet.
     pub receiver: ObjectHeader,
@@ -393,8 +393,8 @@ pub struct LoadPAsPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x3B)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x3B))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct DespawnPlayerPacket {
     /// Player that receives this packet.
     pub receiver: ObjectHeader,
@@ -410,8 +410,8 @@ pub struct DespawnPlayerPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x3C)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x3C))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct ActionUpdatePacket {
     pub unk1: ObjectHeader,
     /// Object that performed this action.
@@ -427,8 +427,8 @@ pub struct ActionUpdatePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x52)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x52))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct DamageReceivePacket {
     /// Player that receives this packet.
     pub receiver: ObjectHeader,
@@ -467,8 +467,8 @@ pub struct DamageReceivePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x5F)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x5F))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct SetTitleRequestPacket {
     pub unused: ObjectHeader,
     /// Object of the player that has set the title.
@@ -487,8 +487,8 @@ pub struct SetTitleRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x71)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x71))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct MovementEndPacket {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -511,9 +511,9 @@ pub struct MovementEndPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x72)]
-#[Flags(Flags::OBJECT_RELATED | Flags::PACKED)]
-#[Magic(0xF2B6, 0x5F)]
+#[pso2packet(id(0x04, 0x72))]
+#[pso2packet(flags(Flags::OBJECT_RELATED | Flags::PACKED))]
+#[pso2packet(magic(0xF2B6, 0x5F))]
 pub struct SetTitlePacket {
     /// Object of the player that receives this packet.
     pub receiver: ObjectHeader,
@@ -534,9 +534,9 @@ pub struct SetTitlePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x75)]
-#[Flags(Flags::PACKED | Flags::OBJECT_RELATED)]
-#[Magic(0x83EF, 0x40)]
+#[pso2packet(id(0x04, 0x75))]
+#[pso2packet(flags(Flags::PACKED | Flags::OBJECT_RELATED))]
+#[pso2packet(magic(0x83EF, 0x40))]
 pub struct ActionEndPacket {
     pub unk1: ObjectHeader,
     /// Object that was performing an action.
@@ -555,8 +555,8 @@ pub struct ActionEndPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x79)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x79))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct Unk0479Packet {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -571,9 +571,9 @@ pub struct Unk0479Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x80)]
-#[Flags(Flags::PACKED | Flags::OBJECT_RELATED)]
-#[Magic(0x4315, 0x7A)]
+#[pso2packet(id(0x04, 0x80))]
+#[pso2packet(flags(Flags::PACKED | Flags::OBJECT_RELATED))]
+#[pso2packet(magic(0x4315, 0x7A))]
 pub struct MovementActionServerPacket {
     /// Player that receives this packet.
     pub receiver: ObjectHeader,
@@ -599,8 +599,8 @@ pub struct MovementActionServerPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x81)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x81))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct ActionUpdateServerPacket {
     /// Player that receives this packet.
     pub receiver: ObjectHeader,
@@ -615,8 +615,8 @@ pub struct ActionUpdateServerPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0x86)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0x86))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct Unk0486Packet {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -628,8 +628,8 @@ pub struct Unk0486Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0xAA)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0xAA))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct Unk04AAPacket {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -641,8 +641,8 @@ pub struct Unk04AAPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0xB0)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0xB0))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct Unk04B0Packet {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -656,8 +656,8 @@ pub struct Unk04B0Packet {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0xBA)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0xBA))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct Unk04BAPacket {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,
@@ -674,8 +674,8 @@ pub struct Unk04BAPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x04, 0xEA)]
-#[Flags(Flags::OBJECT_RELATED)]
+#[pso2packet(id(0x04, 0xEA))]
+#[pso2packet(flags(Flags::OBJECT_RELATED))]
 pub struct Unk04EAPacket {
     pub unk1: ObjectHeader,
     pub unk2: ObjectHeader,

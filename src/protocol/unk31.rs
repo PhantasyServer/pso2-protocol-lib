@@ -14,9 +14,9 @@ use crate::AsciiString;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x31, 0x02)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xC6AD, 0xB1)]
+#[pso2packet(id(0x31, 0x02))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xC6AD, 0xB1))]
 pub struct NewTitlesPacket {
     /// Unclaimed title IDs (i.e. new titles).
     pub new_titles_ids: Vec<u32>,
@@ -30,9 +30,9 @@ pub struct NewTitlesPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x31, 0x04)]
-#[Flags(Flags::PACKED)]
-#[Magic(0xD228, 0x47)]
+#[pso2packet(id(0x31, 0x04))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0xD228, 0x47))]
 pub struct TitleListPacket {
     /// Title information.
     pub title_infos: Vec<TitleInfo>,
@@ -61,7 +61,7 @@ pub struct LoadTitlesPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x31, 0x06)]
+#[pso2packet(id(0x31, 0x06))]
 pub struct GetTitleConditionPacket {
     /// Requested title ID.
     pub title_id: u32,
@@ -75,9 +75,9 @@ pub struct GetTitleConditionPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x31, 0x07)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x6361, 0x28)]
+#[pso2packet(id(0x31, 0x07))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x6361, 0x28))]
 pub struct LoadTitleConditionPacket {
     /// Requested title ID.
     pub title_id: u32,
@@ -134,7 +134,7 @@ pub struct PlayAchievementsResponsePacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x31, 0x0A)]
+#[pso2packet(id(0x31, 0x0A))]
 pub struct ReceiveTitleRewardRequestPacket {
     /// Requested title ID.
     pub title_id: u32,
@@ -148,7 +148,7 @@ pub struct ReceiveTitleRewardRequestPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x31, 0x0B)]
+#[pso2packet(id(0x31, 0x0B))]
 pub struct ReceiveTitleRewardPacket {
     pub unk1: u32,
     pub unk2: u32,
@@ -163,9 +163,9 @@ pub struct ReceiveTitleRewardPacket {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x31, 0x05)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x57E6, 0x92)]
+#[pso2packet(id(0x31, 0x05))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x57E6, 0x92))]
 struct LoadTitlesInternal {
     title_ids: Vec<u32>,
     names: String,
@@ -175,9 +175,9 @@ struct LoadTitlesInternal {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Default, PartialEq, PacketReadWrite)]
-#[Id(0x31, 0x09)]
-#[Flags(Flags::PACKED)]
-#[Magic(0x6EDC, 0xBE)]
+#[pso2packet(id(0x31, 0x09))]
+#[pso2packet(flags(Flags::PACKED))]
+#[pso2packet(magic(0x6EDC, 0xBE))]
 struct PlayAchievementsInternal {
     unk1: u32,
     /// Total enemies suppressed.
