@@ -95,7 +95,7 @@ enum Enum {
 
 bitflags::bitflags! {
     #[derive(pso2packetlib_impl::HelperRW, PartialEq, Debug)]
-    #[pso2packet(bitflags(u16))]
+    #[pso2packet(bitflags)]
     struct HelperBitFlags: u16 {
         const A = 1 << 0;
         const B = 1 << 1;

@@ -145,7 +145,7 @@ bitflags::bitflags! {
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[cfg_attr(feature = "serde", serde(default))]
     #[derive(Debug, Copy, Clone, Default, PartialEq, HelperReadWrite)]
-    #[pso2packet(bitflags(u8))]
+    #[pso2packet(bitflags)]
     pub struct FriendFlags: u8 {
         /// Is the friend online.
         const IS_ONLINE = 1 << 0;

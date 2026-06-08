@@ -94,7 +94,7 @@ pub use pso2packetlib_impl::PacketRW;
 ///
 /// # Attribute explanation
 /// ## Container attributes
-/// - `#[pso2packet(bitflags(u*))]` adds read/write support for [`bitflags`] flags containers.
+/// - `#[pso2packet(bitflags)]` adds read/write support for [`bitflags`] flags containers.
 /// ## Struct field attributes
 /// - `#[pso2packet(only_on(_`[`protocol::PacketType`]`_))]`. If set then the field will only be
 ///   read/written if the reader packet type matches the specified packet type.

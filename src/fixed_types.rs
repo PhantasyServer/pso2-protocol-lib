@@ -164,20 +164,8 @@ impl<const N: usize> HelperReadWrite for FixedString<N> {
         })
     }
 
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        _: crate::protocol::PacketType,
-        _: u32,
-        _: u32,
-    ) -> Result<(), crate::protocol::PacketError> {
-        writer
-            .write_all(&StringRW::write_fixed(&self.string, N as _))
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "FixedString",
-                field_name: "str",
-                error: e,
-            })
+    fn write(&self, writer: &mut Vec<u8>, _: crate::protocol::PacketType, _: u32, _: u32) {
+        writer.extend_from_slice(&StringRW::write_fixed(&self.string, N as _));
     }
 }
 #[cfg(feature = "serde")]
@@ -249,20 +237,8 @@ impl<const N: usize> HelperReadWrite for FixedAsciiString<N> {
         })
     }
 
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        _: crate::protocol::PacketType,
-        _: u32,
-        _: u32,
-    ) -> Result<(), crate::protocol::PacketError> {
-        writer
-            .write_all(&self.string.write_fixed(N as _))
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "FixedAsciiString",
-                field_name: "str",
-                error: e,
-            })
+    fn write(&self, writer: &mut Vec<u8>, _: crate::protocol::PacketType, _: u32, _: u32) {
+        writer.extend_from_slice(&self.string.write_fixed(N as _));
     }
 }
 #[cfg(feature = "serde")]
@@ -319,18 +295,12 @@ impl HelperReadWrite for WinTime {
 
     fn write(
         &self,
-        writer: &mut impl std::io::Write,
+        writer: &mut Vec<u8>,
         packet_type: crate::protocol::PacketType,
         _: u32,
         _: u32,
-    ) -> Result<(), crate::protocol::PacketError> {
-        (self.time.as_millis() as u64 + WIN_FT_TIME_TO_TIMESTAMP)
-            .write(writer, packet_type, 0, 0)
-            .map_err(|e| PacketError::CompositeFieldError {
-                packet_name: "WinTime",
-                field_name: "time",
-                error: e.into(),
-            })
+    ) {
+        (self.time.as_millis() as u64 + WIN_FT_TIME_TO_TIMESTAMP).write(writer, packet_type, 0, 0);
     }
 }
 
@@ -380,22 +350,14 @@ impl<const N: usize, T: HelperReadWrite + Default> HelperReadWrite for FixedVec<
 
     fn write(
         &self,
-        writer: &mut impl std::io::Write,
+        writer: &mut Vec<u8>,
         packet_type: crate::protocol::PacketType,
         xor: u32,
         sub: u32,
-    ) -> Result<(), crate::protocol::PacketError> {
+    ) {
         for i in self.iter().chain(std::iter::repeat(&T::default())).take(N) {
-            i.write(writer, packet_type, xor, sub).map_err(|e| {
-                PacketError::CompositeFieldError {
-                    packet_name: "FixedVec",
-                    field_name: "value",
-                    error: e.into(),
-                }
-            })?;
+            i.write(writer, packet_type, xor, sub);
         }
-
-        Ok(())
     }
 }
 #[cfg(feature = "serde")]
@@ -448,13 +410,6 @@ impl<S: SizeProvider, T: HelperReadWrite> HelperReadWrite for VecUSize<S, T> {
         let mut data = vec![];
         data.reserve_exact(len as usize);
 
-        // let seek1 = reader
-        //     .stream_position()
-        //     .map_err(|e| PacketError::PaddingError {
-        //         packet_name: "VecUSize",
-        //         field_name: "pre_read",
-        //         error: e,
-        //     })?;
         for _ in 0..len {
             data.push(T::read(reader, packet_type, xor, sub).map_err(|e| {
                 PacketError::CompositeFieldError {
@@ -464,23 +419,6 @@ impl<S: SizeProvider, T: HelperReadWrite> HelperReadWrite for VecUSize<S, T> {
                 }
             })?);
         }
-        // let seek2 = reader
-        //     .stream_position()
-        //     .map_err(|e| PacketError::PaddingError {
-        //         packet_name: "VecUSize",
-        //         field_name: "post_read",
-        //         error: e,
-        //     })?;
-        // let len = (seek2 - seek1) as usize;
-        // reader
-        //     .seek(std::io::SeekFrom::Current(
-        //         (len.next_multiple_of(4) - len) as i64,
-        //     ))
-        //     .map_err(|e| PacketError::PaddingError {
-        //         packet_name: "VecUSize",
-        //         field_name: "padding",
-        //         error: e,
-        //     })?;
         Ok(Self {
             data,
             _p_data: PhantomData,
@@ -489,45 +427,15 @@ impl<S: SizeProvider, T: HelperReadWrite> HelperReadWrite for VecUSize<S, T> {
 
     fn write(
         &self,
-        writer: &mut impl std::io::Write,
+        writer: &mut Vec<u8>,
         packet_type: crate::protocol::PacketType,
         xor: u32,
         sub: u32,
-    ) -> Result<(), crate::protocol::PacketError> {
-        writer
-            .write_all(&S::to_data(self.data.len()))
-            .map_err(|e| PacketError::FieldLengthError {
-                packet_name: "VecUSize",
-                field_name: "len",
-                error: e,
-            })?;
-        let mut buf = vec![];
+    ) {
+        writer.extend_from_slice(&S::to_data(self.data.len()));
         for i in self.iter() {
-            i.write(&mut buf, packet_type, xor, sub).map_err(|e| {
-                PacketError::CompositeFieldError {
-                    packet_name: "VecUSize",
-                    field_name: "value",
-                    error: e.into(),
-                }
-            })?;
+            i.write(writer, packet_type, xor, sub);
         }
-        // let len = buf.len();
-        writer
-            .write_all(&buf)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "VecUSize",
-                field_name: "value",
-                error: e,
-            })?;
-        // writer
-        //     .write_all(&vec![0; len.next_multiple_of(4) - len])
-        //     .map_err(|e| PacketError::PaddingError {
-        //         packet_name: "VecUSize",
-        //         field_name: "padding",
-        //         error: e,
-        //     })?;
-
-        Ok(())
     }
 }
 
@@ -589,37 +497,18 @@ impl<const NO_PADDING: bool> HelperReadWrite for Bytes<NO_PADDING> {
 
     fn write(
         &self,
-        writer: &mut impl std::io::Write,
+        writer: &mut Vec<u8>,
         packet_type: crate::protocol::PacketType,
         xor: u32,
         sub: u32,
-    ) -> Result<(), crate::protocol::PacketError> {
-        write_magic(self.bytes.len() as _, sub, xor)
-            .write(writer, packet_type, xor, sub)
-            .map_err(|e| PacketError::CompositeFieldError {
-                packet_name: "Bytes",
-                field_name: "len",
-                error: e.into(),
-            })?;
-        writer
-            .write_all(&self.bytes)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "Bytes",
-                field_name: "bytes",
-                error: e,
-            })?;
+    ) {
+        write_magic(self.bytes.len() as _, sub, xor).write(writer, packet_type, xor, sub);
+        writer.extend_from_slice(&self.bytes);
         if !NO_PADDING {
             let len = self.bytes.len();
-            writer
-                .write_all(&vec![0u8; len.next_multiple_of(4) - len])
-                .map_err(|e| PacketError::PaddingError {
-                    packet_name: "Bytes",
-                    field_name: "padding",
-                    error: e,
-                })?;
+            let padded_len = writer.len() + (len.next_multiple_of(4) - len);
+            writer.resize(padded_len, 0);
         }
-
-        Ok(())
     }
 }
 #[cfg(feature = "serde")]
@@ -683,41 +572,15 @@ impl<const N: usize, const NO_PADDING: bool> HelperReadWrite for FixedBytes<N, N
         Ok(Self { bytes })
     }
 
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        _: crate::protocol::PacketType,
-        _: u32,
-        _: u32,
-    ) -> Result<(), crate::protocol::PacketError> {
+    fn write(&self, writer: &mut Vec<u8>, _: crate::protocol::PacketType, _: u32, _: u32) {
         let size = self.bytes.len().min(N);
-        writer
-            .write_all(&self.bytes[..size])
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "FixedBytes",
-                field_name: "bytes",
-                error: e,
-            })?;
-        let remainder = N - size;
-        if remainder != 0 {
-            writer
-                .write_all(&vec![0; remainder])
-                .map_err(|e| PacketError::PaddingError {
-                    packet_name: "FixedBytes",
-                    field_name: "padding",
-                    error: e,
-                })?;
-        }
+        writer.extend_from_slice(&self.bytes[..size]);
+        let len = writer.len() + (N - size);
+        writer.resize(len, 0);
         if !NO_PADDING {
-            writer
-                .write_all(&vec![0u8; N.next_multiple_of(4) - N])
-                .map_err(|e| PacketError::PaddingError {
-                    packet_name: "FixedBytes",
-                    field_name: "padding",
-                    error: e,
-                })?;
+            let padded_len = writer.len() + (N.next_multiple_of(4) - N);
+            writer.resize(padded_len, 0);
         }
-        Ok(())
     }
 }
 #[cfg(feature = "serde")]

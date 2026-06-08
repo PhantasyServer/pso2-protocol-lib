@@ -12,9 +12,9 @@ use crate::{
     fixed_types::{Bytes, FixedAsciiString, FixedBytes, FixedString, FixedVec, WinTime},
     AsciiString,
 };
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt};
 use std::{
-    io::{Read, Seek, Write},
+    io::{Read, Seek},
     net::Ipv4Addr,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -1593,20 +1593,10 @@ impl PacketReadWrite for CharacterListPacket {
             ad,
         })
     }
-    fn write(&self, packet_type: PacketType) -> Result<Vec<u8>, PacketError> {
+    fn write(&self, packet_type: PacketType) -> Vec<u8> {
         let mut buf = PacketHeader::new(0x11, 0x03, Flags::default()).write(packet_type);
-        buf.write_u32::<LittleEndian>((self.characters.len() as u32).clamp(0, 30))
-            .map_err(|e| PacketError::FieldLengthError {
-                packet_name: "CharacterListPacket",
-                field_name: "characters",
-                error: e,
-            })?;
-        buf.write_u32::<LittleEndian>(0)
-            .map_err(|e| PacketError::PaddingError {
-                packet_name: "CharacterListPacket",
-                field_name: "characters",
-                error: e,
-            })?;
+        buf.extend_from_slice(&(self.characters.len() as u32).clamp(0, 30).to_le_bytes());
+        buf.extend_from_slice(&0u32.to_le_bytes());
 
         let characters = &self.characters;
 
@@ -1616,27 +1606,11 @@ impl PacketReadWrite for CharacterListPacket {
             .cycle()
             .take(30)
         {
-            buf.write_u32::<LittleEndian>(0)
-                .map_err(|e| PacketError::PaddingError {
-                    packet_name: "CharacterListPacket",
-                    field_name: "vec_characters_value",
-                    error: e,
-                })?;
-            character.write(&mut buf, packet_type, 0, 0).map_err(|e| {
-                PacketError::CompositeFieldError {
-                    packet_name: "CharacterListPacket",
-                    field_name: "vec_characters_value",
-                    error: Box::new(e),
-                }
-            })?;
+            buf.extend_from_slice(&0u32.to_le_bytes());
+            character.write(&mut buf, packet_type, 0, 0);
         }
         // ???
-        buf.write_u32::<LittleEndian>(0)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "CharacterListPacket",
-                field_name: "undefined",
-                error: e,
-            })?;
+        buf.extend_from_slice(&0u32.to_le_bytes());
         for equiped_items in self
             .equiped_items
             .iter()
@@ -1645,105 +1619,39 @@ impl PacketReadWrite for CharacterListPacket {
             .take(30)
         {
             for item in equiped_items {
-                item.write(&mut buf, packet_type, 0, 0).map_err(|e| {
-                    PacketError::CompositeFieldError {
-                        packet_name: "CharacterListPacket",
-                        field_name: "vec_equiped_items_value",
-                        error: Box::new(e),
-                    }
-                })?;
+                item.write(&mut buf, packet_type, 0, 0);
             }
         }
         for i in 0..30 {
-            buf.write_u32::<LittleEndian>(self.play_times[i])
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "CharacterListPacket",
-                    field_name: "array_play_times_value",
-                    error: e,
-                })?;
+            buf.extend_from_slice(&self.play_times[i].to_le_bytes());
         }
         // ???
         for _ in 0..32 {
-            buf.write_u8(0).map_err(|e| PacketError::PaddingError {
-                packet_name: "CharacterListPacket",
-                field_name: "deletion_flags",
-                error: e,
-            })?;
+            buf.extend_from_slice(&0u8.to_le_bytes());
         }
         for i in 0..30 {
             // deletion flag
-            buf.write_u32::<LittleEndian>(self.deletion_flags[i].0)
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "CharacterListPacket",
-                    field_name: "array_deletion_flags_0_value",
-                    error: e,
-                })?;
+            buf.extend_from_slice(&self.deletion_flags[i].0.to_le_bytes());
             // timestamp
-            buf.write_u32::<LittleEndian>(self.deletion_flags[i].1)
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "CharacterListPacket",
-                    field_name: "array_deletion_flags_1_value",
-                    error: e,
-                })?;
+            buf.extend_from_slice(&self.deletion_flags[i].1.to_le_bytes());
         }
         for i in 0..30 {
             // transfer flag
-            buf.write_u32::<LittleEndian>(self.transfer_flags[i].0)
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "CharacterListPacket",
-                    field_name: "array_transfer_flags_0_value",
-                    error: e,
-                })?;
+            buf.extend_from_slice(&self.transfer_flags[i].0.to_le_bytes());
             // ??? prob target ship
-            buf.write_u32::<LittleEndian>(self.transfer_flags[i].1)
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "CharacterListPacket",
-                    field_name: "array_transfer_flags_1_value",
-                    error: e,
-                })?;
+            buf.extend_from_slice(&self.transfer_flags[i].1.to_le_bytes());
         }
-        buf.write_u16::<LittleEndian>(self.account_accessory)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "CharacterListPacket",
-                field_name: "account_accessory",
-                error: e,
-            })?;
+        buf.extend_from_slice(&self.account_accessory.to_le_bytes());
         // ???
-        buf.write_all(&[0u8; 6])
-            .map_err(|e| PacketError::PaddingError {
-                packet_name: "CharacterListPacket",
-                field_name: "login_survey",
-                error: e,
-            })?;
-        buf.write_u32::<LittleEndian>(self.login_survey)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "CharacterListPacket",
-                field_name: "login_survey",
-                error: e,
-            })?;
-        buf.write_u32::<LittleEndian>(self.ad)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "CharacterListPacket",
-                field_name: "ad",
-                error: e,
-            })?;
+        buf.extend_from_slice(&[0; 6]);
+        buf.extend_from_slice(&self.login_survey.to_le_bytes());
+        buf.extend_from_slice(&self.ad.to_le_bytes());
         // ???
-        buf.write_u32::<LittleEndian>(0x00_00_00_00)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "CharacterListPacket",
-                field_name: "undefined",
-                error: e,
-            })?;
+        buf.extend_from_slice(&0u32.to_le_bytes());
+        // ???
+        buf.extend_from_slice(&0u32.to_le_bytes());
 
-        // ???
-        buf.write_u32::<LittleEndian>(0x00_00_00_00)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "CharacterListPacket",
-                field_name: "undefined",
-                error: e,
-            })?;
-
-        Ok(buf)
+        buf
     }
 }
 
@@ -1767,13 +1675,13 @@ impl PacketReadWrite for EncryptionRequestPacket {
             rsa_data: tmp_data.into(),
         })
     }
-    fn write(&self, packet_type: PacketType) -> Result<Vec<u8>, PacketError> {
+    fn write(&self, packet_type: PacketType) -> Vec<u8> {
         let mut buf = PacketHeader::new(0x11, 0x0B, Flags::default()).write(packet_type);
         let mut data = self.rsa_data.clone();
         data.reverse();
         data.resize(0x104, 0);
         buf.extend(data.iter());
-        Ok(buf)
+        buf
     }
 }
 
@@ -1790,10 +1698,10 @@ impl PacketReadWrite for EncryptionResponsePacket {
 
         Ok(Self { data: data.into() })
     }
-    fn write(&self, packet_type: PacketType) -> Result<Vec<u8>, PacketError> {
+    fn write(&self, packet_type: PacketType) -> Vec<u8> {
         let mut buf = PacketHeader::new(0x11, 0x0C, Flags::default()).write(packet_type);
         buf.extend(self.data.iter());
-        Ok(buf)
+        buf
     }
 }
 

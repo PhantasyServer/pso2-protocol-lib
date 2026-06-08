@@ -1,6 +1,6 @@
 //! PSO2 packet definitions and protocol information.
 
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt};
 use pso2packetlib_impl::{HelperReadWrite, PacketReadWrite, ProtocolReadWrite};
 use std::io::{Read, Seek};
 
@@ -1702,14 +1702,14 @@ impl PacketHeader {
     pub fn write(&self, packet_type: PacketType) -> Vec<u8> {
         let mut buf = vec![];
         if !matches!(packet_type, PacketType::NGS) {
-            buf.write_u8(self.id).unwrap();
-            buf.write_u8(self.subid as u8).unwrap();
-            self.flag.write(&mut buf, packet_type, 0, 0).unwrap();
-            buf.write_u8(0).unwrap();
+            buf.push(self.id);
+            buf.push(self.subid as u8);
+            self.flag.write(&mut buf, packet_type, 0, 0);
+            buf.push(0);
         } else {
-            self.flag.write(&mut buf, packet_type, 0, 0).unwrap();
-            buf.write_u8(self.id).unwrap();
-            buf.write_u16::<LittleEndian>(self.subid).unwrap();
+            self.flag.write(&mut buf, packet_type, 0, 0);
+            buf.push(self.id);
+            buf.extend_from_slice(&self.subid.to_le_bytes());
         }
         buf
     }
@@ -1719,7 +1719,7 @@ bitflags::bitflags! {
     /// Packet flags.
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[pso2packet(bitflags(u8))]
+    #[pso2packet(bitflags)]
     pub struct Flags: u8 {
         /// Set when the packet contains variable length data.
         const PACKED = 1 << 2;

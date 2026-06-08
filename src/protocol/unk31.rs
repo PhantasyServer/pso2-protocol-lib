@@ -311,7 +311,7 @@ impl PacketReadWrite for LoadTitlesPacket {
         Ok(Self { names: items })
     }
 
-    fn write(&self, packet_type: PacketType) -> Result<Vec<u8>, PacketError> {
+    fn write(&self, packet_type: PacketType) -> Vec<u8> {
         let mut names = String::new();
         let mut name_lens = vec![];
         let mut title_ids = vec![];
@@ -326,11 +326,6 @@ impl PacketReadWrite for LoadTitlesPacket {
             name_lens,
         }
         .write(packet_type)
-        .map_err(|e| PacketError::CompositeFieldError {
-            packet_name: "LoadTitlesPacket",
-            field_name: "internal",
-            error: Box::new(e),
-        })
     }
 }
 
@@ -387,7 +382,7 @@ impl PacketReadWrite for PlayAchievementsResponsePacket {
         })
     }
 
-    fn write(&self, packet_type: super::PacketType) -> Result<Vec<u8>, PacketError> {
+    fn write(&self, packet_type: super::PacketType) -> Vec<u8> {
         let mut names = String::new();
         let mut total_len = 0;
         let mut boss_enemies = vec![];
@@ -431,10 +426,5 @@ impl PacketReadWrite for PlayAchievementsResponsePacket {
             titles_acquired: self.titles_acquired,
         }
         .write(packet_type)
-        .map_err(|e| PacketError::CompositeFieldError {
-            packet_name: "PlayAchievementsResponsePacket",
-            field_name: "internal",
-            error: Box::new(e),
-        })
     }
 }

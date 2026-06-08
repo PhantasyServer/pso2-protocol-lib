@@ -60,7 +60,7 @@ pub fn packet_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
             fn write(
                 &self,
                 packet_type: #crate_location::protocol::PacketType
-            ) -> Result<Vec<u8>, #crate_location::protocol::PacketError> {
+            ) -> Vec<u8> {
                 use #crate_location::derive_reexports::*;
                 use #crate_location::protocol::PacketError as Error;
                 let packet_name = stringify!(#name);
@@ -69,7 +69,7 @@ pub fn packet_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
                 let writer = &mut buf;
                 let (xor, sub) = (#xor, #sub);
                 #write
-                Ok(buf)
+                buf
             }
         }
     };
@@ -99,12 +99,7 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
     };
 
     match &ast.data {
-        Data::Struct(_) if is_bitflags.is_some() => {
-            let Some(repr_type) = is_bitflags else {
-                unreachable!()
-            };
-            parse_bitflags(&mut read, &mut write, repr_type)?
-        }
+        Data::Struct(_) if is_bitflags => parse_bitflags(&mut read, &mut write)?,
         Data::Struct(data) => parse_struct_field(&mut read, &mut write, data)?,
         Data::Enum(data) => parse_enum(&mut read, &mut write, data, repr_type)?,
         _ => {}
@@ -127,17 +122,16 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
             }
             fn write(
                 &self,
-                writer: &mut impl std::io::Write,
+                writer: &mut Vec<u8>,
                 packet_type: #crate_location::protocol::PacketType,
                 xor: u32,
                 sub: u32
-            ) -> Result<(), #crate_location::protocol::PacketError> {
+            ) {
                 use #crate_location::derive_reexports::*;
                 use #crate_location::protocol::PacketError as Error;
                 let packet_name = stringify!(#name);
 
                 #write
-                Ok(())
             }
         }
     };
@@ -155,36 +149,31 @@ fn parse_enum(
     let mut discriminant = match repr_type {
         Size::U8 => {
             read.extend(quote! {let num = reader.read_u8()});
-            write.extend(quote! {writer.write_u8(*self as _)});
+            write.extend(quote! {writer.extend_from_slice(&(*self as u8).to_le_bytes());});
             Discriminant::U8(0)
         }
         Size::U16 => {
             read.extend(quote! {let num = reader.read_u16::<LittleEndian>()});
-            write.extend(quote! {writer.write_u16::<LittleEndian>(*self as _)});
+            write.extend(quote! {writer.extend_from_slice(&(*self as u16).to_le_bytes());});
             Discriminant::U16(0)
         }
         Size::U32 => {
             read.extend(quote! {let num = reader.read_u32::<LittleEndian>()});
-            write.extend(quote! {writer.write_u32::<LittleEndian>(*self as _)});
+            write.extend(quote! {writer.extend_from_slice(&(*self as u32).to_le_bytes());});
             Discriminant::U32(0)
         }
         Size::U64 => {
             read.extend(quote! {let num = reader.read_u64::<LittleEndian>()});
-            write.extend(quote! {writer.write_u64::<LittleEndian>(*self as _)});
+            write.extend(quote! {writer.extend_from_slice(&(*self as u64).to_le_bytes());});
             Discriminant::U64(0)
         }
         Size::U128 => {
             read.extend(quote! {let num = reader.read_u128::<LittleEndian>()});
-            write.extend(quote! {writer.write_u128::<LittleEndian>(*self as _)});
+            write.extend(quote! {writer.extend_from_slice(&(*self as u128).to_le_bytes());});
             Discriminant::U128(0)
         }
     };
     read.extend(quote! {.map_err(|e| Error::ValueError{
-            packet_name,
-            error: e,
-        })?;
-    });
-    write.extend(quote! {.map_err(|e| Error::ValueError{
             packet_name,
             error: e,
         })?;
@@ -226,41 +215,10 @@ fn parse_enum(
     Ok(())
 }
 
-fn parse_bitflags(read: &mut TS2, write: &mut TS2, repr: Size) -> syn::Result<()> {
-    match repr {
-        Size::U8 => {
-            read.extend(quote! {let num = reader.read_u8()});
-            write.extend(quote! {writer.write_u8(self.bits())});
-        }
-        Size::U16 => {
-            read.extend(quote! {let num = reader.read_u16::<LittleEndian>()});
-            write.extend(quote! {writer.write_u16::<LittleEndian>(self.bits())});
-        }
-        Size::U32 => {
-            read.extend(quote! {let num = reader.read_u32::<LittleEndian>()});
-            write.extend(quote! {writer.write_u32::<LittleEndian>(self.bits())});
-        }
-        Size::U64 => {
-            read.extend(quote! {let num = reader.read_u64::<LittleEndian>()});
-            write.extend(quote! {writer.write_u64::<LittleEndian>(self.bits())});
-        }
-        Size::U128 => {
-            read.extend(quote! {let num = reader.read_u128::<LittleEndian>()});
-            write.extend(quote! {writer.write_u128::<LittleEndian>(self.bits())});
-        }
-    };
-    read.extend(quote! {.map_err(|e| Error::ValueError{
-            packet_name,
-            error: e,
-        })?;
-    });
-    write.extend(quote! {.map_err(|e| Error::ValueError{
-            packet_name,
-            error: e,
-        })?;
-    });
+fn parse_bitflags(read: &mut TS2, write: &mut TS2) -> syn::Result<()> {
+    read.extend(quote! {Ok(Self::from_bits_truncate(HelperReadWrite::read(reader, packet_type, xor, sub)?))});
+    write.extend(quote! {writer.extend_from_slice(&self.bits().to_le_bytes());});
 
-    read.extend(quote! {Ok(Self::from_bits_truncate(num))});
     Ok(())
 }
 
@@ -343,13 +301,7 @@ fn parse_struct_field(read: &mut TS2, write: &mut TS2, data: &DataStruct) -> syn
                     error: e,
                 })?;
             });
-            write.extend(quote! {writer.write_all(&[0u8; #seek_after as usize])
-                .map_err(|e| Error::PaddingError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
-            });
+            write.extend(quote! {writer.extend_from_slice(&[0u8; #seek_after as usize]);});
         }
     }
     read.extend(quote! {Ok(Self{#return_token})});
@@ -432,7 +384,7 @@ struct ContainerSettings {
 
 #[derive(Default)]
 struct ContainerHelperSettings {
-    bitflags_ty: Option<Size>,
+    bitflags_ty: bool,
 }
 
 #[derive(Default)]
@@ -483,13 +435,7 @@ fn get_attrs(
                     error: e,
                 })?;
             });
-            write.extend(quote! {writer.write_all(&[0u8; #amount as usize])
-                .map_err(|e| Error::PaddingError{
-                    packet_name,
-                    field_name: "unknown",
-                    error: e,
-                })?;
-            });
+            write.extend(quote! {writer.extend_from_slice(&[0u8; #amount as usize]);});
         }
         "seek_after" => {
             set.seek_after = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
@@ -503,13 +449,7 @@ fn get_attrs(
                     error: e,
                 })?;
             });
-            write.extend(quote! {writer.write_u16::<LittleEndian>(#num)
-                .map_err(|e| Error::ConstantError{
-                    packet_name,
-                    const_val: #num as _,
-                    error: e,
-                })?;
-            });
+            write.extend(quote! {writer.extend_from_slice(&#num.to_le_bytes());});
         }
         _ => return Err(syn::Error::new(span, "Unknown attribute")),
     }
@@ -574,18 +514,13 @@ fn get_container_attrs(
 fn get_helper_container_attrs(
     set: &mut ContainerHelperSettings,
     string: &str,
-    list: Option<&MetaList>,
+    _: Option<&MetaList>,
     span: Span,
     _: &mut TS2,
     _: &mut TS2,
 ) -> syn::Result<()> {
-    let Some(list) = list else {
-        return Err(syn::Error::new(span, "Invalid syntax"));
-    };
     match string {
-        "bitflags" => {
-            set.bitflags_ty = Size::from_string(&list.tokens.to_string());
-        }
+        "bitflags" => set.bitflags_ty = true,
         _ => return Err(syn::Error::new(span, "Unknown attribute")),
     }
     Ok(())
@@ -636,12 +571,7 @@ fn type_read_write(
             },
         );
         write.extend(quote! {
-            #write_fn(&#write_name, writer, packet_type, xor, sub)
-                .map_err(|e| Error::CompositeFieldError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: Box::new(e)
-                })?;
+            #write_fn(&#write_name, writer, packet_type, xor, sub);
         });
         return Ok((read, write));
     }
@@ -656,15 +586,7 @@ fn type_read_write(
                     }
                 })?;
             });
-    write.extend(quote! {#write_name.write(writer, packet_type, xor, sub)
-        .map_err(|e| {
-            Error::CompositeFieldError{
-                packet_name,
-                field_name: stringify!(#field_name),
-                error: Box::new(e),
-            }
-        })?;
-    });
+    write.extend(quote! {#write_name.write(writer, packet_type, xor, sub);});
     Ok((read, write))
 }
 

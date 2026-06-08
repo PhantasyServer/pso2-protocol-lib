@@ -4,7 +4,7 @@ use crate::{
     fixed_types::{FixedBytes, FixedVec, VecUSize},
     protocol::{HelperReadWrite, PacketError, PacketType},
 };
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt};
 
 /// Item attributes found in the `item_parameter.bin` file in the ICE archive from
 /// [`crate::protocol::Packet::LoadItemAttributes`].
@@ -447,7 +447,7 @@ bitflags::bitflags! {
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[cfg_attr(feature = "serde", serde(default))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[pso2packet(bitflags(u8))]
+    #[pso2packet(bitflags)]
     pub struct GenderFlags: u8 {
         /// Males can equip.
         const MALE = 1 << 0;
@@ -461,7 +461,7 @@ bitflags::bitflags! {
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[cfg_attr(feature = "serde", serde(default))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[pso2packet(bitflags(u8))]
+    #[pso2packet(bitflags)]
     pub struct RaceFlags: u8 {
         /// Humans can equip.
         const HUMAN = 1 << 0;
@@ -516,7 +516,7 @@ impl ItemAttributes {
             _ => Ok(Self::PC(ItemAttributesPC::read(reader, packet_type, 0, 0)?)),
         }
     }
-    pub fn write_attrs(&self, writer: &mut impl std::io::Write) -> Result<(), PacketError> {
+    pub fn write_attrs(&self, writer: &mut Vec<u8>) {
         match self {
             ItemAttributes::PC(x) => x.write_attrs(writer),
             ItemAttributes::Vita(x) => x.write_attrs(writer),
@@ -530,7 +530,7 @@ impl ItemAttributesPC {
     ) -> Result<Self, PacketError> {
         Self::read(reader, crate::protocol::PacketType::Classic, 0, 0)
     }
-    pub fn write_attrs(&self, writer: &mut impl std::io::Write) -> Result<(), PacketError> {
+    pub fn write_attrs(&self, writer: &mut Vec<u8>) {
         self.write(writer, crate::protocol::PacketType::Classic, 0, 0)
     }
 }
@@ -541,7 +541,7 @@ impl ItemAttributesVita {
     ) -> Result<Self, PacketError> {
         Self::read(reader, crate::protocol::PacketType::Classic, 0, 0)
     }
-    pub fn write_attrs(&self, writer: &mut impl std::io::Write) -> Result<(), PacketError> {
+    pub fn write_attrs(&self, writer: &mut Vec<u8>) {
         self.write(writer, crate::protocol::PacketType::Classic, 0, 0)
     }
 }
@@ -574,32 +574,11 @@ impl HelperReadWrite for GenderDmg {
         Ok(Self { force_dmg, gender })
     }
 
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        pt: PacketType,
-        _: u32,
-        _: u32,
-    ) -> Result<(), PacketError> {
-        let mut gender = [0u8];
-        self.gender
-            .write(&mut gender.as_mut_slice(), pt, 0, 0)
-            .map_err(|e| PacketError::CompositeFieldError {
-                packet_name: "GenderDmg",
-                field_name: "gender",
-                error: Box::new(e),
-            })?;
-
+    fn write(&self, writer: &mut Vec<u8>, _: PacketType, _: u32, _: u32) {
         let mut bits = 0u16;
         bits |= self.force_dmg & 0x3FFF;
-        bits |= (gender[0] as u16) << 14;
-        writer
-            .write_u16::<LittleEndian>(bits)
-            .map_err(|e| PacketError::ValueError {
-                packet_name: "GenderDmg",
-                error: e,
-            })?;
-        Ok(())
+        bits |= (self.gender.bits() as u16) << 14;
+        writer.extend_from_slice(&bits.to_le_bytes());
     }
 }
 
@@ -668,13 +647,7 @@ impl HelperReadWrite for UnitRes {
         })
     }
 
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        _: PacketType,
-        _: u32,
-        _: u32,
-    ) -> Result<(), PacketError> {
+    fn write(&self, writer: &mut Vec<u8>, _: PacketType, _: u32, _: u32) {
         let mut bits = 0u128;
         bits |= (self.mel_res as u128) & 0x7F;
         bits <<= 7;
@@ -703,14 +676,7 @@ impl HelperReadWrite for UnitRes {
         bits |= (self.tec_def as u128) & 0x1FFF;
         bits <<= 7;
         bits |= (self.tec_res as u128) & 0x7F;
-        let bytes = bits.to_le_bytes();
-        writer
-            .write_all(&bytes[..0xF])
-            .map_err(|e| PacketError::ValueError {
-                packet_name: "UnitRes",
-                error: e,
-            })?;
-        Ok(())
+        writer.extend_from_slice(&bits.to_le_bytes()[..0xF]);
     }
 }
 
@@ -748,13 +714,7 @@ impl HelperReadWrite for UnitAtk {
         })
     }
 
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        _: PacketType,
-        _: u32,
-        _: u32,
-    ) -> Result<(), PacketError> {
+    fn write(&self, writer: &mut Vec<u8>, _: PacketType, _: u32, _: u32) {
         let mut bits = 0u64;
         bits |= (self.unk_atk as u64) & 0xF;
         bits <<= 13;
@@ -765,14 +725,7 @@ impl HelperReadWrite for UnitAtk {
         bits |= (self.rng_atk as u64) & 0x1FFF;
         bits <<= 13;
         bits |= (self.mel_atk as u64) & 0x1FFF;
-        let bytes = bits.to_le_bytes();
-        writer
-            .write_all(&bytes[..0x7])
-            .map_err(|e| PacketError::ValueError {
-                packet_name: "UnitAtk",
-                error: e,
-            })?;
-        Ok(())
+        writer.extend_from_slice(&bits.to_le_bytes()[..0x7]);
     }
 }
 

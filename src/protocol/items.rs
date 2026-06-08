@@ -5,7 +5,7 @@ use super::{
     models::{character::HSVColor, Position},
     HelperReadWrite, ObjectHeader, PacketError, PacketReadWrite, PacketType,
 };
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt};
 use std::{io::SeekFrom, time::Duration};
 
 // ----------------------------------------------------------------
@@ -1415,7 +1415,7 @@ impl PacketReadWrite for LoadItemPacket {
         Ok(Self { items })
     }
 
-    fn write(&self, packet_type: PacketType) -> Result<Vec<u8>, PacketError> {
+    fn write(&self, packet_type: PacketType) -> Vec<u8> {
         let mut names = String::new();
         let mut name_length = vec![];
         let mut ids = vec![];
@@ -1430,11 +1430,6 @@ impl PacketReadWrite for LoadItemPacket {
             name_length,
         }
         .write(packet_type)
-        .map_err(|e| PacketError::CompositeFieldError {
-            packet_name: "LoadItemPacket",
-            field_name: "internal",
-            error: Box::new(e),
-        })
     }
 }
 
@@ -1492,47 +1487,16 @@ impl HelperReadWrite for Item {
             unk,
         })
     }
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        packet_type: PacketType,
-        xor: u32,
-        sub: u32,
-    ) -> Result<(), PacketError> {
-        writer
-            .write_u64::<LittleEndian>(self.uuid)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "Item",
-                field_name: "uuid",
-                error: e,
-            })?;
-        self.id.write(writer, packet_type, xor, sub).map_err(|e| {
-            PacketError::CompositeFieldError {
-                packet_name: "Item",
-                field_name: "id",
-                error: Box::new(e),
-            }
-        })?;
-        self.data
-            .write(writer, packet_type)
-            .map_err(|e| PacketError::CompositeFieldError {
-                packet_name: "Item",
-                field_name: "data",
-                error: Box::new(e),
-            })?;
+    fn write(&self, writer: &mut Vec<u8>, packet_type: PacketType, xor: u32, sub: u32) {
+        writer.extend_from_slice(&self.uuid.to_le_bytes());
+        self.id.write(writer, packet_type, xor, sub);
+        self.data.write(writer, packet_type);
         #[cfg(feature = "ngs_packets")]
         if packet_type == PacketType::NGS {
             for byte in self.unk {
-                writer
-                    .write_u16::<LittleEndian>(byte)
-                    .map_err(|e| PacketError::FieldError {
-                        packet_name: "Item",
-                        field_name: "unk",
-                        error: e,
-                    })?;
+                writer.extend_from_slice(&byte.to_le_bytes());
             }
         }
-        Ok(())
     }
 }
 
@@ -1582,40 +1546,15 @@ impl HelperReadWrite for ItemData {
             unk,
         })
     }
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        packet_type: PacketType,
-        xor: u32,
-        sub: u32,
-    ) -> Result<(), PacketError> {
-        self.id.write(writer, packet_type, xor, sub).map_err(|e| {
-            PacketError::CompositeFieldError {
-                packet_name: "ItemData",
-                field_name: "id",
-                error: Box::new(e),
-            }
-        })?;
-        self.data
-            .write(writer, packet_type)
-            .map_err(|e| PacketError::CompositeFieldError {
-                packet_name: "ItemData",
-                field_name: "data",
-                error: Box::new(e),
-            })?;
+    fn write(&self, writer: &mut Vec<u8>, packet_type: PacketType, xor: u32, sub: u32) {
+        self.id.write(writer, packet_type, xor, sub);
+        self.data.write(writer, packet_type);
         #[cfg(feature = "ngs_packets")]
         if packet_type == PacketType::NGS {
             for byte in self.unk {
-                writer
-                    .write_u16::<LittleEndian>(byte)
-                    .map_err(|e| PacketError::FieldError {
-                        packet_name: "ItemData",
-                        field_name: "unk",
-                        error: e,
-                    })?;
+                writer.extend_from_slice(&byte.to_le_bytes());
             }
         }
-        Ok(())
     }
 }
 
@@ -1694,71 +1633,42 @@ impl ItemType {
             }),
         })
     }
-    pub(crate) fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        packet_type: PacketType,
-    ) -> Result<(), PacketError> {
+    pub(crate) fn write(&self, writer: &mut Vec<u8>, packet_type: PacketType) {
         match self {
             Self::NoItem => {
-                writer
-                    .write_all(&[0; 0x28])
-                    .map_err(|e| PacketError::FieldError {
-                        packet_name: "ItemType",
-                        field_name: "field_0",
-                        error: e,
-                    })?;
+                writer.resize(writer.len() + 0x28, 0);
             }
-            Self::Weapon(x) => x.write(writer, packet_type, 0, 0)?,
-            Self::Clothing(x) => x.write(writer, packet_type, 0, 0)?,
-            Self::Consumable(x) => x.write(writer, packet_type, 0, 0)?,
-            Self::Camo(x) => x.write(writer, packet_type, 0, 0)?,
-            Self::Unit(x) => x.write(writer, packet_type, 0, 0)?,
+            Self::Weapon(x) => x.write(writer, packet_type, 0, 0),
+            Self::Clothing(x) => x.write(writer, packet_type, 0, 0),
+            Self::Consumable(x) => x.write(writer, packet_type, 0, 0),
+            Self::Camo(x) => x.write(writer, packet_type, 0, 0),
+            Self::Unit(x) => x.write(writer, packet_type, 0, 0),
             Self::Unknown(x) => {
                 let mut data = x.to_vec();
                 data.resize(0x28, 0);
-                writer
-                    .write_all(&data)
-                    .map_err(|e| PacketError::FieldError {
-                        packet_name: "ItemType",
-                        field_name: "field_0",
-                        error: e,
-                    })?;
+                writer.append(&mut data);
             }
             #[cfg(feature = "ngs_packets")]
             Self::NoItemNGS => {
-                writer
-                    .write_all(&[0; 0x38])
-                    .map_err(|e| PacketError::FieldError {
-                        packet_name: "ItemType",
-                        field_name: "field_0",
-                        error: e,
-                    })?;
+                writer.resize(writer.len() + 0x38, 0);
             }
             #[cfg(feature = "ngs_packets")]
-            Self::WeaponNGS(x) => x.write(writer, packet_type, 0, 0)?,
+            Self::WeaponNGS(x) => x.write(writer, packet_type, 0, 0),
             #[cfg(feature = "ngs_packets")]
-            Self::ClothingNGS(x) => x.write(writer, packet_type, 0, 0)?,
+            Self::ClothingNGS(x) => x.write(writer, packet_type, 0, 0),
             #[cfg(feature = "ngs_packets")]
-            Self::ConsumableNGS(x) => x.write(writer, packet_type, 0, 0)?,
+            Self::ConsumableNGS(x) => x.write(writer, packet_type, 0, 0),
             #[cfg(feature = "ngs_packets")]
-            Self::CamoNGS(x) => x.write(writer, packet_type, 0, 0)?,
+            Self::CamoNGS(x) => x.write(writer, packet_type, 0, 0),
             #[cfg(feature = "ngs_packets")]
-            Self::UnitNGS(x) => x.write(writer, packet_type, 0, 0)?,
+            Self::UnitNGS(x) => x.write(writer, packet_type, 0, 0),
             #[cfg(feature = "ngs_packets")]
             Self::UnknownNGS(x) => {
                 let mut data = x.to_vec();
                 data.resize(0x38, 0);
-                writer
-                    .write_all(&data)
-                    .map_err(|e| PacketError::FieldError {
-                        packet_name: "ItemType",
-                        field_name: "field_0",
-                        error: e,
-                    })?;
+                writer.append(&mut data);
             }
         }
-        Ok(())
     }
 }
 
@@ -1786,28 +1696,13 @@ fn read_packed_affixes(
     Ok(affixes.try_into().unwrap())
 }
 
-fn write_packed_affixes(
-    affixes: &[u16; 8],
-    writer: &mut impl std::io::Write,
-    _: PacketType,
-    _: u32,
-    _: u32,
-) -> Result<(), PacketError> {
-    let mut packed = vec![];
+fn write_packed_affixes(affixes: &[u16; 8], writer: &mut Vec<u8>, _: PacketType, _: u32, _: u32) {
     for i in 0..4 {
         let affix_1 = affixes[i * 2].to_le_bytes();
         let affix_2 = affixes[i * 2 + 1].to_le_bytes();
-        packed.push(affix_1[0]);
-        packed.push(affix_2[0]);
+        writer.push(affix_1[0]);
+        writer.push(affix_2[0]);
         let packed_int = (affix_1[1] << 4 & 0xF0) | (affix_2[1] & 0xF);
-        packed.push(packed_int);
+        writer.push(packed_int);
     }
-    writer
-        .write_all(&packed)
-        .map_err(|e| PacketError::FieldError {
-            packet_name: "PackedAffixes",
-            field_name: "affixes",
-            error: e,
-        })?;
-    Ok(())
 }

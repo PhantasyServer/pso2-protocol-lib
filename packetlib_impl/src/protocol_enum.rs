@@ -67,10 +67,10 @@ pub fn protocol_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Resul
                 use #crate_location::protocol::PacketError;
 
                 let mut buf: Vec<u8> = vec![0; 4];
-                let packet_out: Result<Vec<u8>, PacketError> = match self {
+                let packet_out: Vec<u8> = match self {
                     #write
                 };
-                buf.extend(packet_out.expect("Writing to a Vec shouldn't fail"));
+                buf.extend(packet_out);
                 let len = buf.len().next_multiple_of(4);
                 buf.resize(len, 0);
                 let len = (len as u32).to_le_bytes();
@@ -271,7 +271,7 @@ fn parse_enum_field(
                             }
                         });
                         write.extend(quote! {
-                            Self::#name(data) => Ok(data[4..].to_vec()),
+                            Self::#name(data) => data[4..].to_vec(),
                         });
                         continue;
                     }
@@ -307,7 +307,7 @@ fn parse_enum_field(
                         Self::#name((header, data)) => {
                             let mut out_data = header.write(packet_type);
                             out_data.extend_from_slice(&data);
-                            Ok(out_data)
+                            out_data
                         }
                     });
                 }
@@ -323,17 +323,17 @@ fn parse_enum_field(
                         }
                     });
                     write.extend(quote! {
-                        Self::#name => Ok(vec![]),
+                        Self::#name => vec![],
                     });
                     continue;
                 }
                 if settings.unknown {
                     write.extend(quote! {
-                        Self::#name => Ok(vec![]),
+                        Self::#name => vec![],
                     });
                 } else {
                     write.extend(quote! {
-                        Self::#name => Ok(PacketHeader::new(#id, #subid, Flags::default()).write(packet_type)),
+                        Self::#name => PacketHeader::new(#id, #subid, Flags::default()).write(packet_type),
                     });
                 }
                 category.extend(quote! {

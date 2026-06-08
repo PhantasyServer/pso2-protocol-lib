@@ -79,13 +79,7 @@ impl HelperReadWrite for EulerPosition {
         Ok(pos.into())
     }
 
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        packet_type: PacketType,
-        xor: u32,
-        sub: u32,
-    ) -> Result<(), PacketError> {
+    fn write(&self, writer: &mut Vec<u8>, packet_type: PacketType, xor: u32, sub: u32) {
         let pos: Position = (*self).into();
         pos.write(writer, packet_type, xor, sub)
     }
@@ -116,28 +110,12 @@ impl HelperReadWrite for SGValue {
         Ok(Self(value))
     }
 
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        _: PacketType,
-        _: u32,
-        _: u32,
-    ) -> Result<(), PacketError> {
+    fn write(&self, writer: &mut Vec<u8>, _: PacketType, _: u32, _: u32) {
         let value = (self.0 * 5.0) as u32;
-        let buf = value.to_le_bytes();
-        writer
-            .write_all(&buf[2..4])
-            .map_err(|e| PacketError::ValueError {
-                packet_name: "SGValue",
-                error: e,
-            })?;
-        writer
-            .write_all(&buf[0..2])
-            .map_err(|e| PacketError::ValueError {
-                packet_name: "SGValue",
-                error: e,
-            })?;
-        Ok(())
+        let mut buf = value.to_le_bytes();
+        buf.swap(2, 0);
+        buf.swap(3, 1);
+        writer.extend_from_slice(&buf);
     }
 }
 
@@ -165,27 +143,11 @@ impl HelperReadWrite for FunValue {
         Ok(Self(value))
     }
 
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        _: PacketType,
-        _: u32,
-        _: u32,
-    ) -> Result<(), PacketError> {
-        let buf = self.0.to_le_bytes();
-        writer
-            .write_all(&buf[2..4])
-            .map_err(|e| PacketError::ValueError {
-                packet_name: "FunValue",
-                error: e,
-            })?;
-        writer
-            .write_all(&buf[0..2])
-            .map_err(|e| PacketError::ValueError {
-                packet_name: "FunValue",
-                error: e,
-            })?;
-        Ok(())
+    fn write(&self, writer: &mut Vec<u8>, _: PacketType, _: u32, _: u32) {
+        let mut buf = self.0.to_le_bytes();
+        buf.swap(2, 0);
+        buf.swap(3, 1);
+        writer.extend_from_slice(&buf);
     }
 }
 

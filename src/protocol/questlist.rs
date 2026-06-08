@@ -649,7 +649,7 @@ bitflags::bitflags! {
     /// Available quest types flags.
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[pso2packet(bitflags(u128))]
+    #[pso2packet(bitflags)]
     pub struct AvailableQuestType: u128 {
         const EXTREME = 1 << 1;
         // unsure
@@ -825,7 +825,7 @@ bitflags::bitflags! {
     /// Available quest difficulties.
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[pso2packet(bitflags(u8))]
+    #[pso2packet(bitflags)]
     pub struct QuestDifficultyType: u8 {
         const NORMAL = 1 << 0;
         const HARD = 1 << 1;
@@ -948,7 +948,7 @@ bitflags::bitflags! {
     /// Gained quest item flags.
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[pso2packet(bitflags(u32))]
+    #[pso2packet(bitflags)]
     pub struct QuestItemFlags: u32 {
         /// No inventory space was available for an item.
         const NO_SPACE_ITEM = 1 << 0;
@@ -1000,21 +1000,8 @@ impl HelperReadWrite for RevealedRegions {
         Ok(Self { zones: data.into() })
     }
 
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        packet_type: super::PacketType,
-        _: u32,
-        _: u32,
-    ) -> Result<(), PacketError> {
-        self.zones
-            .data
-            .write(writer, packet_type, 0, 0)
-            .map_err(|e| PacketError::CompositeFieldError {
-                packet_name: "RevealedRegions",
-                field_name: "zone_bits",
-                error: Box::new(e),
-            })
+    fn write(&self, writer: &mut Vec<u8>, packet_type: super::PacketType, _: u32, _: u32) {
+        self.zones.data.write(writer, packet_type, 0, 0)
     }
 }
 

@@ -1,5 +1,5 @@
 use super::{Flags, PacketCategory, PacketError, PacketType};
-use std::io::{Read, Seek, Write};
+use std::io::{Read, Seek};
 
 /// Trait for manipulating encryption data.
 pub trait PacketEncryption {
@@ -30,7 +30,7 @@ pub trait PacketReadWrite: Sized {
         packet_type: PacketType,
     ) -> Result<Self, PacketError>;
     /// Writes a packet to a Vec.
-    fn write(&self, packet_type: PacketType) -> Result<Vec<u8>, PacketError>;
+    fn write(&self, packet_type: PacketType) -> Vec<u8>;
 }
 
 /// Read/Write trait for aditional data structs/enums.
@@ -43,11 +43,5 @@ pub trait HelperReadWrite: Sized {
         sub: u32,
     ) -> Result<Self, PacketError>;
     /// Writes data to a stream.
-    fn write(
-        &self,
-        writer: &mut impl Write,
-        packet_type: PacketType,
-        xor: u32,
-        sub: u32,
-    ) -> Result<(), PacketError>;
+    fn write(&self, writer: &mut Vec<u8>, packet_type: PacketType, xor: u32, sub: u32);
 }

@@ -7,10 +7,10 @@ use super::{
     Flags, ObjectHeader, PacketError, PacketHeader, PacketReadWrite, PacketType,
 };
 use crate::{fixed_types::FixedBytes, AsciiString};
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt};
 use half::f16;
 use std::{
-    io::{Read, Seek, Write},
+    io::{Read, Seek},
     time::Duration,
 };
 
@@ -1092,214 +1092,90 @@ impl PacketReadWrite for MovementPacket {
         }
         Ok(packet)
     }
-    fn write(&self, packet_type: PacketType) -> Result<Vec<u8>, PacketError> {
+    fn write(&self, packet_type: PacketType) -> Vec<u8> {
         let mut tmp_buf = vec![];
         let mut flags = 0u32;
         if let Some(n) = self.ent1_id {
-            tmp_buf
-                .write_u64::<LittleEndian>(n)
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "ent1_id",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x1;
         }
         if let Some(n) = self.ent1_type {
-            tmp_buf
-                .write_u16::<LittleEndian>(n)
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "ent1_type",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x2;
         }
         if let Some(n) = self.ent1_unk {
-            tmp_buf
-                .write_u16::<LittleEndian>(n)
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "ent1_unk",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x4;
         }
         if let Some(n) = self.ent2_id {
-            tmp_buf
-                .write_u64::<LittleEndian>(n)
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "ent2_id",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x8;
         }
         if let Some(n) = self.ent2_type {
-            tmp_buf
-                .write_u16::<LittleEndian>(n)
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "ent2_type",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x10;
         }
         if let Some(n) = self.ent2_unk {
-            tmp_buf
-                .write_u16::<LittleEndian>(n)
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "ent2_unk",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x20;
         }
         if let Some(x) = self.timestamp {
-            tmp_buf
-                .write_u32::<LittleEndian>(x.as_secs() as u32)
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "timestamp",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&(x.as_secs() as u32).to_le_bytes());
             flags += 0x40;
         }
         if let Some(n) = self.rot_x {
-            tmp_buf
-                .write_u16::<LittleEndian>(n.to_bits())
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "rot_x",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x80;
         }
         if let Some(n) = self.rot_y {
-            tmp_buf
-                .write_u16::<LittleEndian>(n.to_bits())
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "rot_y",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x100;
         }
         if let Some(n) = self.rot_z {
-            tmp_buf
-                .write_u16::<LittleEndian>(n.to_bits())
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "rot_z",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x200;
         }
         if let Some(n) = self.rot_w {
-            tmp_buf
-                .write_u16::<LittleEndian>(n.to_bits())
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "rot_w",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x400;
         }
         if let Some(n) = self.cur_x {
-            tmp_buf
-                .write_u16::<LittleEndian>(n.to_bits())
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "cur_x",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x800;
         }
         if let Some(n) = self.cur_y {
-            tmp_buf
-                .write_u16::<LittleEndian>(n.to_bits())
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "cur_y",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x1000;
         }
         if let Some(n) = self.cur_z {
-            tmp_buf
-                .write_u16::<LittleEndian>(n.to_bits())
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "cur_z",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x2000;
         }
         if let Some(n) = self.unk1 {
-            tmp_buf
-                .write_u16::<LittleEndian>(n.to_bits())
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "unk1",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x4000;
         }
         if let Some(n) = self.unk_x {
-            tmp_buf
-                .write_u16::<LittleEndian>(n.to_bits())
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "unk_x",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x8000;
         }
         if let Some(n) = self.unk_y {
-            tmp_buf
-                .write_u16::<LittleEndian>(n.to_bits())
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "unk_y",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x10000;
         }
         if let Some(n) = self.unk_z {
-            tmp_buf
-                .write_u16::<LittleEndian>(n.to_bits())
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "unk_z",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x20000;
         }
         if let Some(n) = self.unk2 {
-            tmp_buf
-                .write_u16::<LittleEndian>(n.to_bits())
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "unk2",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x40000;
         }
         if let Some(n) = self.unk4 {
-            tmp_buf.write_u8(n).map_err(|e| PacketError::FieldError {
-                packet_name: "MovementPacket",
-                field_name: "unk4",
-                error: e,
-            })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x180000;
         } else if let Some(n) = self.unk3 {
-            tmp_buf
-                .write_u32::<LittleEndian>(n)
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "unk3",
-                    error: e,
-                })?;
+            tmp_buf.extend_from_slice(&n.to_le_bytes());
             flags += 0x80000;
         }
         let mut buf = if flags == 0xFFFFF {
@@ -1312,21 +1188,11 @@ impl PacketReadWrite for MovementPacket {
         } else {
             PacketHeader::new(0x04, 0x07, Flags::OBJECT_RELATED | Flags::FLAG_10).write(packet_type)
         };
-        buf.write_all(&self.unk)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "MovementPacket",
-                field_name: "unk",
-                error: e,
-            })?;
+        buf.extend_from_slice(&self.unk);
         if flags != 0xFFFFF {
-            buf.write_u24::<LittleEndian>(flags)
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "flags",
-                    error: e,
-                })?;
+            buf.extend_from_slice(&flags.to_le_bytes()[0..3]);
         }
         buf.append(&mut tmp_buf);
-        Ok(buf)
+        buf
     }
 }

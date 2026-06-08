@@ -26,17 +26,12 @@ macro_rules! helper_int {
 
             fn write(
                 &self,
-                writer: &mut impl std::io::Write,
+                writer: &mut Vec<u8>,
                 _: super::PacketType,
                 _: u32,
                 _: u32,
-            ) -> Result<(), super::PacketError> {
-                let buf = self.$write();
-                writer.write_all(&buf).map_err(|e| PacketError::FieldError {
-                    packet_name: stringify!($name),
-                    field_name: "value",
-                    error: e,
-                })
+            ) {
+                writer.extend_from_slice(&self.$write());
             }
         }
     };
@@ -59,13 +54,7 @@ impl<T: HelperReadWrite> HelperReadWrite for Box<T> {
         T::read(reader, packet_type, xor, sub).map(Box::new)
     }
 
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        packet_type: super::PacketType,
-        xor: u32,
-        sub: u32,
-    ) -> Result<(), PacketError> {
+    fn write(&self, writer: &mut Vec<u8>, packet_type: super::PacketType, xor: u32, sub: u32) {
         self.as_ref().write(writer, packet_type, xor, sub)
     }
 }
@@ -97,23 +86,10 @@ impl<T: HelperReadWrite, const N: usize> HelperReadWrite for [T; N] {
         }
     }
 
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        packet_type: super::PacketType,
-        xor: u32,
-        sub: u32,
-    ) -> Result<(), PacketError> {
+    fn write(&self, writer: &mut Vec<u8>, packet_type: super::PacketType, xor: u32, sub: u32) {
         for i in self {
-            i.write(writer, packet_type, xor, sub).map_err(|e| {
-                PacketError::CompositeFieldError {
-                    packet_name: "array",
-                    field_name: "value",
-                    error: e.into(),
-                }
-            })?;
+            i.write(writer, packet_type, xor, sub);
         }
-        Ok(())
     }
 }
 
@@ -135,18 +111,12 @@ impl HelperReadWrite for Duration {
 
     fn write(
         &self,
-        writer: &mut impl std::io::Write,
+        writer: &mut Vec<u8>,
         packet_type: crate::protocol::PacketType,
         _: u32,
         _: u32,
-    ) -> Result<(), crate::protocol::PacketError> {
-        (self.as_secs() as u32)
-            .write(writer, packet_type, 0, 0)
-            .map_err(|e| PacketError::CompositeFieldError {
-                packet_name: "WinTime",
-                field_name: "time",
-                error: e.into(),
-            })
+    ) {
+        (self.as_secs() as u32).write(writer, packet_type, 0, 0);
     }
 }
 
@@ -164,20 +134,8 @@ impl HelperReadWrite for String {
         })
     }
 
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        _: crate::protocol::PacketType,
-        xor: u32,
-        sub: u32,
-    ) -> Result<(), crate::protocol::PacketError> {
-        writer
-            .write_all(&self.write_variable(sub, xor))
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "String",
-                field_name: "str",
-                error: e,
-            })
+    fn write(&self, writer: &mut Vec<u8>, _: crate::protocol::PacketType, xor: u32, sub: u32) {
+        writer.extend_from_slice(&self.write_variable(sub, xor));
     }
 }
 
@@ -197,20 +155,8 @@ impl HelperReadWrite for AsciiString {
         })
     }
 
-    fn write(
-        &self,
-        writer: &mut impl std::io::Write,
-        _: crate::protocol::PacketType,
-        xor: u32,
-        sub: u32,
-    ) -> Result<(), crate::protocol::PacketError> {
-        writer
-            .write_all(&self.write_variable(sub, xor))
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "AsciiString",
-                field_name: "str",
-                error: e,
-            })
+    fn write(&self, writer: &mut Vec<u8>, _: crate::protocol::PacketType, xor: u32, sub: u32) {
+        writer.extend_from_slice(&self.write_variable(sub, xor));
     }
 }
 
@@ -267,44 +213,19 @@ impl<T: HelperReadWrite> HelperReadWrite for Vec<T> {
 
     fn write(
         &self,
-        writer: &mut impl std::io::Write,
+        writer: &mut Vec<u8>,
         packet_type: crate::protocol::PacketType,
         xor: u32,
         sub: u32,
-    ) -> Result<(), crate::protocol::PacketError> {
-        (write_magic(self.len() as u32, sub, xor))
-            .write(writer, packet_type, xor, sub)
-            .map_err(|e| PacketError::CompositeFieldError {
-                packet_name: "Vec",
-                field_name: "len",
-                error: e.into(),
-            })?;
-        let mut buf = vec![];
+    ) {
+        (write_magic(self.len() as u32, sub, xor)).write(writer, packet_type, xor, sub);
+        let len1 = writer.len();
         for i in self.iter() {
-            i.write(&mut buf, packet_type, xor, sub).map_err(|e| {
-                PacketError::CompositeFieldError {
-                    packet_name: "Vec",
-                    field_name: "value",
-                    error: e.into(),
-                }
-            })?;
+            i.write(writer, packet_type, xor, sub);
         }
-        let len = buf.len();
-        writer
-            .write_all(&buf)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "Vec",
-                field_name: "value",
-                error: e,
-            })?;
-        writer
-            .write_all(&vec![0; len.next_multiple_of(4) - len])
-            .map_err(|e| PacketError::PaddingError {
-                packet_name: "Vec",
-                field_name: "padding",
-                error: e,
-            })?;
-
-        Ok(())
+        let len2 = writer.len();
+        let wrote_len = len2 - len1;
+        let padded_len = len2 + (wrote_len.next_multiple_of(4) - wrote_len);
+        writer.resize(padded_len, 0);
     }
 }

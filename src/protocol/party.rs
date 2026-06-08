@@ -653,7 +653,7 @@ bitflags::bitflags! {
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[cfg_attr(feature = "serde", serde(default))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[pso2packet(bitflags(u8))]
+    #[pso2packet(bitflags)]
     pub struct PartyFlags: u8 {
         /// Is the party only for friends.
         const FRIENDS_ONLY = 1 << 0;

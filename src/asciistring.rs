@@ -1,6 +1,5 @@
 //! Ascii only string.
 use crate::protocol::{read_magic, write_magic};
-use byteorder::{LittleEndian, WriteBytesExt};
 use std::io::{Read, Seek, SeekFrom, Write};
 
 /// Helper read/write trait for strings.
@@ -27,8 +26,7 @@ pub trait StringRW: Sized + Default + std::ops::Deref<Target = str> {
     fn write_variable(&self, sub: u32, xor: u32) -> Vec<u8> {
         let mut buf = vec![];
         if self.is_empty() {
-            buf.write_u32::<LittleEndian>(write_magic(0, sub, xor))
-                .unwrap();
+            buf.extend_from_slice(&write_magic(0, sub, xor).to_le_bytes());
             return buf;
         }
         #[cfg(not(test))]
@@ -36,8 +34,7 @@ pub trait StringRW: Sized + Default + std::ops::Deref<Target = str> {
         #[cfg(test)]
         let len = self.chars().count();
         let padding = Self::get_padding(len as u64) as usize;
-        buf.write_u32::<LittleEndian>(write_magic(len as u32, sub, xor))
-            .unwrap();
+        buf.extend_from_slice(&write_magic(len as u32, sub, xor).to_le_bytes());
         buf.write_all(&self.write_fixed(len)).unwrap();
         buf.write_all(&vec![0; padding]).unwrap();
         buf

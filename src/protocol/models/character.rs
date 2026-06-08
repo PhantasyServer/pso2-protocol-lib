@@ -3,8 +3,8 @@ use crate::{
     fixed_types::FixedString,
     protocol::{HelperReadWrite, PacketError, PacketType},
 };
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use std::io::{Read, Seek, Write};
+use byteorder::{LittleEndian, ReadBytesExt};
+use std::io::{Read, Seek};
 
 // ----------------------------------------------------------------
 // Structures
@@ -270,7 +270,7 @@ bitflags::bitflags! {
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[cfg_attr(feature = "serde", serde(default))]
     #[derive(Debug, Default, Clone, PartialEq, HelperReadWrite)]
-    #[pso2packet(bitflags(u16))]
+    #[pso2packet(bitflags)]
     pub struct ClassFlags: u16 {
         const Hunter = 1 << 0;
         const Ranger = 1 << 1;
@@ -488,120 +488,28 @@ impl HelperReadWrite for Character {
             unk4,
         })
     }
-    fn write(
-        &self,
-        writer: &mut impl Write,
-        packet_type: PacketType,
-        xor: u32,
-        sub: u32,
-    ) -> Result<(), PacketError> {
-        writer
-            .write_u32::<LittleEndian>(self.character_id)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "Character",
-                field_name: "character_id",
-                error: e,
-            })?;
-        writer
-            .write_u32::<LittleEndian>(self.player_id)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "Character",
-                field_name: "player_id",
-                error: e,
-            })?;
-        writer
-            .write_u32::<LittleEndian>(self.unk1)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "Character",
-                field_name: "unk1",
-                error: e,
-            })?;
-        writer
-            .write_u32::<LittleEndian>(self.voice_type)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "Character",
-                field_name: "voice_type",
-                error: e,
-            })?;
-        writer
-            .write_u16::<LittleEndian>(self.unk2)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "Character",
-                field_name: "unk2",
-                error: e,
-            })?;
-        writer
-            .write_i16::<LittleEndian>(self.voice_pitch)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "Character",
-                field_name: "voice_pitch",
-                error: e,
-            })?;
-        self.name
-            .write(writer, packet_type, xor, sub)
-            .map_err(|e| PacketError::CompositeFieldError {
-                packet_name: "Character",
-                field_name: "name",
-                error: Box::new(e),
-            })?;
+    fn write(&self, writer: &mut Vec<u8>, packet_type: PacketType, xor: u32, sub: u32) {
+        writer.extend_from_slice(&self.character_id.to_le_bytes());
+        writer.extend_from_slice(&self.player_id.to_le_bytes());
+        writer.extend_from_slice(&self.unk1.to_le_bytes());
+        writer.extend_from_slice(&self.voice_type.to_le_bytes());
+        writer.extend_from_slice(&self.unk2.to_le_bytes());
+        writer.extend_from_slice(&self.voice_pitch.to_le_bytes());
+        self.name.write(writer, packet_type, xor, sub);
 
         if matches!(packet_type, PacketType::Vita) {
-            writer
-                .write_u32::<LittleEndian>(0)
-                .map_err(|e| PacketError::PaddingError {
-                    packet_name: "Character",
-                    field_name: "look",
-                    error: e,
-                })?;
+            writer.extend_from_slice(&0u32.to_le_bytes());
         }
-        self.look
-            .write(writer, packet_type, xor, sub)
-            .map_err(|e| PacketError::CompositeFieldError {
-                packet_name: "Character",
-                field_name: "look",
-                error: Box::new(e),
-            })?;
-        writer
-            .write_u32::<LittleEndian>(self.unk3)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "Character",
-                field_name: "unk3",
-                error: e,
-            })?;
-        self.classes
-            .write(writer, packet_type, xor, sub)
-            .map_err(|e| PacketError::CompositeFieldError {
-                packet_name: "Character",
-                field_name: "classes",
-                error: Box::new(e),
-            })?;
+        self.look.write(writer, packet_type, xor, sub);
+        writer.extend_from_slice(&self.unk3.to_le_bytes());
+        self.classes.write(writer, packet_type, xor, sub);
 
-        self.unk4
-            .write(writer, packet_type, xor, sub)
-            .map_err(|e| PacketError::CompositeFieldError {
-                packet_name: "Character",
-                field_name: "unk4",
-                error: Box::new(e),
-            })?;
+        self.unk4.write(writer, packet_type, xor, sub);
 
-        writer
-            .write_all(&[0u8; 0x56])
-            .map_err(|e| PacketError::PaddingError {
-                packet_name: "Character",
-                field_name: "unk3",
-                error: e,
-            })?;
+        writer.resize(writer.len() + 0x56, 0);
         if matches!(packet_type, PacketType::NA) {
-            writer
-                .write_u32::<LittleEndian>(0)
-                .map_err(|e| PacketError::PaddingError {
-                    packet_name: "Character",
-                    field_name: "unk3",
-                    error: e,
-                })?;
+            writer.extend_from_slice(&0u32.to_le_bytes());
         }
-
-        Ok(())
     }
 }
 
