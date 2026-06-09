@@ -287,7 +287,7 @@ pub struct EnemyRecord {
 
 impl PacketReadWrite for LoadTitlesPacket {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         flags: &super::Flags,
         packet_type: PacketType,
     ) -> Result<Self, PacketError> {
@@ -331,7 +331,7 @@ impl PacketReadWrite for LoadTitlesPacket {
 
 impl PacketReadWrite for PlayAchievementsResponsePacket {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         flags: &super::Flags,
         packet_type: super::PacketType,
     ) -> Result<Self, PacketError> {

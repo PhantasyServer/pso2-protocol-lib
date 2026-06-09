@@ -3,8 +3,6 @@ use crate::{
     fixed_types::FixedString,
     protocol::{HelperReadWrite, PacketError, PacketType},
 };
-use byteorder::{LittleEndian, ReadBytesExt};
-use std::io::{Read, Seek};
 
 // ----------------------------------------------------------------
 // Structures
@@ -359,56 +357,53 @@ pub struct ClassInfo {
 
 impl HelperReadWrite for Character {
     fn read(
-        reader: &mut (impl Read + Seek),
+        reader: &mut &[u8],
         packet_type: PacketType,
         xor: u32,
         sub: u32,
     ) -> Result<Self, PacketError> {
-        let character_id =
-            reader
-                .read_u32::<LittleEndian>()
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "Character",
-                    field_name: "character_id",
-                    error: e,
-                })?;
-        let player_id = reader
-            .read_u32::<LittleEndian>()
-            .map_err(|e| PacketError::FieldError {
+        let character_id = HelperReadWrite::read(reader, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "Character",
+                field_name: "character_id",
+                error: Box::new(e),
+            }
+        })?;
+        let player_id = HelperReadWrite::read(reader, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
                 packet_name: "Character",
                 field_name: "player_id",
-                error: e,
-            })?;
-        let unk1 = reader
-            .read_u32::<LittleEndian>()
-            .map_err(|e| PacketError::FieldError {
+                error: Box::new(e),
+            }
+        })?;
+        let unk1 = HelperReadWrite::read(reader, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
                 packet_name: "Character",
                 field_name: "unk1",
-                error: e,
-            })?;
-        let voice_type =
-            reader
-                .read_u32::<LittleEndian>()
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "Character",
-                    field_name: "voice_type",
-                    error: e,
-                })?;
-        let unk2 = reader
-            .read_u16::<LittleEndian>()
-            .map_err(|e| PacketError::FieldError {
+                error: Box::new(e),
+            }
+        })?;
+        let voice_type = HelperReadWrite::read(reader, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "Character",
+                field_name: "voice_type",
+                error: Box::new(e),
+            }
+        })?;
+        let unk2 = HelperReadWrite::read(reader, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
                 packet_name: "Character",
                 field_name: "unk2",
-                error: e,
-            })?;
-        let voice_pitch =
-            reader
-                .read_i16::<LittleEndian>()
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "Character",
-                    field_name: "voice_pitch",
-                    error: e,
-                })?;
+                error: Box::new(e),
+            }
+        })?;
+        let voice_pitch = HelperReadWrite::read(reader, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "Character",
+                field_name: "voice_pitch",
+                error: Box::new(e),
+            }
+        })?;
         let name = FixedString::read(reader, packet_type, xor, sub).map_err(|e| {
             PacketError::CompositeFieldError {
                 packet_name: "Character",
@@ -418,13 +413,15 @@ impl HelperReadWrite for Character {
         })?;
 
         if matches!(packet_type, PacketType::Vita) {
-            reader
-                .seek(std::io::SeekFrom::Current(4))
-                .map_err(|e| PacketError::PaddingError {
+            if reader.len() < 4 {
+                return Err(PacketError::PaddingError {
                     packet_name: "Character",
                     field_name: "look",
-                    error: e,
-                })?;
+                    expected: 4,
+                    got: reader.len(),
+                });
+            }
+            *reader = &reader[4..];
         }
 
         let look = Look::read(reader, packet_type, xor, sub).map_err(|e| {
@@ -434,13 +431,13 @@ impl HelperReadWrite for Character {
                 error: Box::new(e),
             }
         })?;
-        let unk3 = reader
-            .read_u32::<LittleEndian>()
-            .map_err(|e| PacketError::FieldError {
+        let unk3 = HelperReadWrite::read(reader, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
                 packet_name: "Character",
                 field_name: "unk3",
-                error: e,
-            })?;
+                error: Box::new(e),
+            }
+        })?;
         let classes = ClassInfo::read(reader, packet_type, xor, sub).map_err(|e| {
             PacketError::CompositeFieldError {
                 packet_name: "Character",
@@ -457,21 +454,25 @@ impl HelperReadWrite for Character {
             }
         })?;
 
-        reader
-            .seek(std::io::SeekFrom::Current(0x56))
-            .map_err(|e| PacketError::PaddingError {
+        if reader.len() < 0x56 {
+            return Err(PacketError::PaddingError {
                 packet_name: "Character",
                 field_name: "unk3",
-                error: e,
-            })?;
+                expected: 0x56,
+                got: reader.len(),
+            });
+        }
+        *reader = &reader[0x56..];
         if matches!(packet_type, PacketType::NA) {
-            reader
-                .seek(std::io::SeekFrom::Current(4))
-                .map_err(|e| PacketError::PaddingError {
+            if reader.len() < 4 {
+                return Err(PacketError::PaddingError {
                     packet_name: "Character",
                     field_name: "unk3",
-                    error: e,
-                })?;
+                    expected: 4,
+                    got: reader.len(),
+                });
+            }
+            *reader = &reader[4..];
         }
 
         Ok(Self {

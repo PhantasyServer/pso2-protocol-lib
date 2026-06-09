@@ -58,7 +58,7 @@ pub struct FixedVec<const N: usize, T> {
 }
 
 trait SizeProvider {
-    fn to_size(reader: &mut (impl std::io::Read + std::io::Seek)) -> Result<u32, PacketError>;
+    fn to_size(reader: &mut &[u8]) -> Result<u32, PacketError>;
     fn to_data(size: usize) -> Vec<u8>;
 }
 
@@ -101,7 +101,7 @@ pub struct FixedBytes<const N: usize, const NO_PADDING: bool = false> {
 macro_rules! helper_int {
     ($name:ty) => {
         impl SizeProvider for $name {
-            fn to_size(reader: &mut (impl std::io::Read + std::io::Seek)) -> Result<u32, PacketError> {
+            fn to_size(reader: &mut &[u8]) -> Result<u32, PacketError> {
                 Ok(<$name>::read(reader, crate::protocol::PacketType::Classic, 0, 0)? as u32)
             }
             fn to_data(size: usize) -> Vec<u8> {
@@ -148,19 +148,13 @@ impl<const N: usize> Display for FixedString<N> {
 }
 impl<const N: usize> HelperReadWrite for FixedString<N> {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         _: crate::protocol::PacketType,
         _: u32,
         _: u32,
     ) -> Result<Self, crate::protocol::PacketError> {
         Ok(Self {
-            string: <String as StringRW>::read_fixed(reader, N as _).map_err(|e| {
-                PacketError::FieldError {
-                    packet_name: "FixedString",
-                    field_name: "str",
-                    error: e,
-                }
-            })?,
+            string: <String as StringRW>::read_fixed(reader, N as _)?,
         })
     }
 
@@ -221,19 +215,13 @@ impl<const N: usize> Display for FixedAsciiString<N> {
 }
 impl<const N: usize> HelperReadWrite for FixedAsciiString<N> {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         _: crate::protocol::PacketType,
         _: u32,
         _: u32,
     ) -> Result<Self, crate::protocol::PacketError> {
         Ok(Self {
-            string: AsciiString::read_fixed(reader, N as _).map_err(|e| {
-                PacketError::FieldError {
-                    packet_name: "FixedAsciiString",
-                    field_name: "str",
-                    error: e,
-                }
-            })?,
+            string: <AsciiString as StringRW>::read_fixed(reader, N as _)?,
         })
     }
 
@@ -275,7 +263,7 @@ impl From<Duration> for WinTime {
 const WIN_FT_TIME_TO_TIMESTAMP: u64 = 0x0A97_30B6_6800;
 impl HelperReadWrite for WinTime {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         packet_type: crate::protocol::PacketType,
         _: u32,
         _: u32,
@@ -328,7 +316,7 @@ impl<const N: usize, T> From<FixedVec<N, T>> for Vec<T> {
 }
 impl<const N: usize, T: HelperReadWrite + Default> HelperReadWrite for FixedVec<N, T> {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         packet_type: crate::protocol::PacketType,
         xor: u32,
         sub: u32,
@@ -397,7 +385,7 @@ impl<S, T> From<VecUSize<S, T>> for Vec<T> {
 }
 impl<S: SizeProvider, T: HelperReadWrite> HelperReadWrite for VecUSize<S, T> {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         packet_type: crate::protocol::PacketType,
         xor: u32,
         sub: u32,
@@ -463,34 +451,37 @@ impl<const NO_PADDING: bool> From<Bytes<NO_PADDING>> for Vec<u8> {
 }
 impl<const NO_PADDING: bool> HelperReadWrite for Bytes<NO_PADDING> {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         _: crate::protocol::PacketType,
         xor: u32,
         sub: u32,
     ) -> Result<Self, crate::protocol::PacketError> {
-        let len = read_magic(reader, sub, xor).map_err(|e| PacketError::FieldLengthError {
+        let len = read_magic(reader, sub, xor).map_err(|e| PacketError::CompositeFieldError {
             packet_name: "Bytes",
             field_name: "len",
-            error: e,
-        })?;
-        let mut bytes = vec![0; len as usize];
-        reader
-            .read_exact(&mut bytes)
-            .map_err(|e| PacketError::FieldError {
+            error: Box::new(e),
+        })? as usize;
+        if reader.len() < len {
+            return Err(PacketError::FieldError {
                 packet_name: "Bytes",
-                field_name: "bytes",
-                error: e,
-            })?;
+                field_name: "value",
+                expected: len,
+                got: reader.len(),
+            });
+        }
+        let bytes = reader[..len].to_vec();
+        *reader = &reader[len..];
         if !NO_PADDING {
-            reader
-                .seek(std::io::SeekFrom::Current(
-                    (len.next_multiple_of(4) - len) as i64,
-                ))
-                .map_err(|e| PacketError::PaddingError {
+            let padding = len.next_multiple_of(4) - len;
+            if reader.len() < padding {
+                return Err(PacketError::PaddingError {
                     packet_name: "Bytes",
                     field_name: "padding",
-                    error: e,
-                })?;
+                    expected: padding,
+                    got: reader.len(),
+                });
+            }
+            *reader = &reader[padding..];
         }
         Ok(Self { bytes })
     }
@@ -545,29 +536,32 @@ impl<const N: usize, const NO_PADDING: bool> From<FixedBytes<N, NO_PADDING>> for
 }
 impl<const N: usize, const NO_PADDING: bool> HelperReadWrite for FixedBytes<N, NO_PADDING> {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         _: crate::protocol::PacketType,
         _: u32,
         _: u32,
     ) -> Result<Self, crate::protocol::PacketError> {
-        let mut bytes = vec![0; N];
-        reader
-            .read_exact(&mut bytes)
-            .map_err(|e| PacketError::FieldError {
+        if reader.len() < N {
+            return Err(PacketError::FieldError {
                 packet_name: "FixedBytes",
-                field_name: "bytes",
-                error: e,
-            })?;
+                field_name: "value",
+                expected: N,
+                got: reader.len(),
+            });
+        }
+        let bytes = reader[..N].to_vec();
+        *reader = &reader[N..];
         if !NO_PADDING {
-            reader
-                .seek(std::io::SeekFrom::Current(
-                    (N.next_multiple_of(4) - N) as i64,
-                ))
-                .map_err(|e| PacketError::PaddingError {
+            let padding = N.next_multiple_of(4) - N;
+            if reader.len() < padding {
+                return Err(PacketError::PaddingError {
                     packet_name: "FixedBytes",
                     field_name: "padding",
-                    error: e,
-                })?;
+                    expected: padding,
+                    got: reader.len(),
+                });
+            }
+            *reader = &reader[padding..];
         }
         Ok(Self { bytes })
     }

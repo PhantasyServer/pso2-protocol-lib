@@ -46,7 +46,7 @@ pub fn packet_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
         #[automatically_derived]
         impl #crate_location::protocol::PacketReadWrite for #name {
             fn read(
-                reader: &mut (impl std::io::Read + std::io::Seek),
+                reader: &mut &[u8],
                 flags: &#crate_location::protocol::Flags,
                 packet_type: #crate_location::protocol::PacketType
             ) -> Result<Self, #crate_location::protocol::PacketError> {
@@ -109,7 +109,7 @@ pub fn helper_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Result<
         #[automatically_derived]
         impl #crate_location::protocol::HelperReadWrite for #name {
             fn read(
-                reader: &mut (impl std::io::Read + std::io::Seek),
+                reader: &mut &[u8],
                 packet_type: #crate_location::protocol::PacketType,
                 xor: u32,
                 sub: u32
@@ -146,38 +146,22 @@ fn parse_enum(
 ) -> syn::Result<()> {
     let mut default_token = quote! {};
     let mut match_expr = quote! {};
-    let mut discriminant = match repr_type {
-        Size::U8 => {
-            read.extend(quote! {let num = reader.read_u8()});
-            write.extend(quote! {writer.extend_from_slice(&(*self as u8).to_le_bytes());});
-            Discriminant::U8(0)
-        }
-        Size::U16 => {
-            read.extend(quote! {let num = reader.read_u16::<LittleEndian>()});
-            write.extend(quote! {writer.extend_from_slice(&(*self as u16).to_le_bytes());});
-            Discriminant::U16(0)
-        }
-        Size::U32 => {
-            read.extend(quote! {let num = reader.read_u32::<LittleEndian>()});
-            write.extend(quote! {writer.extend_from_slice(&(*self as u32).to_le_bytes());});
-            Discriminant::U32(0)
-        }
-        Size::U64 => {
-            read.extend(quote! {let num = reader.read_u64::<LittleEndian>()});
-            write.extend(quote! {writer.extend_from_slice(&(*self as u64).to_le_bytes());});
-            Discriminant::U64(0)
-        }
-        Size::U128 => {
-            read.extend(quote! {let num = reader.read_u128::<LittleEndian>()});
-            write.extend(quote! {writer.extend_from_slice(&(*self as u128).to_le_bytes());});
-            Discriminant::U128(0)
-        }
+    let (ty, mut discriminant) = match repr_type {
+        Size::U8 => (quote! {u8}, Discriminant::U8(0)),
+        Size::U16 => (quote! {u16}, Discriminant::U16(0)),
+        Size::U32 => (quote! {u32}, Discriminant::U32(0)),
+        Size::U64 => (quote! {u64}, Discriminant::U64(0)),
+        Size::U128 => (quote! {u128}, Discriminant::U128(0)),
     };
-    read.extend(quote! {.map_err(|e| Error::ValueError{
-            packet_name,
-            error: e,
-        })?;
-    });
+    read.extend(
+        quote! {let num = #ty::read(reader, packet_type, xor, sub).map_err(|e| Error::CompositeFieldError{
+                packet_name,
+                field_name: "value",
+                error: Box::new(e),
+            })?;
+        },
+    );
+    write.extend(quote! {writer.extend_from_slice(&(*self as #ty).to_le_bytes());});
 
     for variant in &data.variants {
         let variant_name = &variant.ident;
@@ -293,13 +277,17 @@ fn parse_struct_field(read: &mut TS2, write: &mut TS2, data: &DataStruct) -> syn
         }
 
         if settings.seek_after != 0 {
-            let seek_after = settings.seek_after;
-            read.extend(quote! {reader.seek(std::io::SeekFrom::Current(#seek_after))
-                .map_err(|e| Error::PaddingError{
-                    packet_name,
-                    field_name: stringify!(#field_name),
-                    error: e,
-                })?;
+            let seek_after = settings.seek_after as usize;
+            read.extend(quote! {
+                if reader.len() < #seek_after {
+                    return Err(Error::PaddingError {
+                        packet_name,
+                        field_name: stringify!(#field_name),
+                        expected: #seek_after,
+                        got: reader.len(),
+                    });
+                }
+                *reader = &reader[#seek_after..];
             });
             write.extend(quote! {writer.extend_from_slice(&[0u8; #seek_after as usize]);});
         }
@@ -427,13 +415,17 @@ fn get_attrs(
             ));
         }
         "seek" => {
-            let amount: i64 = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
-            read.extend(quote! {reader.seek(std::io::SeekFrom::Current(#amount))
-                .map_err(|e| Error::PaddingError{
-                    packet_name,
-                    field_name: "unknown",
-                    error: e,
-                })?;
+            let amount: usize = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
+            read.extend(quote! {
+                if reader.len() < #amount {
+                    return Err(Error::PaddingError {
+                        packet_name,
+                        field_name: "unknown",
+                        expected: #amount,
+                        got: reader.len(),
+                    });
+                }
+                *reader = &reader[#amount..];
             });
             write.extend(quote! {writer.extend_from_slice(&[0u8; #amount as usize]);});
         }
@@ -442,12 +434,14 @@ fn get_attrs(
         }
         "const_u16" => {
             let num: u16 = list.unwrap().parse_args::<LitInt>()?.base10_parse()?;
-            read.extend(quote! {reader.seek(std::io::SeekFrom::Current(2))
-                .map_err(|e| Error::ConstantError{
-                    packet_name,
-                    const_val: #num as _,
-                    error: e,
-                })?;
+            read.extend(quote! {
+                if reader.len() < 2 {
+                    return Err(Error::ConstantError{
+                        packet_name,
+                        const_val: #num as _,
+                    });
+                }
+                *reader = &reader[2..];
             });
             write.extend(quote! {writer.extend_from_slice(&#num.to_le_bytes());});
         }

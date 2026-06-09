@@ -1,25 +1,37 @@
 //! Ascii only string.
-use crate::protocol::{read_magic, write_magic};
-use std::io::{Read, Seek, SeekFrom, Write};
+use crate::protocol::{read_magic, write_magic, PacketError};
 
 /// Helper read/write trait for strings.
 pub trait StringRW: Sized + Default + std::ops::Deref<Target = str> {
     /// Reads a fixed length string from a reader.
-    fn read_fixed(reader: &mut impl Read, len: u64) -> std::io::Result<Self>;
+    fn read_fixed(reader: &mut &[u8], len: u64) -> Result<Self, PacketError>;
     /// Writes a fixed length string to a writer.
     fn write_fixed(&self, len: usize) -> Vec<u8>;
     /// Returns number of bytes needed to pad a string to align it to a 4 byte boundary.
     fn get_padding(len: u64) -> u64;
     /// Reads a variable length string from a reader.
-    fn read_variable(reader: &mut (impl Read + Seek), sub: u32, xor: u32) -> std::io::Result<Self> {
-        let magic_len = read_magic(reader, sub, xor)? as u64;
+    fn read_variable(reader: &mut &[u8], sub: u32, xor: u32) -> Result<Self, PacketError> {
+        let magic_len =
+            read_magic(reader, sub, xor).map_err(|e| PacketError::CompositeFieldError {
+                packet_name: "StringRW",
+                field_name: "len",
+                error: Box::new(e),
+            })? as u64;
         if magic_len == 0 {
             return Ok(Default::default());
         }
         let len = magic_len;
-        let padding = Self::get_padding(len);
+        let padding = Self::get_padding(len) as usize;
         let string = Self::read_fixed(reader, len)?;
-        reader.seek(SeekFrom::Current(padding as i64))?;
+        if reader.len() < padding {
+            return Err(PacketError::PaddingError {
+                packet_name: "StringRW",
+                field_name: "value",
+                expected: padding,
+                got: reader.len(),
+            });
+        }
+        *reader = &reader[padding..];
         Ok(string)
     }
     /// Writes a variable length string to a writer.
@@ -35,18 +47,25 @@ pub trait StringRW: Sized + Default + std::ops::Deref<Target = str> {
         let len = self.chars().count();
         let padding = Self::get_padding(len as u64) as usize;
         buf.extend_from_slice(&write_magic(len as u32, sub, xor).to_le_bytes());
-        buf.write_all(&self.write_fixed(len)).unwrap();
-        buf.write_all(&vec![0; padding]).unwrap();
+        buf.extend_from_slice(&self.write_fixed(len));
+        buf.extend_from_slice(&vec![0; padding]);
         buf
     }
 }
 
 impl StringRW for String {
-    fn read_fixed(reader: &mut impl Read, len: u64) -> std::io::Result<Self> {
-        let len = len * 2;
-        let mut buf = vec![];
-        reader.take(len).read_to_end(&mut buf)?;
-        let buf = &buf;
+    fn read_fixed(reader: &mut &[u8], len: u64) -> Result<Self, PacketError> {
+        let len = len as usize * 2;
+        if reader.len() < len {
+            return Err(PacketError::FieldError {
+                packet_name: "String",
+                field_name: "data",
+                expected: len,
+                got: reader.len(),
+            });
+        }
+        let buf = reader[..len].to_vec();
+        *reader = &reader[len..];
         let mut words = vec![];
         for word in buf.chunks(2) {
             words.push(u16::from_le_bytes(word.try_into().unwrap()))
@@ -183,9 +202,18 @@ impl<'de> serde::Deserialize<'de> for AsciiString {
 }
 
 impl StringRW for AsciiString {
-    fn read_fixed(reader: &mut impl Read, len: u64) -> std::io::Result<Self> {
-        let mut buf = vec![];
-        reader.take(len).read_to_end(&mut buf)?;
+    fn read_fixed(reader: &mut &[u8], len: u64) -> Result<Self, PacketError> {
+        let len = len as usize;
+        if reader.len() < len {
+            return Err(PacketError::FieldError {
+                packet_name: "AsciiString",
+                field_name: "data",
+                expected: len,
+                got: reader.len(),
+            });
+        }
+        let buf = reader[..len].to_vec();
+        *reader = &reader[len..];
         #[allow(unused_mut)]
         let mut string = String::from_utf8_lossy(&buf).to_string();
         #[cfg(not(test))]

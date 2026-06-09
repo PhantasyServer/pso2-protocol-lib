@@ -1,5 +1,4 @@
 use super::{Flags, PacketCategory, PacketError, PacketType};
-use std::io::{Read, Seek};
 
 /// Trait for manipulating encryption data.
 pub trait PacketEncryption {
@@ -25,7 +24,7 @@ pub trait ProtocolRW: PacketEncryption + Sized {
 pub trait PacketReadWrite: Sized {
     /// Reads a packet from a stream.
     fn read(
-        reader: &mut (impl Read + Seek),
+        reader: &mut &[u8],
         flags: &Flags,
         packet_type: PacketType,
     ) -> Result<Self, PacketError>;
@@ -37,7 +36,7 @@ pub trait PacketReadWrite: Sized {
 pub trait HelperReadWrite: Sized {
     /// Reads data from a stream.
     fn read(
-        reader: &mut (impl Read + Seek),
+        reader: &mut &[u8],
         packet_type: PacketType,
         xor: u32,
         sub: u32,

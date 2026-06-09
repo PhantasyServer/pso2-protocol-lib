@@ -12,9 +12,7 @@ use crate::{
     fixed_types::{Bytes, FixedAsciiString, FixedBytes, FixedString, FixedVec, WinTime},
     AsciiString,
 };
-use byteorder::{LittleEndian, ReadBytesExt};
 use std::{
-    io::{Read, Seek},
     net::Ipv4Addr,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -76,7 +74,6 @@ pub struct SegaIDLoginPacket {
     pub password: FixedAsciiString<0x40>,
     #[pso2packet(seek(0x4))]
     pub unk10: u32,
-    #[pso2packet(seek_after(0x4))]
     pub unk11: AsciiString,
 }
 
@@ -1435,35 +1432,34 @@ pub enum LinkRequestScreen {
 // ----------------------------------------------------------------
 
 impl PacketReadWrite for CharacterListPacket {
-    fn read(
-        reader: &mut (impl Read + Seek),
-        _: &Flags,
-        packet_type: PacketType,
-    ) -> Result<Self, PacketError> {
-        let char_amount = reader
-            .read_u32::<LittleEndian>()
-            .map_err(|e| PacketError::FieldLengthError {
+    fn read(reader: &mut &[u8], _: &Flags, packet_type: PacketType) -> Result<Self, PacketError> {
+        let char_amount = i32::read(reader, packet_type, 0, 0)
+            .map_err(|e| PacketError::CompositeFieldError {
                 packet_name: "CharacterListPacket",
-                field_name: "characters",
-                error: e,
+                field_name: "char_amount",
+                error: Box::new(e),
             })?
             .clamp(0, 30);
-        reader
-            .seek(std::io::SeekFrom::Current(4))
-            .map_err(|e| PacketError::PaddingError {
+        if reader.len() < 4 {
+            return Err(PacketError::PaddingError {
                 packet_name: "CharacterListPacket",
                 field_name: "characters",
-                error: e,
-            })?;
+                expected: 4,
+                got: reader.len(),
+            });
+        }
+        *reader = &reader[4..];
         let mut characters = vec![];
         for i in 0..30 {
-            reader
-                .seek(std::io::SeekFrom::Current(4))
-                .map_err(|e| PacketError::PaddingError {
+            if reader.len() < 4 {
+                return Err(PacketError::PaddingError {
                     packet_name: "CharacterListPacket",
                     field_name: "vec_characters_value",
-                    error: e,
-                })?;
+                    expected: 4,
+                    got: reader.len(),
+                });
+            }
+            *reader = &reader[4..];
             let character = Character::read(reader, packet_type, 0, 0).map_err(|e| {
                 PacketError::CompositeFieldError {
                     packet_name: "CharacterListPacket",
@@ -1476,13 +1472,11 @@ impl PacketReadWrite for CharacterListPacket {
             }
         }
         // ???
-        reader
-            .seek(std::io::SeekFrom::Current(0x4))
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "CharacterListPacket",
-                field_name: "undefined",
-                error: e,
-            })?;
+        u32::read(reader, packet_type, 0, 0).map_err(|e| PacketError::CompositeFieldError {
+            packet_name: "CharacterListPacket",
+            field_name: "undefined",
+            error: Box::new(e),
+        })?;
         let mut equiped_items = vec![];
         // items
         for i in 0..30 {
@@ -1502,85 +1496,87 @@ impl PacketReadWrite for CharacterListPacket {
         }
         let mut play_times = [0u32; 30];
         for item in &mut play_times {
-            *item = reader
-                .read_u32::<LittleEndian>()
-                .map_err(|e| PacketError::FieldError {
+            *item = u32::read(reader, packet_type, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
                     packet_name: "CharacterListPacket",
                     field_name: "array_play_times_value",
-                    error: e,
-                })?;
+                    error: Box::new(e),
+                }
+            })?;
         }
-        reader
-            .seek(std::io::SeekFrom::Current(32))
-            .map_err(|e| PacketError::PaddingError {
+        if reader.len() < 32 {
+            return Err(PacketError::PaddingError {
                 packet_name: "CharacterListPacket",
                 field_name: "deletion_flags",
-                error: e,
-            })?;
+                expected: 32,
+                got: reader.len(),
+            });
+        }
+        *reader = &reader[32..];
         let mut deletion_flags = [(0u32, 0u32); 30];
         for item in &mut deletion_flags {
-            item.0 = reader
-                .read_u32::<LittleEndian>()
-                .map_err(|e| PacketError::FieldError {
+            item.0 = HelperReadWrite::read(reader, packet_type, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
                     packet_name: "CharacterListPacket",
                     field_name: "array_deletion_flags_0_value",
-                    error: e,
-                })?;
-            item.1 = reader
-                .read_u32::<LittleEndian>()
-                .map_err(|e| PacketError::FieldError {
+                    error: Box::new(e),
+                }
+            })?;
+            item.1 = HelperReadWrite::read(reader, packet_type, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
                     packet_name: "CharacterListPacket",
                     field_name: "array_deletion_flags_1_value",
-                    error: e,
-                })?;
+                    error: Box::new(e),
+                }
+            })?;
         }
         let mut transfer_flags = [(0u32, 0u32); 30];
         for item in &mut transfer_flags {
-            item.0 = reader
-                .read_u32::<LittleEndian>()
-                .map_err(|e| PacketError::FieldError {
+            item.0 = HelperReadWrite::read(reader, packet_type, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
                     packet_name: "CharacterListPacket",
                     field_name: "array_transfer_flags_0_value",
-                    error: e,
-                })?;
-            item.1 = reader
-                .read_u32::<LittleEndian>()
-                .map_err(|e| PacketError::FieldError {
+                    error: Box::new(e),
+                }
+            })?;
+            item.1 = HelperReadWrite::read(reader, packet_type, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
                     packet_name: "CharacterListPacket",
                     field_name: "array_transfer_flags_1_value",
-                    error: e,
-                })?;
+                    error: Box::new(e),
+                }
+            })?;
         }
-        let account_accessory =
-            reader
-                .read_u16::<LittleEndian>()
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "CharacterListPacket",
-                    field_name: "account_accessory",
-                    error: e,
-                })?;
-        reader
-            .seek(std::io::SeekFrom::Current(6))
-            .map_err(|e| PacketError::PaddingError {
+        let account_accessory = HelperReadWrite::read(reader, packet_type, 0, 0).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "CharacterListPacket",
+                field_name: "account_accessory",
+                error: Box::new(e),
+            }
+        })?;
+        if reader.len() < 6 {
+            return Err(PacketError::PaddingError {
                 packet_name: "CharacterListPacket",
                 field_name: "login_survey",
-                error: e,
-            })?;
-        let login_survey =
-            reader
-                .read_u32::<LittleEndian>()
-                .map_err(|e| PacketError::FieldError {
-                    packet_name: "CharacterListPacket",
-                    field_name: "login_survey",
-                    error: e,
-                })?;
-        let ad = reader
-            .read_u32::<LittleEndian>()
-            .map_err(|e| PacketError::FieldError {
+                expected: 6,
+                got: reader.len(),
+            });
+        }
+        *reader = &reader[6..];
+        let login_survey = HelperReadWrite::read(reader, packet_type, 0, 0).map_err(|e| {
+            PacketError::CompositeFieldError {
+                packet_name: "CharacterListPacket",
+                field_name: "login_survey",
+                error: Box::new(e),
+            }
+        })?;
+        let ad = HelperReadWrite::read(reader, packet_type, 0, 0).map_err(|e| {
+            PacketError::CompositeFieldError {
                 packet_name: "CharacterListPacket",
                 field_name: "ad",
-                error: e,
-            })?;
+                error: Box::new(e),
+            }
+        })?;
 
         Ok(Self {
             characters,
@@ -1656,19 +1652,11 @@ impl PacketReadWrite for CharacterListPacket {
 }
 
 impl PacketReadWrite for EncryptionRequestPacket {
-    fn read(reader: &mut impl Read, _: &Flags, _: PacketType) -> Result<Self, PacketError> {
-        let mut rsa_data = vec![];
-        reader
-            .read_to_end(&mut rsa_data)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "EncryptionRequestPacket",
-                field_name: "rsa_data",
-                error: e,
-            })?;
+    fn read(reader: &mut &[u8], _: &Flags, _: PacketType) -> Result<Self, PacketError> {
         let mut tmp_data = vec![];
-        let mut iter = rsa_data.into_iter().rev().skip(4);
-        if let Some(x) = iter.find(|x| *x != 0x00) {
-            tmp_data.push(x);
+        let mut iter = reader.into_iter().rev().skip(4);
+        if let Some(x) = iter.find(|x| **x != 0x00) {
+            tmp_data.push(*x);
             tmp_data.extend(iter);
         }
         Ok(Self {
@@ -1686,17 +1674,10 @@ impl PacketReadWrite for EncryptionRequestPacket {
 }
 
 impl PacketReadWrite for EncryptionResponsePacket {
-    fn read(reader: &mut impl Read, _: &Flags, _: PacketType) -> Result<Self, PacketError> {
-        let mut data = vec![];
-        reader
-            .read_to_end(&mut data)
-            .map_err(|e| PacketError::FieldError {
-                packet_name: "EncryptionResponsePacket",
-                field_name: "data",
-                error: e,
-            })?;
-
-        Ok(Self { data: data.into() })
+    fn read(reader: &mut &[u8], _: &Flags, _: PacketType) -> Result<Self, PacketError> {
+        Ok(Self {
+            data: reader.to_vec().into(),
+        })
     }
     fn write(&self, packet_type: PacketType) -> Vec<u8> {
         let mut buf = PacketHeader::new(0x11, 0x0C, Flags::default()).write(packet_type);

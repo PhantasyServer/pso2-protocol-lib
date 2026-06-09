@@ -1,8 +1,6 @@
 //! PSO2 packet definitions and protocol information.
 
-use byteorder::{LittleEndian, ReadBytesExt};
 use pso2packetlib_impl::{HelperReadWrite, PacketReadWrite, ProtocolReadWrite};
-use std::io::{Read, Seek};
 
 // Packet traits
 mod traits;
@@ -75,31 +73,16 @@ use unk34::*;
 /// Error type returned by packet parsing operations.
 #[derive(Debug, thiserror::Error)]
 pub enum PacketError {
-    /// Failed to read or write packet field.
-    #[error("failed to read/write field {field_name} from {packet_name}: {error}")]
+    /// Failed to read packet field.
+    #[error("insufficient bytes to read field {field_name} from {packet_name} (expected: {expected}, got {got})")]
     FieldError {
         packet_name: &'static str,
         field_name: &'static str,
-        #[source]
-        error: std::io::Error,
+        expected: usize,
+        got: usize,
     },
-    /// Failed to read or write flags or enum value.
-    #[error("failed to read/write value of {packet_name}: {error}")]
-    ValueError {
-        packet_name: &'static str,
-        #[source]
-        error: std::io::Error,
-    },
-    /// Failed to read or write variable packet field length.
-    #[error("failed to read/write length of field {field_name} from {packet_name}: {error}")]
-    FieldLengthError {
-        packet_name: &'static str,
-        field_name: &'static str,
-        #[source]
-        error: std::io::Error,
-    },
-    /// Failed to read or write packet field (i.e. field implementing [`HelperReadWrite`]).
-    #[error("failed to read/write field {field_name} from {packet_name}: {error}")]
+    /// Failed to read packet field (i.e. field implementing [`HelperReadWrite`]).
+    #[error("failed to read field {field_name} from {packet_name}: {error}")]
     CompositeFieldError {
         packet_name: &'static str,
         field_name: &'static str,
@@ -107,27 +90,24 @@ pub enum PacketError {
         error: Box<Self>,
     },
     /// Failed to add padding to packet field.
-    #[error("failed to pad field {field_name} from {packet_name}: {error}")]
+    #[error(
+        "failed to pad field {field_name} from {packet_name} (expected: {expected}, got: {got})"
+    )]
     PaddingError {
         packet_name: &'static str,
         field_name: &'static str,
-        #[source]
-        error: std::io::Error,
+        expected: usize,
+        got: usize,
     },
-    /// Failed to read/write constant value.
-    #[error("failed to read/write constant {const_val} from {packet_name}: {error}")]
+    /// Failed to read constant value.
+    #[error("failed to read constant {const_val} from {packet_name}")]
     ConstantError {
         packet_name: &'static str,
         const_val: u64,
-        #[source]
-        error: std::io::Error,
     },
-    /// Failed to read/write length of [`Packet`].
-    #[error("failed to read/write length for Packet: {error}")]
-    PacketLengthError {
-        #[source]
-        error: std::io::Error,
-    },
+    /// Failed to read length of [`Packet`].
+    #[error("failed to read length for Packet (expected bytes: {expected}, got: {got})")]
+    PacketLengthError { expected: usize, got: usize },
 }
 
 /// Type of the packet.
@@ -1658,42 +1638,45 @@ impl PacketHeader {
     pub fn new(id: u8, subid: u16, flag: Flags) -> Self {
         Self { id, subid, flag }
     }
-    pub fn read(
-        reader: &mut (impl Read + Seek),
-        packet_type: PacketType,
-    ) -> Result<Self, PacketError> {
+    pub fn read(reader: &mut &[u8], packet_type: PacketType) -> Result<Self, PacketError> {
         let (id, subid, flag) = if !matches!(packet_type, PacketType::NGS) {
-            let id = reader.read_u8().map_err(|e| PacketError::FieldError {
-                packet_name: "PacketHeader",
-                field_name: "id",
-                error: e,
+            let id = HelperReadWrite::read(reader, packet_type, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "PacketHeader",
+                    field_name: "id",
+                    error: Box::new(e),
+                }
             })?;
-            let subid = reader.read_u8().map_err(|e| PacketError::FieldError {
-                packet_name: "PacketHeader",
-                field_name: "subid",
-                error: e,
+            let subid = u8::read(reader, packet_type, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "PacketHeader",
+                    field_name: "subid",
+                    error: Box::new(e),
+                }
             })? as u16;
             let flag = Flags::read(reader, packet_type, 0, 0)?;
-            reader.read_u8().map_err(|e| PacketError::PaddingError {
+            u8::read(reader, packet_type, 0, 0).map_err(|e| PacketError::CompositeFieldError {
                 packet_name: "PacketHeader",
-                field_name: "flag",
-                error: e,
+                field_name: "flag_padding",
+                error: Box::new(e),
             })?;
             (id, subid, flag)
         } else {
             let flag = Flags::read(reader, packet_type, 0, 0)?;
-            let id = reader.read_u8().map_err(|e| PacketError::FieldError {
-                packet_name: "PacketHeader",
-                field_name: "id",
-                error: e,
+            let id = HelperReadWrite::read(reader, packet_type, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "PacketHeader",
+                    field_name: "id",
+                    error: Box::new(e),
+                }
             })?;
-            let subid = reader
-                .read_u16::<LittleEndian>()
-                .map_err(|e| PacketError::FieldError {
+            let subid = HelperReadWrite::read(reader, packet_type, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
                     packet_name: "PacketHeader",
                     field_name: "subid",
-                    error: e,
-                })?;
+                    error: Box::new(e),
+                }
+            })?;
             (id, subid, flag)
         };
 
@@ -1779,8 +1762,8 @@ pub struct ObjectHeader {
 // temporarily hidden
 #[doc(hidden)]
 #[inline(always)]
-pub fn read_magic(reader: &mut impl Read, sub: u32, xor: u32) -> std::io::Result<u32> {
-    Ok((reader.read_u32::<LittleEndian>()? ^ xor) - sub)
+pub fn read_magic(reader: &mut &[u8], sub: u32, xor: u32) -> Result<u32, PacketError> {
+    Ok((u32::read(reader, Default::default(), 0, 0)? ^ xor) - sub)
 }
 #[doc(hidden)]
 #[inline(always)]

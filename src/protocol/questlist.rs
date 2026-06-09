@@ -985,7 +985,7 @@ impl Default for UnlockedQuest {
 
 impl HelperReadWrite for RevealedRegions {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         packet_type: super::PacketType,
         _: u32,
         _: u32,

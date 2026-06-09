@@ -5,8 +5,7 @@ use super::{
     models::{character::HSVColor, Position},
     HelperReadWrite, ObjectHeader, PacketError, PacketReadWrite, PacketType,
 };
-use byteorder::{LittleEndian, ReadBytesExt};
-use std::{io::SeekFrom, time::Duration};
+use core::time::Duration;
 
 // ----------------------------------------------------------------
 // Items packets
@@ -1395,7 +1394,7 @@ pub enum MesetaDirection {
 
 impl PacketReadWrite for LoadItemPacket {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         flags: &super::Flags,
         packet_type: PacketType,
     ) -> Result<Self, PacketError> {
@@ -1435,18 +1434,18 @@ impl PacketReadWrite for LoadItemPacket {
 
 impl HelperReadWrite for Item {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         packet_type: PacketType,
         xor: u32,
         sub: u32,
     ) -> Result<Self, PacketError> {
-        let uuid = reader
-            .read_u64::<LittleEndian>()
-            .map_err(|e| PacketError::FieldError {
+        let uuid = HelperReadWrite::read(reader, packet_type, xor, sub).map_err(|e| {
+            PacketError::CompositeFieldError {
                 packet_name: "Item",
                 field_name: "uuid",
-                error: e,
-            })?;
+                error: Box::new(e),
+            }
+        })?;
         let id = ItemId::read(reader, packet_type, xor, sub).map_err(|e| {
             PacketError::CompositeFieldError {
                 packet_name: "Item",
@@ -1464,17 +1463,12 @@ impl HelperReadWrite for Item {
         #[cfg(feature = "ngs_packets")]
         let unk = match packet_type {
             PacketType::NGS => {
-                let mut data = [0u16; 12];
-                for byte in data.iter_mut() {
-                    *byte =
-                        reader
-                            .read_u16::<LittleEndian>()
-                            .map_err(|e| PacketError::FieldError {
-                                packet_name: "Item",
-                                field_name: "unk",
-                                error: e,
-                            })?;
-                }
+                let data: [u16; 12] = HelperReadWrite::read(reader, packet_type, xor, sub)
+                    .map_err(|e| PacketError::CompositeFieldError {
+                        packet_name: "Item",
+                        field_name: "unk",
+                        error: Box::new(e),
+                    })?;
                 data
             }
             _ => [0u16; 12],
@@ -1502,7 +1496,7 @@ impl HelperReadWrite for Item {
 
 impl HelperReadWrite for ItemData {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         packet_type: PacketType,
         xor: u32,
         sub: u32,
@@ -1524,17 +1518,12 @@ impl HelperReadWrite for ItemData {
         #[cfg(feature = "ngs_packets")]
         let unk = match packet_type {
             PacketType::NGS => {
-                let mut data = [0u16; 12];
-                for byte in data.iter_mut() {
-                    *byte =
-                        reader
-                            .read_u16::<LittleEndian>()
-                            .map_err(|e| PacketError::FieldError {
-                                packet_name: "ItemData",
-                                field_name: "unk",
-                                error: e,
-                            })?;
-                }
+                let data: [u16; 12] = HelperReadWrite::read(reader, packet_type, xor, sub)
+                    .map_err(|e| PacketError::CompositeFieldError {
+                        packet_name: "ItemData",
+                        field_name: "unk",
+                        error: Box::new(e),
+                    })?;
                 data
             }
             _ => [0u16; 12],
@@ -1560,20 +1549,22 @@ impl HelperReadWrite for ItemData {
 
 impl ItemType {
     pub(crate) fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         item: &ItemId,
         packet_type: PacketType,
     ) -> Result<Self, PacketError> {
         Ok(match (item.item_type, packet_type) {
             #[cfg(feature = "ngs_packets")]
             (0, PacketType::NGS) => {
-                reader
-                    .seek(SeekFrom::Current(0x38))
-                    .map_err(|e| PacketError::FieldError {
+                if reader.len() < 0x38 {
+                    return Err(PacketError::FieldError {
                         packet_name: "ItemType",
                         field_name: "field_0",
-                        error: e,
-                    })?;
+                        expected: 0x38,
+                        got: reader.len(),
+                    });
+                }
+                *reader = &reader[0x38..];
                 Self::NoItemNGS
             }
             #[cfg(feature = "ngs_packets")]
@@ -1593,25 +1584,27 @@ impl ItemType {
             #[cfg(feature = "ngs_packets")]
             (10, PacketType::NGS) => Self::CamoNGS(CamoNGSItem::read(reader, packet_type, 0, 0)?),
             #[cfg(feature = "ngs_packets")]
-            (_, PacketType::NGS) => Self::UnknownNGS({
-                let mut tmp = [0u8; 0x38];
-                reader
-                    .read_exact(&mut tmp)
-                    .map_err(|e| PacketError::FieldError {
-                        packet_name: "ItemType",
-                        field_name: "field_0",
-                        error: e,
-                    })?;
-                tmp.to_vec().into()
-            }),
+            (_, PacketType::NGS) => {
+                Self::UnknownNGS({
+                    let tmp: [u8; 0x38] = HelperReadWrite::read(reader, packet_type, 0, 0)
+                        .map_err(|e| PacketError::CompositeFieldError {
+                            packet_name: "ItemType",
+                            field_name: "field_0",
+                            error: Box::new(e),
+                        })?;
+                    tmp.to_vec().into()
+                })
+            }
             (0, _) => {
-                reader
-                    .seek(SeekFrom::Current(0x28))
-                    .map_err(|e| PacketError::FieldError {
+                if reader.len() < 0x28 {
+                    return Err(PacketError::FieldError {
                         packet_name: "ItemType",
                         field_name: "field_0",
-                        error: e,
-                    })?;
+                        expected: 0x28,
+                        got: reader.len(),
+                    });
+                }
+                *reader = &reader[0x28..];
                 Self::NoItem
             }
             (1, _) => Self::Weapon(WeaponItem::read(reader, packet_type, 0, 0)?),
@@ -1619,18 +1612,17 @@ impl ItemType {
             (3, _) => Self::Consumable(ConsumableItem::read(reader, packet_type, 0, 0)?),
             (5, _) => Self::Unit(UnitItem::read(reader, packet_type, 0, 0)?),
             (10, _) => Self::Camo(CamoItem::read(reader, packet_type, 0, 0)?),
-            _ => Self::Unknown({
-                let mut tmp = [0u8; 0x28];
-                reader
-                    .read_exact(&mut tmp)
-                    .map_err(|e| PacketError::FieldError {
-                        packet_name: "ItemType",
-                        field_name: "field_0",
-                        error: e,
-                    })?;
-
-                tmp.to_vec().into()
-            }),
+            _ => {
+                Self::Unknown({
+                    let tmp: [u8; 0x28] = HelperReadWrite::read(reader, packet_type, 0, 0)
+                        .map_err(|e| PacketError::CompositeFieldError {
+                            packet_name: "ItemType",
+                            field_name: "field_0",
+                            error: Box::new(e),
+                        })?;
+                    tmp.to_vec().into()
+                })
+            }
         })
     }
     pub(crate) fn write(&self, writer: &mut Vec<u8>, packet_type: PacketType) {
@@ -1673,20 +1665,23 @@ impl ItemType {
 }
 
 fn read_packed_affixes(
-    reader: &mut (impl std::io::Read + std::io::Seek),
+    reader: &mut &[u8],
     _: PacketType,
     _: u32,
     _: u32,
 ) -> Result<[u16; 8], PacketError> {
-    let mut packed = [0u8; 12];
-    let mut affixes = vec![];
-    reader
-        .read_exact(&mut packed)
-        .map_err(|e| PacketError::FieldError {
+    if reader.len() < 12 {
+        return Err(PacketError::PaddingError {
             packet_name: "PackedAffixes",
             field_name: "affixes",
-            error: e,
-        })?;
+            expected: 12,
+            got: reader.len(),
+        });
+    }
+    let packed = &reader[..12];
+    *reader = &reader[12..];
+
+    let mut affixes = vec![];
     for i in 0..4 {
         let affix_1 = u16::from_le_bytes([packed[i * 3], (packed[i * 3 + 2] & 0xF0) >> 4]);
         let affix_2 = u16::from_le_bytes([packed[i * 3 + 1], (packed[i * 3 + 2] & 0xF)]);

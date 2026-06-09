@@ -8,19 +8,24 @@ macro_rules! helper_int {
     ($name:ty; $read:ident, $write:ident) => {
         impl HelperReadWrite for $name {
             fn read(
-                reader: &mut (impl std::io::Read + std::io::Seek),
+                reader: &mut &[u8],
                 _: super::PacketType,
                 _: u32,
                 _: u32,
             ) -> Result<Self, super::PacketError> {
-                let mut buf = [0; std::mem::size_of::<$name>()];
-                reader
-                    .read_exact(&mut buf)
-                    .map_err(|e| PacketError::FieldError {
+                const BUF_SIZE: usize = core::mem::size_of::<$name>();
+                let mut buf = [0; BUF_SIZE];
+                let read_len = reader.len();
+                if read_len < BUF_SIZE {
+                    return Err(PacketError::FieldError {
                         packet_name: stringify!($name),
                         field_name: "value",
-                        error: e,
-                    })?;
+                        expected: BUF_SIZE,
+                        got: read_len,
+                    });
+                }
+                buf.copy_from_slice(&reader[..BUF_SIZE]);
+                *reader = &reader[BUF_SIZE..];
                 Ok(<$name>::$read(buf))
             }
 
@@ -46,7 +51,7 @@ helper_int!(Ipv4Addr; from, octets);
 
 impl<T: HelperReadWrite> HelperReadWrite for Box<T> {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         packet_type: super::PacketType,
         xor: u32,
         sub: u32,
@@ -61,7 +66,7 @@ impl<T: HelperReadWrite> HelperReadWrite for Box<T> {
 
 impl<T: HelperReadWrite, const N: usize> HelperReadWrite for [T; N] {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         packet_type: super::PacketType,
         xor: u32,
         sub: u32,
@@ -95,7 +100,7 @@ impl<T: HelperReadWrite, const N: usize> HelperReadWrite for [T; N] {
 
 impl HelperReadWrite for Duration {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         packet_type: crate::protocol::PacketType,
         _: u32,
         _: u32,
@@ -122,16 +127,12 @@ impl HelperReadWrite for Duration {
 
 impl HelperReadWrite for String {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         _: crate::protocol::PacketType,
         xor: u32,
         sub: u32,
     ) -> Result<Self, crate::protocol::PacketError> {
-        <String as StringRW>::read_variable(reader, sub, xor).map_err(|e| PacketError::FieldError {
-            packet_name: "String",
-            field_name: "str",
-            error: e,
-        })
+        <String as StringRW>::read_variable(reader, sub, xor)
     }
 
     fn write(&self, writer: &mut Vec<u8>, _: crate::protocol::PacketType, xor: u32, sub: u32) {
@@ -141,18 +142,12 @@ impl HelperReadWrite for String {
 
 impl HelperReadWrite for AsciiString {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         _: crate::protocol::PacketType,
         xor: u32,
         sub: u32,
     ) -> Result<Self, crate::protocol::PacketError> {
-        <AsciiString as StringRW>::read_variable(reader, sub, xor).map_err(|e| {
-            PacketError::FieldError {
-                packet_name: "AsciiString",
-                field_name: "str",
-                error: e,
-            }
-        })
+        <AsciiString as StringRW>::read_variable(reader, sub, xor)
     }
 
     fn write(&self, writer: &mut Vec<u8>, _: crate::protocol::PacketType, xor: u32, sub: u32) {
@@ -162,26 +157,20 @@ impl HelperReadWrite for AsciiString {
 
 impl<T: HelperReadWrite> HelperReadWrite for Vec<T> {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         packet_type: crate::protocol::PacketType,
         xor: u32,
         sub: u32,
     ) -> Result<Self, crate::protocol::PacketError> {
-        let len = read_magic(reader, sub, xor).map_err(|e| PacketError::FieldError {
+        let len = read_magic(reader, sub, xor).map_err(|e| PacketError::CompositeFieldError {
             packet_name: "Vec",
             field_name: "len",
-            error: e,
+            error: Box::new(e),
         })?;
         let mut data = vec![];
         data.reserve_exact(len as usize);
 
-        let seek1 = reader
-            .stream_position()
-            .map_err(|e| PacketError::PaddingError {
-                packet_name: "Vec",
-                field_name: "pre_read",
-                error: e,
-            })?;
+        let seek1 = reader.as_ptr() as usize;
         for _ in 0..len {
             data.push(T::read(reader, packet_type, xor, sub).map_err(|e| {
                 PacketError::CompositeFieldError {
@@ -191,23 +180,18 @@ impl<T: HelperReadWrite> HelperReadWrite for Vec<T> {
                 }
             })?);
         }
-        let seek2 = reader
-            .stream_position()
-            .map_err(|e| PacketError::PaddingError {
-                packet_name: "Vec",
-                field_name: "post_read",
-                error: e,
-            })?;
+        let seek2 = reader.as_ptr() as usize;
         let len = (seek2 - seek1) as usize;
-        reader
-            .seek(std::io::SeekFrom::Current(
-                (len.next_multiple_of(4) - len) as i64,
-            ))
-            .map_err(|e| PacketError::PaddingError {
+        let padding = len.next_multiple_of(4) - len;
+        if reader.len() < padding {
+            return Err(PacketError::PaddingError {
                 packet_name: "Vec",
                 field_name: "padding",
-                error: e,
-            })?;
+                expected: padding,
+                got: reader.len(),
+            });
+        }
+        *reader = &reader[padding..];
         Ok(data)
     }
 

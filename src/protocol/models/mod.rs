@@ -70,7 +70,7 @@ pub struct FunValue(pub u32);
 
 impl HelperReadWrite for EulerPosition {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
+        reader: &mut &[u8],
         packet_type: PacketType,
         xor: u32,
         sub: u32,
@@ -86,25 +86,16 @@ impl HelperReadWrite for EulerPosition {
 }
 
 impl HelperReadWrite for SGValue {
-    fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
-        _: PacketType,
-        _: u32,
-        _: u32,
-    ) -> Result<Self, PacketError> {
-        let mut buf = [0u8; 4];
-        reader
-            .read_exact(&mut buf[2..4])
-            .map_err(|e| PacketError::ValueError {
+    fn read(reader: &mut &[u8], pt: PacketType, _: u32, _: u32) -> Result<Self, PacketError> {
+        let mut buf = u32::read(reader, pt, 0, 0)
+            .map_err(|e| PacketError::CompositeFieldError {
                 packet_name: "SGValue",
-                error: e,
-            })?;
-        reader
-            .read_exact(&mut buf[0..2])
-            .map_err(|e| PacketError::ValueError {
-                packet_name: "SGValue",
-                error: e,
-            })?;
+                field_name: "value",
+                error: Box::new(e),
+            })?
+            .to_le_bytes();
+        buf.swap(2, 0);
+        buf.swap(3, 1);
         let value = u32::from_le_bytes(buf);
         let value = value as f32 / 5.0;
         Ok(Self(value))
@@ -121,24 +112,20 @@ impl HelperReadWrite for SGValue {
 
 impl HelperReadWrite for FunValue {
     fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
-        _: PacketType,
+        reader: &mut &[u8],
+        pt: PacketType,
         _: u32,
         _: u32,
     ) -> Result<Self, PacketError> {
-        let mut buf = [0u8; 4];
-        reader
-            .read_exact(&mut buf[2..4])
-            .map_err(|e| PacketError::ValueError {
+        let mut buf = u32::read(reader, pt, 0, 0)
+            .map_err(|e| PacketError::CompositeFieldError {
                 packet_name: "FunValue",
-                error: e,
-            })?;
-        reader
-            .read_exact(&mut buf[0..2])
-            .map_err(|e| PacketError::ValueError {
-                packet_name: "FunValue",
-                error: e,
-            })?;
+                field_name: "value",
+                error: Box::new(e),
+            })?
+            .to_le_bytes();
+        buf.swap(2, 0);
+        buf.swap(3, 1);
         let value = u32::from_le_bytes(buf);
         Ok(Self(value))
     }

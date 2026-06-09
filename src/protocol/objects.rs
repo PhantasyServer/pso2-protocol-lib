@@ -6,13 +6,9 @@ use super::{
     },
     Flags, ObjectHeader, PacketError, PacketHeader, PacketReadWrite, PacketType,
 };
-use crate::{fixed_types::FixedBytes, AsciiString};
-use byteorder::{LittleEndian, ReadBytesExt};
+use crate::{fixed_types::FixedBytes, protocol::HelperReadWrite, AsciiString};
 use half::f16;
-use std::{
-    io::{Read, Seek},
-    time::Duration,
-};
+use core::time::Duration;
 
 // ----------------------------------------------------------------
 // Object related packets
@@ -696,396 +692,361 @@ pub struct Unk04EAPacket {
 
 //yikes
 impl PacketReadWrite for MovementPacket {
-    fn read(
-        reader: &mut (impl Read + Seek),
-        flags: &Flags,
-        _: PacketType,
-    ) -> Result<Self, PacketError> {
+    fn read(reader: &mut &[u8], flags: &Flags, pt: PacketType) -> Result<Self, PacketError> {
         let mut packet = Self::default();
-        reader
-            .read_exact(&mut packet.unk)
-            .map_err(|e| PacketError::FieldError {
+        let req = packet.unk.len();
+        if reader.len() < req {
+            return Err(PacketError::FieldError {
                 packet_name: "MovementPacket",
                 field_name: "unk",
-                error: e,
-            })?;
+                expected: req,
+                got: reader.len(),
+            });
+        }
+        packet.unk.copy_from_slice(&reader[..req]);
+        *reader = &reader[req..];
+
         if flags.contains(Flags::FULL_MOVEMENT) {
-            packet.ent1_id =
-                Some(
-                    reader
-                        .read_u64::<LittleEndian>()
-                        .map_err(|e| PacketError::FieldError {
-                            packet_name: "MovementPacket",
-                            field_name: "ent1_id",
-                            error: e,
-                        })?,
-                );
-            packet.ent1_type =
-                Some(
-                    reader
-                        .read_u16::<LittleEndian>()
-                        .map_err(|e| PacketError::FieldError {
-                            packet_name: "MovementPacket",
-                            field_name: "ent1_type",
-                            error: e,
-                        })?,
-                );
-            packet.ent1_unk =
-                Some(
-                    reader
-                        .read_u16::<LittleEndian>()
-                        .map_err(|e| PacketError::FieldError {
-                            packet_name: "MovementPacket",
-                            field_name: "ent1_unk",
-                            error: e,
-                        })?,
-                );
-            packet.ent2_id =
-                Some(
-                    reader
-                        .read_u64::<LittleEndian>()
-                        .map_err(|e| PacketError::FieldError {
-                            packet_name: "MovementPacket",
-                            field_name: "ent2_id",
-                            error: e,
-                        })?,
-                );
-            packet.ent2_type =
-                Some(
-                    reader
-                        .read_u16::<LittleEndian>()
-                        .map_err(|e| PacketError::FieldError {
-                            packet_name: "MovementPacket",
-                            field_name: "ent2_type",
-                            error: e,
-                        })?,
-                );
-            packet.ent2_unk =
-                Some(
-                    reader
-                        .read_u16::<LittleEndian>()
-                        .map_err(|e| PacketError::FieldError {
-                            packet_name: "MovementPacket",
-                            field_name: "ent2_unk",
-                            error: e,
-                        })?,
-                );
-            packet.timestamp = Some(Duration::from_secs(
-                reader
-                    .read_u32::<LittleEndian>()
-                    .map_err(|e| PacketError::FieldError {
-                        packet_name: "MovementPacket",
-                        field_name: "timestamp",
-                        error: e,
-                    })? as u64,
-            ));
-            packet.rot_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.ent1_id = Some(HelperReadWrite::read(reader, pt, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent1_id",
+                    error: Box::new(e),
+                }
+            })?);
+            packet.ent1_type = Some(HelperReadWrite::read(reader, pt, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent1_type",
+                    error: Box::new(e),
+                }
+            })?);
+            packet.ent1_unk = Some(HelperReadWrite::read(reader, pt, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent1_unk",
+                    error: Box::new(e),
+                }
+            })?);
+            packet.ent2_id = Some(HelperReadWrite::read(reader, pt, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent2_id",
+                    error: Box::new(e),
+                }
+            })?);
+            packet.ent2_type = Some(HelperReadWrite::read(reader, pt, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent2_type",
+                    error: Box::new(e),
+                }
+            })?);
+            packet.ent2_unk = Some(HelperReadWrite::read(reader, pt, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent2_unk",
+                    error: Box::new(e),
+                }
+            })?);
+            packet.timestamp = Some(Duration::from_secs(u32::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "timestamp",
+                    error: Box::new(e),
+                },
+            )? as u64));
+            packet.rot_x = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "rot_x",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
-            packet.rot_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.rot_y = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "rot_y",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
-            packet.rot_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.rot_z = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "rot_z",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
-            packet.rot_w = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.rot_w = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "rot_w",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
-            packet.cur_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.cur_x = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "cur_x",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
-            packet.cur_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.cur_y = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "cur_y",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
-            packet.cur_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.cur_z = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "cur_z",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
-            packet.unk1 = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.unk1 = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "unk1",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
-            packet.unk_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.unk_x = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "unk_x",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
-            packet.unk_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.unk_y = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "unk_y",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
-            packet.unk_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.unk_z = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "unk_z",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
-            packet.unk2 = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.unk2 = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "unk2",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
-            packet.unk3 =
-                Some(
-                    reader
-                        .read_u32::<LittleEndian>()
-                        .map_err(|e| PacketError::FieldError {
-                            packet_name: "MovementPacket",
-                            field_name: "unk3",
-                            error: e,
-                        })?,
-                );
+            packet.unk3 = Some(HelperReadWrite::read(reader, pt, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "unk3",
+                    error: Box::new(e),
+                }
+            })?);
             return Ok(packet);
         }
-        let flags = reader
-            .read_u24::<LittleEndian>()
-            .map_err(|e| PacketError::FieldError {
+        if reader.len() < 3 {
+            return Err(PacketError::FieldError {
                 packet_name: "MovementPacket",
                 field_name: "flags",
-                error: e,
-            })?;
+                expected: 3,
+                got: reader.len(),
+            });
+        }
+        let mut buf = [0; 4];
+        buf[..3].copy_from_slice(&reader[..3]);
+        *reader = &reader[3..];
+        let flags = u32::from_le_bytes(buf);
         if flags & 0x1 != 0 {
-            packet.ent1_id =
-                Some(
-                    reader
-                        .read_u64::<LittleEndian>()
-                        .map_err(|e| PacketError::FieldError {
-                            packet_name: "MovementPacket",
-                            field_name: "ent1_id",
-                            error: e,
-                        })?,
-                );
+            packet.ent1_id = Some(HelperReadWrite::read(reader, pt, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent1_id",
+                    error: Box::new(e),
+                }
+            })?);
         }
         if flags & 0x2 != 0 {
-            packet.ent1_type =
-                Some(
-                    reader
-                        .read_u16::<LittleEndian>()
-                        .map_err(|e| PacketError::FieldError {
-                            packet_name: "MovementPacket",
-                            field_name: "ent1_type",
-                            error: e,
-                        })?,
-                );
+            packet.ent1_type = Some(HelperReadWrite::read(reader, pt, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent1_type",
+                    error: Box::new(e),
+                }
+            })?);
         }
         if flags & 0x4 != 0 {
-            packet.ent1_unk =
-                Some(
-                    reader
-                        .read_u16::<LittleEndian>()
-                        .map_err(|e| PacketError::FieldError {
-                            packet_name: "MovementPacket",
-                            field_name: "ent1_unk",
-                            error: e,
-                        })?,
-                );
+            packet.ent1_unk = Some(HelperReadWrite::read(reader, pt, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent1_unk",
+                    error: Box::new(e),
+                }
+            })?);
         }
         if flags & 0x8 != 0 {
-            packet.ent2_id =
-                Some(
-                    reader
-                        .read_u64::<LittleEndian>()
-                        .map_err(|e| PacketError::FieldError {
-                            packet_name: "MovementPacket",
-                            field_name: "ent2_id",
-                            error: e,
-                        })?,
-                );
+            packet.ent2_id = Some(HelperReadWrite::read(reader, pt, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent2_id",
+                    error: Box::new(e),
+                }
+            })?);
         }
         if flags & 0x10 != 0 {
-            packet.ent2_type =
-                Some(
-                    reader
-                        .read_u16::<LittleEndian>()
-                        .map_err(|e| PacketError::FieldError {
-                            packet_name: "MovementPacket",
-                            field_name: "ent2_type",
-                            error: e,
-                        })?,
-                );
+            packet.ent2_type = Some(HelperReadWrite::read(reader, pt, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent2_type",
+                    error: Box::new(e),
+                }
+            })?);
         }
         if flags & 0x20 != 0 {
-            packet.ent2_unk =
-                Some(
-                    reader
-                        .read_u16::<LittleEndian>()
-                        .map_err(|e| PacketError::FieldError {
-                            packet_name: "MovementPacket",
-                            field_name: "ent2_unk",
-                            error: e,
-                        })?,
-                );
+            packet.ent2_unk = Some(HelperReadWrite::read(reader, pt, 0, 0).map_err(|e| {
+                PacketError::CompositeFieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "ent2_unk",
+                    error: Box::new(e),
+                }
+            })?);
         }
         if flags & 0x40 != 0 {
-            packet.timestamp = Some(Duration::from_secs(
-                reader
-                    .read_u32::<LittleEndian>()
-                    .map_err(|e| PacketError::FieldError {
-                        packet_name: "MovementPacket",
-                        field_name: "timestamp",
-                        error: e,
-                    })? as u64,
-            ));
+            packet.timestamp = Some(Duration::from_secs(u32::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
+                    packet_name: "MovementPacket",
+                    field_name: "timestamp",
+                    error: Box::new(e),
+                },
+            )? as u64));
         }
         if flags & 0x80 != 0 {
-            packet.rot_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.rot_x = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "rot_x",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
         }
         if flags & 0x100 != 0 {
-            packet.rot_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.rot_y = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "rot_y",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
         }
         if flags & 0x200 != 0 {
-            packet.rot_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.rot_z = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "rot_z",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
         }
         if flags & 0x400 != 0 {
-            packet.rot_w = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.rot_w = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "rot_w",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
         }
         if flags & 0x800 != 0 {
-            packet.cur_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.cur_x = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "cur_x",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
         }
         if flags & 0x1000 != 0 {
-            packet.cur_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.cur_y = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "cur_y",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
         }
         if flags & 0x2000 != 0 {
-            packet.cur_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.cur_z = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "cur_z",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
         }
         if flags & 0x4000 != 0 {
-            packet.unk1 = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.unk1 = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "unk1",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
         }
         if flags & 0x8000 != 0 {
-            packet.unk_x = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.unk_x = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "unk_x",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
         }
         if flags & 0x10000 != 0 {
-            packet.unk_y = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.unk_y = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "unk_y",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
         }
         if flags & 0x20000 != 0 {
-            packet.unk_z = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.unk_z = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "unk_z",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
         }
         if flags & 0x40000 != 0 {
-            packet.unk2 = Some(f16::from_bits(reader.read_u16::<LittleEndian>().map_err(
-                |e| PacketError::FieldError {
+            packet.unk2 = Some(f16::from_bits(u16::read(reader, pt, 0, 0).map_err(
+                |e| PacketError::CompositeFieldError {
                     packet_name: "MovementPacket",
                     field_name: "unk2",
-                    error: e,
+                    error: Box::new(e),
                 },
             )?));
         }
         if flags & 0x80000 != 0 {
             if flags & 0x100000 != 0 {
-                packet.unk4 = Some(reader.read_u8().map_err(|e| PacketError::FieldError {
-                    packet_name: "MovementPacket",
-                    field_name: "unk4",
-                    error: e,
+                packet.unk4 = Some(HelperReadWrite::read(reader, pt, 0, 0).map_err(|e| {
+                    PacketError::CompositeFieldError {
+                        packet_name: "MovementPacket",
+                        field_name: "unk4",
+                        error: Box::new(e),
+                    }
                 })?);
             } else {
-                packet.unk3 = Some(reader.read_u32::<LittleEndian>().map_err(|e| {
-                    PacketError::FieldError {
+                packet.unk3 = Some(HelperReadWrite::read(reader, pt, 0, 0).map_err(|e| {
+                    PacketError::CompositeFieldError {
                         packet_name: "MovementPacket",
                         field_name: "unk3",
-                        error: e,
+                        error: Box::new(e),
                     }
                 })?);
             }

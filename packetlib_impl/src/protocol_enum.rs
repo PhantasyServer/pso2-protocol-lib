@@ -95,19 +95,20 @@ pub fn protocol_deriver(ast: &syn::DeriveInput, is_internal: bool) -> syn::Resul
                     if input[pointer..].len() <= 4 {
                         break;
                     }
-                    let len = (&input[pointer..pointer + 4]).read_u32::<LittleEndian>().map_err(|e| {
-                        PacketError::PacketLengthError{
-                            error: e,
-                        }
-                    })? as usize - 4;
+                    let len = {
+                        let mut buf = [0;4];
+                        buf.copy_from_slice(&input[pointer..pointer+4]);
+                        u32::from_le_bytes(buf)
+                    } as usize - 4;
                     pointer += 4;
                     if input[pointer..].len() < len {
                         return Err(PacketError::PacketLengthError{
-                            error: std::io::ErrorKind::UnexpectedEof.into()
+                            expected: len,
+                            got: input[pointer..].len(),
                         });
                     }
                     #read_raw
-                    let mut buf_tmp = std::io::Cursor::new(&input[pointer..pointer + len]);
+                    let mut buf_tmp = &input[pointer..pointer + len];
                     let header = PacketHeader::read(&mut buf_tmp, packet_type).map_err(|e| {
                         PacketError::CompositeFieldError {
                             packet_name: stringify!(#name),
@@ -294,12 +295,7 @@ fn parse_enum_field(
                 if settings.unknown {
                     push_string = quote! {
                         packets.push(Self::#name({
-                            let mut data = vec![];
-                            buf_tmp.read_to_end(&mut data).map_err(|e| PacketError::FieldError{
-                                packet_name: packet_name,
-                                field_name: stringify!(#name),
-                                error: e
-                            })?;
+                            let data = buf_tmp.to_vec();
                             (header, data)
                         }));
                     };

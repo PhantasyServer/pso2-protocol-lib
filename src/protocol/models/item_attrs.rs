@@ -4,7 +4,6 @@ use crate::{
     fixed_types::{FixedBytes, FixedVec, VecUSize},
     protocol::{HelperReadWrite, PacketError, PacketType},
 };
-use byteorder::{LittleEndian, ReadBytesExt};
 
 /// Item attributes found in the `item_parameter.bin` file in the ICE archive from
 /// [`crate::protocol::Packet::LoadItemAttributes`].
@@ -502,10 +501,7 @@ pub enum StatType {
 // ----------------------------------------------------------------
 
 impl ItemAttributes {
-    pub fn read_attrs(
-        reader: &mut (impl std::io::Read + std::io::Seek),
-        packet_type: PacketType,
-    ) -> Result<Self, PacketError> {
+    pub fn read_attrs(reader: &mut &[u8], packet_type: PacketType) -> Result<Self, PacketError> {
         match packet_type {
             PacketType::Vita => Ok(Self::Vita(ItemAttributesVita::read(
                 reader,
@@ -525,9 +521,7 @@ impl ItemAttributes {
 }
 
 impl ItemAttributesPC {
-    pub fn read_attrs(
-        reader: &mut (impl std::io::Read + std::io::Seek),
-    ) -> Result<Self, PacketError> {
+    pub fn read_attrs(reader: &mut &[u8]) -> Result<Self, PacketError> {
         Self::read(reader, crate::protocol::PacketType::Classic, 0, 0)
     }
     pub fn write_attrs(&self, writer: &mut Vec<u8>) {
@@ -536,9 +530,7 @@ impl ItemAttributesPC {
 }
 
 impl ItemAttributesVita {
-    pub fn read_attrs(
-        reader: &mut (impl std::io::Read + std::io::Seek),
-    ) -> Result<Self, PacketError> {
+    pub fn read_attrs(reader: &mut &[u8]) -> Result<Self, PacketError> {
         Self::read(reader, crate::protocol::PacketType::Classic, 0, 0)
     }
     pub fn write_attrs(&self, writer: &mut Vec<u8>) {
@@ -547,23 +539,17 @@ impl ItemAttributesVita {
 }
 
 impl HelperReadWrite for GenderDmg {
-    fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
-        pt: PacketType,
-        _: u32,
-        _: u32,
-    ) -> Result<Self, PacketError> {
-        let bits = reader
-            .read_u16::<LittleEndian>()
-            .map_err(|e| PacketError::ValueError {
-                packet_name: "GenderDmg",
-                error: e,
-            })?;
+    fn read(reader: &mut &[u8], pt: PacketType, _: u32, _: u32) -> Result<Self, PacketError> {
+        let bits = u16::read(reader, pt, 0, 0).map_err(|e| PacketError::CompositeFieldError {
+            packet_name: "GenderDmg",
+            field_name: "bits",
+            error: Box::new(e),
+        })?;
         // 14 bits
         let force_dmg = bits & 0x3FFF;
         // hacky solution but it works
         let gender_bits = (bits >> 14) as u8;
-        let mut gender_slice = std::io::Cursor::new(std::slice::from_ref(&gender_bits));
+        let mut gender_slice = core::slice::from_ref(&gender_bits);
         let gender = GenderFlags::read(&mut gender_slice, pt, 0, 0).map_err(|e| {
             PacketError::CompositeFieldError {
                 packet_name: "GenderDmg",
@@ -583,19 +569,18 @@ impl HelperReadWrite for GenderDmg {
 }
 
 impl HelperReadWrite for UnitRes {
-    fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
-        _: PacketType,
-        _: u32,
-        _: u32,
-    ) -> Result<Self, PacketError> {
+    fn read(reader: &mut &[u8], _: PacketType, _: u32, _: u32) -> Result<Self, PacketError> {
         let mut bytes = [0u8; 16];
-        reader
-            .read_exact(&mut bytes[..0xF])
-            .map_err(|e| PacketError::ValueError {
+        if reader.len() < 0xF {
+            return Err(PacketError::FieldError {
                 packet_name: "UnitRes",
-                error: e,
-            })?;
+                field_name: "bytes",
+                expected: 0xF,
+                got: reader.len(),
+            });
+        }
+        bytes[..0xF].copy_from_slice(&reader[..0xF]);
+        *reader = &reader[0xF..];
         let mut bits = u128::from_le_bytes(bytes);
         // 7 bits
         let tec_res = (bits & 0x7F) as u8;
@@ -681,19 +666,18 @@ impl HelperReadWrite for UnitRes {
 }
 
 impl HelperReadWrite for UnitAtk {
-    fn read(
-        reader: &mut (impl std::io::Read + std::io::Seek),
-        _: PacketType,
-        _: u32,
-        _: u32,
-    ) -> Result<Self, PacketError> {
+    fn read(reader: &mut &[u8], _: PacketType, _: u32, _: u32) -> Result<Self, PacketError> {
         let mut bytes = [0u8; 8];
-        reader
-            .read_exact(&mut bytes[..0x7])
-            .map_err(|e| PacketError::ValueError {
-                packet_name: "UnitAtk",
-                error: e,
-            })?;
+        if reader.len() < 7 {
+            return Err(PacketError::FieldError {
+                packet_name: "UnitRes",
+                field_name: "bytes",
+                expected: 7,
+                got: reader.len(),
+            });
+        }
+        bytes[..7].copy_from_slice(&reader[..7]);
+        *reader = &reader[7..];
         let mut bits = u64::from_le_bytes(bytes);
         // 13 bits
         let mel_atk = (bits & 0x1FFF) as u16;
