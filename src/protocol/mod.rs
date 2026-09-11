@@ -35,6 +35,8 @@ pub mod settings;
 pub mod spawn;
 pub mod symbolart;
 pub mod unk10;
+pub mod unk16;
+pub mod unk1c;
 pub mod unk19;
 pub mod unk1e;
 pub mod unk2a;
@@ -64,6 +66,8 @@ use settings::*;
 use spawn::*;
 use symbolart::*;
 use unk10::*;
+use unk16::*;
+use unk1c::*;
 use unk19::*;
 use unk1e::*;
 use unk2a::*;
@@ -1531,6 +1535,85 @@ pub enum Packet {
 
     //Other packets
     /// Raw packet with header.
+    // ----------------------------------------------------------------
+    // Classic packets recovered from the 2026-09-10 spike capture
+    // ----------------------------------------------------------------
+    #[Category(PacketCategory::Object)]
+    /// (0x04, 0xBD) Unknown. (C -> S)
+    #[Classic]
+    #[Id(0x04, 0xBD)]
+    Unk04BD(Unk04BDPacket),
+
+    #[Category(PacketCategory::Chat)]
+    /// (0x07, 0x3D) Unknown. (C -> S)
+    #[Classic]
+    #[Id(0x07, 0x3D)]
+    Unk073D,
+    /// (0x07, 0x41) Unknown. (C -> S)
+    #[Classic]
+    #[Id(0x07, 0x41)]
+    Unk0741,
+
+    #[Category(PacketCategory::Item)]
+    /// (0x0F, 0x28) Unknown. (C -> S)
+    #[Classic]
+    #[Id(0x0F, 0x28)]
+    Unk0F28(Unk0F28Packet),
+    /// (0x0F, 0xAA) Unknown. (C -> S)
+    #[Classic]
+    #[Id(0x0F, 0xAA)]
+    Unk0FAA(Unk0FAAPacket),
+    /// (0x0F, 0xDA) Unknown. (C -> S)
+    #[Classic]
+    #[Id(0x0F, 0xDA)]
+    Unk0FDA(Unk0FDAPacket),
+
+    #[Category(PacketCategory::Unk16)]
+    /// (0x16, 0x07) Unknown. (C -> S)
+    #[Classic]
+    #[Id(0x16, 0x07)]
+    Unk1607(Unk1607Packet),
+
+    #[Category(PacketCategory::Friends)]
+    /// (0x18, 0x2E) Unknown. (C -> S)
+    #[Classic]
+    #[Id(0x18, 0x2E)]
+    Unk182E(Unk182EPacket),
+
+    #[Category(PacketCategory::Characters)]
+    /// (0x1C, 0x1E) Unknown. (C -> S)
+    #[Classic]
+    #[Id(0x1C, 0x1E)]
+    Unk1C1E(Unk1C1EPacket),
+    /// (0x1C, 0x46) Unknown. (C -> S)
+    #[Classic]
+    #[Id(0x1C, 0x46)]
+    Unk1C46(Unk1C46Packet),
+
+    #[Category(PacketCategory::PlayerShop)]
+    /// (0x34, 0x72) Unknown. (C -> S)
+    #[Classic]
+    #[Id(0x34, 0x72)]
+    Unk3472,
+
+    #[Category(PacketCategory::Unk48)]
+    /// (0x48, 0x16) Unknown. (C -> S)
+    #[Classic]
+    #[Id(0x48, 0x16)]
+    Unk4816,
+
+    #[Category(PacketCategory::Unk49)]
+    /// (0x49, 0x00) Unknown. (C -> S)
+    #[Classic]
+    #[Id(0x49, 0x00)]
+    Unk4900,
+
+    #[Category(PacketCategory::Unk4F)]
+    /// (0x4F, 0x00) Unknown. (C -> S)
+    #[Classic]
+    #[Id(0x4F, 0x00)]
+    Unk4F00,
+
     #[Raw]
     Raw(Vec<u8>),
     /// Unknown packet.
@@ -1604,6 +1687,14 @@ pub enum PacketCategory {
     ARKSMissions,
     /// Classic Mission pass related packets. See [`missionpass`]
     MissionPass,
+    /// Unknown 0x16 packets. See [`unk16`]
+    Unk16,
+    /// Unknown 0x48 packets.
+    Unk48,
+    /// Unknown 0x49 packets.
+    Unk49,
+    /// Unknown 0x4F packets.
+    Unk4F,
 }
 
 // ----------------------------------------------------------------
