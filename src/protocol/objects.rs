@@ -1317,3 +1317,20 @@ impl PacketReadWrite for MovementPacket {
         Ok(buf)
     }
 }
+
+/// (0x04, 0xBD) Unknown. (C -> S)
+///
+/// Sent by the classic client during lobby movement, amid Movement (0x04, 0x07) packets.
+/// Recovered from the 2026-09-10 classic spike capture; fields are not yet named.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x04, 0xBD)]
+#[Flags(Flags::OBJECT_RELATED)]
+pub struct Unk04BDPacket {
+    pub object: ObjectHeader,
+    pub unk1: u32,
+    pub unk2: u32,
+    pub unk3: u32,
+    pub unk4: [u8; 0x18],
+}

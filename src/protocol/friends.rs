@@ -186,3 +186,19 @@ pub enum FriendLocation {
     #[Read_default]
     Unknown = 0xFFFF,
 }
+
+/// (0x18, 0x2E) Unknown. (C -> S)
+///
+/// Sent by the classic client during initial login, paired with (0x16, 0x07). `unk1` looks
+/// like a handle/id, `unk2` is always 1. Recovered from the 2026-09-10 classic spike capture;
+/// fields are not yet named.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x18, 0x2E)]
+#[Flags(Flags::PACKED)]
+#[Magic(0, 0)]
+pub struct Unk182EPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+}

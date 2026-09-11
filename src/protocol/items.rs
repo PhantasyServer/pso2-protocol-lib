@@ -1811,3 +1811,40 @@ fn write_packed_affixes(
         })?;
     Ok(())
 }
+
+/// (0x0F, 0x28) Unknown. (C -> S)
+///
+/// Sent by the classic client during initial item sync at login. Recovered from the
+/// 2026-09-10 classic spike capture; fields are not yet named.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0x28)]
+pub struct Unk0F28Packet {
+    pub unk: u32,
+}
+
+/// (0x0F, 0xAA) Unknown. (C -> S)
+///
+/// Sent by the classic client in the lobby after the inventory/equip load. Recovered from
+/// the 2026-09-10 classic spike capture; fields are not yet named.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0xAA)]
+pub struct Unk0FAAPacket {
+    pub unk1: u32,
+    pub unk2: u32,
+}
+
+/// (0x0F, 0xDA) Unknown. (C -> S)
+///
+/// Sent by the classic client during initial item sync at login, just before (0x0F, 0x28).
+/// Recovered from the 2026-09-10 classic spike capture; fields are not yet named.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
+#[derive(Debug, Default, Clone, PartialEq, PacketReadWrite)]
+#[Id(0x0F, 0xDA)]
+pub struct Unk0FDAPacket {
+    pub unk: u32,
+}
